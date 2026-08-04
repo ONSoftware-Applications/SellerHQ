@@ -4,6 +4,10 @@ import BrandMark from './BrandMark'
 import { useAuth } from '../hooks/useAuth'
 import { useSettings } from '../hooks/useSettings'
 
+function isMobile() {
+  return /iphone|ipad|ipod|android/i.test(navigator.userAgent)
+}
+
 type SidebarProps = {
   mobileNavOpen?: boolean
   onCloseMobileNav?: () => void
@@ -137,6 +141,18 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
         >
           Reports
         </NavLink>
+
+        {isMobile() && (
+          <NavLink
+            to="/scan"
+            onClick={handleNavClick}
+            className={({ isActive }) =>
+              `nav-item ${isActive ? 'active' : ''}`
+            }
+          >
+            Scan QR
+          </NavLink>
+        )}
       </nav>
 
       <div className="sidebar-bottom">

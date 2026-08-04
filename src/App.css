@@ -263,6 +263,23 @@
   background: var(--shq-bg);
 }
 
+.scan-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--shq-border);
+  background: var(--shq-surface);
+  color: var(--shq-ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--shq-transition);
+}
+
+.scan-btn:hover {
+  background: var(--shq-bg);
+}
+
 .topbar-heading h1,
 .topbar h1 {
   margin: 0;
@@ -550,6 +567,10 @@
 
 @media (min-width: 901px) {
   .hamburger {
+    display: none;
+  }
+
+  .scan-btn {
     display: none;
   }
 }
