@@ -6,6 +6,7 @@ import { useBusiness } from '../hooks/useBusiness'
 import { useCurrency } from '../hooks/useCurrency'
 import { useToast } from '../hooks/useToast'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { FilterBar } from '../components/FilterBar'
 import type {
   Product,
   ProductCondition,
@@ -394,34 +395,8 @@ if (
       products.filter((product) =>
         selectedProductIds.includes(product.id),
       ),
-    [products, selectedProductIds],
+[products, selectedProductIds],
   )
-
-  const quickSearchTerms = useMemo(() => {
-    const counts = new Map<string, number>()
-
-    for (const product of products) {
-      const terms = [
-        product.brand,
-        product.category,
-        product.storageLocation,
-        ...(Array.isArray(product.marketplaces)
-          ? product.marketplaces
-          : []),
-      ]
-
-      for (const term of terms) {
-        const value = term.trim()
-        if (!value) continue
-        counts.set(value, (counts.get(value) ?? 0) + 1)
-      }
-    }
-
-    return [...counts.entries()]
-      .sort((left, right) => right[1] - left[1])
-      .slice(0, 8)
-      .map(([value]) => value)
-  }, [products])
 
   const visibleSelectionCount = useMemo(
     () =>
@@ -1131,16 +1106,28 @@ if (
         </div>
       </div>
 
-      <div className="inventory-toolbar">
-        <input
-          type="search"
-          placeholder="Search code, SKU, name, brand, category, or storage"
-          value={search}
-          onChange={(event) =>
-            setSearch(event.target.value)
-          }
-        />
-
+<FilterBar
+        searchValue={search}
+        searchPlaceholder="Search code, SKU, name, brand, category, or storage"
+        onSearchChange={setSearch}
+        filtersActive={filtersActive}
+        onClearFilters={() => {
+          setSearch('')
+          setStatusFilter('All')
+          setMarketplaceFilter('All')
+          setConditionFilter('All')
+        }}
+        actions={
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={handleExportCsv}
+            disabled={exportableProducts.length === 0}
+          >
+            Export CSV
+          </button>
+        }
+      >
         <select
           value={statusFilter}
           onChange={(event) =>
@@ -1233,50 +1220,7 @@ if (
           <option value={100}>100 per page</option>
           <option value={250}>250 per page</option>
         </select>
-
-        {filtersActive && (
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => {
-              setSearch('')
-              setStatusFilter('All')
-              setMarketplaceFilter('All')
-              setConditionFilter('All')
-            }}
-            >
-              Clear filters
-          </button>
-        )}
-
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={handleExportCsv}
-          disabled={exportableProducts.length === 0}
-        >
-          Export CSV
-        </button>
-      </div>
-
-      {quickSearchTerms.length > 0 && (
-        <div className="inventory-quick-filters">
-          <span>Quick search</span>
-
-          <div className="inventory-chip-list">
-            {quickSearchTerms.map((term) => (
-              <button
-                key={term}
-                type="button"
-                className="inventory-chip"
-                onClick={() => setSearch(term)}
-              >
-                {term}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      </FilterBar>
 
       <div className="inventory-table-wrapper">
         <table className="inventory-table">

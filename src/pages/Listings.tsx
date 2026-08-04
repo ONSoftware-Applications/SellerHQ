@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { useProducts } from '../hooks/useProducts'
 import { useCurrency } from '../hooks/useCurrency'
+import { FilterBar } from '../components/FilterBar'
 
 const statusOrder: string[] = [
   'Listed',
@@ -33,30 +34,6 @@ function Listings() {
 
   const listedProducts = useMemo(() => {
     return products.filter((product) => product.status === 'Listed')
-  }, [products])
-
-  const quickSearchTerms = useMemo(() => {
-    const counts = new Map<string, number>()
-
-    for (const product of products) {
-      const terms = [
-        product.brand,
-        product.category,
-        product.storageLocation,
-        ...(Array.isArray(product.marketplaces) ? product.marketplaces : []),
-      ]
-
-      for (const term of terms) {
-        const value = term.trim()
-        if (!value) continue
-        counts.set(value, (counts.get(value) ?? 0) + 1)
-      }
-    }
-
-    return [...counts.entries()]
-      .sort((left, right) => right[1] - left[1])
-      .slice(0, 8)
-      .map(([value]) => value)
   }, [products])
 
   const filteredListedProducts = useMemo(() => {
@@ -167,14 +144,13 @@ function Listings() {
         </div>
       </div>
 
-      <div className="inventory-toolbar">
-        <input
-          type="search"
-          placeholder="Search product ID, name, brand, or marketplace"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-
+      <FilterBar
+        searchValue={search}
+        searchPlaceholder="Search product ID, name, brand, or marketplace"
+        onSearchChange={setSearch}
+        filtersActive={search.trim().length > 0}
+        onClearFilters={() => setSearch('')}
+      >
         <select
           value={sortKey}
           onChange={(event) => setSortKey(event.target.value)}
@@ -193,35 +169,7 @@ function Listings() {
         >
           {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
         </button>
-
-        {search.trim().length > 0 && (
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => setSearch('')}
-          >
-            Clear search
-          </button>
-        )}
-      </div>
-
-      {quickSearchTerms.length > 0 && (
-        <div className="inventory-quick-filters">
-          <span>Quick search</span>
-          <div className="inventory-chip-list">
-            {quickSearchTerms.map((term) => (
-              <button
-                key={term}
-                type="button"
-                className="inventory-chip"
-                onClick={() => setSearch(term)}
-              >
-                {term}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      </FilterBar>
 
       <div className="inventory-table-wrapper">
         <table className="inventory-table">

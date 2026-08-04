@@ -6,6 +6,7 @@ import { useExpenses } from '../hooks/useExpenses'
 import { useCurrency } from '../hooks/useCurrency'
 import { taxEstimate } from '../lib/finance'
 import type { Product } from '../types/product'
+import { FilterBar } from '../components/FilterBar'
 
 const periodOptions = ['All time', 'This year', 'This quarter', 'This month', 'Custom']
 const forecastTypes = ['Revenue', 'Profit', 'Units', 'Growth']
@@ -300,7 +301,9 @@ function Forecast() {
         </div>
       </div>
 
-      <div className="inventory-toolbar">
+      <FilterBar
+        filtersActive={false}
+      >
         <select
           value={selectedPeriod}
           onChange={(event) => setSelectedPeriod(event.target.value)}
@@ -330,7 +333,7 @@ function Forecast() {
         >
           {showPredictions ? 'Hide predictions' : 'Show predictions'}
         </button>
-      </div>
+      </FilterBar>
 
       <div className="inventory-stats">
         {quickStats.map((stat, index) => (

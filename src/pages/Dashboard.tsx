@@ -9,6 +9,7 @@ import { useCurrency } from '../hooks/useCurrency'
 import { formatDate } from '../utils/format'
 import type { Marketplace } from '../types/product'
 import LoadingState from '../components/LoadingState'
+import { FilterBar } from '../components/FilterBar'
 import {
   type Period,
   periodRange,
@@ -288,22 +289,7 @@ function Dashboard() {
           <h1>Dashboard</h1>
           <p>{currentBusiness.name} — Business overview and key metrics</p>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <input
-            type="search"
-            placeholder="Search products, brands, marketplaces..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{
-              padding: '10px 14px',
-              border: '1px solid var(--shq-border)',
-              borderRadius: '10px',
-              fontSize: '13px',
-              background: 'var(--shq-surface)',
-              color: 'var(--shq-ink)',
-              minWidth: 'min(240px, 100%)',
-            }}
-          />
+        <div className="page-heading-actions">
           <button
             className="btn btn-primary"
             onClick={() => navigate('/inventory')}
@@ -312,6 +298,14 @@ function Dashboard() {
           </button>
         </div>
       </div>
+
+      <FilterBar
+        searchValue={search}
+        searchPlaceholder="Search products, brands, marketplaces..."
+        onSearchChange={setSearch}
+        filtersActive={search.trim().length > 0}
+        onClearFilters={() => setSearch('')}
+      />
 
       {search.trim().length > 0 && (
         <div style={{ marginBottom: '16px' }}>

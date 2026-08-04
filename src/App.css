@@ -287,6 +287,140 @@
   display: none;
 }
 
+/* ============================================================
+   FILTER BAR
+   ============================================================ */
+
+.filter-bar {
+  margin-bottom: 16px;
+}
+
+.filter-bar-top {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-bar-search {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 12px;
+  border: 1px solid var(--shq-border);
+  background: var(--shq-surface);
+  border-radius: var(--shq-radius-md);
+  color: var(--shq-ink);
+  font: inherit;
+  font-size: 13px;
+  transition: border-color var(--shq-transition);
+}
+
+.filter-bar-search:focus {
+  outline: none;
+  border-color: var(--shq-ink-faint);
+  box-shadow: 0 0 0 3px rgb(20 33 61 / 6%);
+}
+
+.filter-bar-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 1px solid var(--shq-border);
+  background: var(--shq-surface);
+  border-radius: var(--shq-radius-md);
+  color: var(--shq-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--shq-transition), border-color var(--shq-transition);
+}
+
+.filter-bar-toggle:hover {
+  background: var(--shq-surface-subtle);
+  border-color: var(--shq-border-strong);
+}
+
+.filter-bar-toggle.active {
+  background: var(--shq-accent-soft);
+  border-color: var(--shq-accent-muted);
+}
+
+.filter-bar-toggle.has-filters {
+  border-color: var(--shq-accent);
+  color: var(--shq-ink);
+}
+
+.filter-bar-badge {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--shq-accent);
+  flex-shrink: 0;
+}
+
+.filter-bar-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  padding: 16px;
+  background: var(--shq-surface);
+  border: 1px solid var(--shq-border);
+  border-radius: var(--shq-radius-lg);
+  box-shadow: var(--shq-shadow-xs);
+}
+
+.filter-bar-panel select,
+.filter-bar-panel input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--shq-border);
+  background: var(--shq-surface);
+  border-radius: var(--shq-radius-md);
+  color: var(--shq-ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.filter-bar-panel select:focus,
+.filter-bar-panel input:focus {
+  outline: none;
+  border-color: var(--shq-ink-faint);
+  box-shadow: 0 0 0 3px rgb(20 33 61 / 6%);
+}
+
+.filter-bar-clear {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+@media (max-width: 700px) {
+  .filter-bar-top {
+    flex-wrap: nowrap;
+  }
+
+  .filter-bar-search {
+    min-width: 0;
+  }
+
+  .filter-bar-panel {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .filter-bar-clear {
+    grid-column: 1 / -1;
+    width: 100%;
+    text-align: center;
+  }
+
+  .inventory-quick-filters {
+    display: none;
+  }
+}
+
 .topbar-heading h1,
 .topbar h1 {
   margin: 0;
