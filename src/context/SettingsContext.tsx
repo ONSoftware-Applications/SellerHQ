@@ -57,7 +57,7 @@ const defaultSettings: UserSettings = {
     taxDeadlines: true,
   },
   appearance: {
-    theme: 'system',
+    theme: 'light',
     compactMode: false,
   },
   tax: {
