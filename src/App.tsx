@@ -39,6 +39,7 @@ const Pricing = lazy(() => import('./pages/Pricing'))
 const Reports = lazy(() => import('./pages/Reports'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Install = lazy(() => import('./pages/Install'))
+const Scan = lazy(() => import('./pages/Scan'))
 
 function PageLoader() {
   return <div className="inventory-loading" style={{ minHeight: '40vh' }}>
@@ -137,6 +138,10 @@ function App() {
                             <Route
                               path="/install"
                               element={<Install />}
+                            />
+                            <Route
+                              path="/scan"
+                              element={<Scan />}
                             />
                           </Route>
                         </Route>

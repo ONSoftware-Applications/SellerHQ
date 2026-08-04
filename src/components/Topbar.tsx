@@ -8,6 +8,10 @@ function isInstallable() {
     !(window.navigator as unknown as { standalone?: boolean }).standalone
 }
 
+function isMobile() {
+  return /iphone|ipad|ipod|android/i.test(navigator.userAgent)
+}
+
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': {
     title: 'Dashboard',
@@ -48,6 +52,10 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/install': {
     title: 'Install App',
     subtitle: 'Get SellerHQ on your device.',
+  },
+  '/scan': {
+    title: 'Scan QR',
+    subtitle: 'Scan a product label QR code.',
   },
   '/create-business': {
     title: 'New business',
@@ -165,6 +173,17 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
               className="install-btn"
             >
               ⬇ Install app
+            </button>
+          )}
+
+          {isMobile() && (
+            <button
+              type="button"
+              onClick={() => navigate('/scan')}
+              className="scan-btn"
+              aria-label="Scan QR code"
+            >
+              ⊡ Scan
             </button>
           )}
 
