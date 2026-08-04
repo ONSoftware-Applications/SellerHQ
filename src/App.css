@@ -263,21 +263,28 @@
   background: var(--shq-bg);
 }
 
-.scan-btn {
-  padding: 6px 14px;
-  border-radius: 8px;
+.topbar-icon-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--shq-radius-sm);
   border: 1px solid var(--shq-border);
   background: var(--shq-surface);
   color: var(--shq-ink);
-  font-size: 13px;
-  font-weight: 500;
   cursor: pointer;
-  white-space: nowrap;
+  flex-shrink: 0;
   transition: background var(--shq-transition);
 }
 
-.scan-btn:hover {
-  background: var(--shq-bg);
+.topbar-icon-btn:hover {
+  background: var(--shq-surface-subtle);
+  border-color: var(--shq-border-strong);
+}
+
+.scan-btn {
+  display: none;
 }
 
 .topbar-heading h1,
@@ -548,6 +555,10 @@
     display: flex;
   }
 
+  .topbar-icon-btn {
+    display: flex;
+  }
+
   .topbar {
     padding: 12px 16px;
   }
@@ -573,16 +584,20 @@
   .scan-btn {
     display: none;
   }
+
+  .topbar-icon-btn {
+    display: none;
+  }
 }
 
 @media (max-width: 700px) {
   .dashboard {
-    padding: 16px;
-    grid-template-columns: 1fr;
+    padding: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .chart-card {
-    grid-column: span 1;
+    grid-column: span 2;
   }
 
   .topbar-heading p {
@@ -1855,7 +1870,26 @@
 }
 
 @media (max-width: 700px) {
-  .page-heading,
+  .page-heading > div:first-child {
+    display: none;
+  }
+
+  .page-heading {
+    margin-bottom: 12px;
+  }
+
+  .page-heading-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .page-heading-actions .primary-button,
+  .page-heading-actions .secondary-button,
+  .page-heading-actions .btn {
+    flex: 1;
+    text-align: center;
+  }
+
   .product-details-header {
     flex-direction: column;
   }
@@ -1870,15 +1904,15 @@
   }
 
   .inventory-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .inventory-summary {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .inventory-import-summary {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .product-fields {
@@ -2684,14 +2718,25 @@
   }
 
   .inventory-toolbar {
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
   }
 
-  .inventory-toolbar input,
-  .inventory-toolbar select {
+  .inventory-toolbar input[type="search"] {
+    grid-column: 1 / -1;
     width: 100%;
+    min-width: 0;
+  }
+
+  .inventory-toolbar select,
+  .inventory-toolbar .secondary-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .inventory-toolbar .secondary-button {
+    text-align: center;
   }
 
   .inventory-page-actions {
