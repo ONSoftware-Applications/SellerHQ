@@ -1,16 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+type Platform = 'ios' | 'android' | 'mac' | 'windows' | 'other'
+
+function detectPlatform(ua: string): Platform {
+  if (/iphone|ipad|ipod/i.test(ua)) return 'ios'
+  if (/android/i.test(ua)) return 'android'
+  if (/mac/i.test(ua)) return 'mac'
+  if (/win/i.test(ua)) return 'windows'
+  return 'other'
+}
+
 function Install() {
   const navigate = useNavigate()
-  const [platform, setPlatform] = useState<'mac' | 'windows' | 'other'>('other')
+  const [platform, setPlatform] = useState<Platform>('other')
   const [canInstall, setCanInstall] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null)
 
   useEffect(() => {
-    const ua = navigator.userAgent.toLowerCase()
-    if (ua.includes('mac')) setPlatform('mac')
-    else if (ua.includes('win')) setPlatform('windows')
+    setPlatform(detectPlatform(navigator.userAgent))
 
     function onBeforeInstall(e: Event) {
       e.preventDefault()
@@ -36,6 +44,52 @@ function Install() {
   const isStandalone =
     window.matchMedia('(display-mode: standalone)').matches ||
     (window.navigator as unknown as { standalone?: boolean }).standalone === true
+
+  const platformLabel: Record<Platform, string> = {
+    ios: 'iPhone / iPad',
+    android: 'Android',
+    mac: 'Mac',
+    windows: 'Windows',
+    other: 'Your device',
+  }
+
+  const instructions: Record<Platform, React.ReactNode> = {
+    ios: (
+      <>
+        <li>Tap the <strong>Share</strong> button <span style={{ fontSize: '16px' }}>􀈂</span> in Safari's toolbar</li>
+        <li>Scroll down and select <strong>Add to Home Screen</strong></li>
+        <li>Confirm the name and tap <strong>Add</strong></li>
+      </>
+    ),
+    android: (
+      <>
+        <li>Tap the <strong>three-dot menu</strong> (⋮) in the top-right corner of Chrome</li>
+        <li>Select <strong>Add to Home screen</strong></li>
+        <li>Confirm by tapping <strong>Add</strong></li>
+      </>
+    ),
+    mac: (
+      <>
+        <li>Tap the <strong>Share</strong> button in Safari's toolbar</li>
+        <li>Select <strong>Add to Home Screen</strong></li>
+        <li>Confirm the name and tap <strong>Add</strong></li>
+      </>
+    ),
+    windows: (
+      <>
+        <li>Click the <strong>three-dot menu</strong> (⋮) in the top-right corner</li>
+        <li>Select <strong>Cast, save, and share</strong> → <strong>Install page as app</strong></li>
+        <li>Confirm by clicking <strong>Install</strong></li>
+      </>
+    ),
+    other: (
+      <>
+        <li>Open this page in Chrome, Edge, or Safari</li>
+        <li>Look for an <strong>Install</strong> or <strong>Add to Home Screen</strong> option in the browser menu</li>
+        <li>Confirm the installation</li>
+      </>
+    ),
+  }
 
   return (
     <div style={{ maxWidth: '560px', margin: '0 auto', padding: '32px 24px' }}>
@@ -65,13 +119,13 @@ function Install() {
       {isStandalone && (
         <div
           style={{
-            background: 'var(--shq-success-bg, #ecfdf5)',
-            border: '1px solid var(--shq-success-border, #a7f3d0)',
+            background: 'var(--shq-success-bg)',
+            border: '1px solid var(--shq-success-border)',
             borderRadius: '12px',
             padding: '16px 20px',
             marginBottom: '24px',
             fontSize: '14px',
-            color: 'var(--shq-success-text, #065f46)',
+            color: 'var(--shq-success-text)',
           }}
         >
           SellerHQ is already installed on this device.
@@ -88,7 +142,7 @@ function Install() {
         }}
       >
         <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: '600' }}>
-          {platform === 'mac' ? 'Mac' : platform === 'windows' ? 'Windows' : 'Your device'}
+          {platformLabel[platform]}
         </h3>
 
         {canInstall ? (
@@ -116,25 +170,7 @@ function Install() {
         )}
 
         <ol style={{ margin: 0, padding: '0 0 0 20px', fontSize: '14px', lineHeight: '2', color: 'var(--shq-ink)' }}>
-          {platform === 'mac' ? (
-            <>
-              <li>Tap the <strong>Share</strong> button in Safari's toolbar</li>
-              <li>Select <strong>Add to Home Screen</strong></li>
-              <li>Confirm the name and tap <strong>Add</strong></li>
-            </>
-          ) : platform === 'windows' ? (
-            <>
-              <li>Click the <strong>three-dot menu</strong> (⋮) in the top-right corner</li>
-              <li>Select <strong>Cast, save, and share</strong> → <strong>Install page as app</strong></li>
-              <li>Confirm by clicking <strong>Install</strong></li>
-            </>
-          ) : (
-            <>
-              <li>Open this page in Chrome, Edge, or Safari</li>
-              <li>Look for an <strong>Install</strong> or <strong>Add to Home Screen</strong> option in the browser menu</li>
-              <li>Confirm the installation</li>
-            </>
-          )}
+          {instructions[platform]}
         </ol>
       </div>
 

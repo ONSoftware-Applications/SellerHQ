@@ -577,8 +577,15 @@
     display: none;
   }
 
+  .install-btn span,
   .install-btn {
-    display: none;
+    padding: 6px 10px;
+    font-size: 0;
+  }
+
+  .install-btn::before {
+    content: '⬇';
+    font-size: 16px;
   }
 
   .topbar h1 {
