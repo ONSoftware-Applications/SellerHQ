@@ -24,6 +24,7 @@ dist-ssr
 .vscode/*
 .vscode/
 !.vscode/extensions.json
+.vs/
 .idea
 .DS_Store
 *.suo
@@ -31,6 +32,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary files
+Icons and Logos/
+fix_tax.js
+fix_tax.mjs
 
 # Output and build artifacts
 coverage
