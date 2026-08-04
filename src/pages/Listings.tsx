@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useProducts } from '../hooks/useProducts'
 import { useCurrency } from '../hooks/useCurrency'
 import { FilterBar } from '../components/FilterBar'
+import { usePagination, PaginationControls } from '../components/Pagination'
 
 const statusOrder: string[] = [
   'Listed',
@@ -113,6 +114,8 @@ function Listings() {
 
   const activeListings = listedProducts.length
 
+  const pagination = usePagination(sortedListedProducts, 50)
+
   return (
     <div className="inventory-page">
       <div className="page-heading">
@@ -196,8 +199,8 @@ function Listings() {
                   </div>
                 </td>
               </tr>
-            ) : sortedListedProducts.length > 0 ? (
-              sortedListedProducts.map((product) => (
+            ) : pagination.paginated.length > 0 ? (
+              pagination.paginated.map((product) => (
                 <tr key={product.id}>
                   <td>
                     <button
@@ -299,6 +302,11 @@ function Listings() {
           </tbody>
         </table>
       </div>
+
+      <PaginationControls
+        result={pagination}
+        label="listings"
+      />
     </div>
   )
 }

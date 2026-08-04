@@ -7,6 +7,7 @@ import { downloadCsv } from '../utils/format'
 import { useToast } from '../hooks/useToast'
 import { RecordSaleModal } from '../components/RecordSaleModal'
 import { FilterBar } from '../components/FilterBar'
+import { usePagination, PaginationControls } from '../components/Pagination'
 import {
   averageProfitPerItem,
   averageSaleValue,
@@ -141,6 +142,8 @@ function Sales() {
 
     return sorted
   }, [filteredSoldProducts, sortDirection, sortKey])
+
+  const pagination = usePagination(sortedSoldProducts, 50)
 
   const totalSalesRevenue = useMemo(() => {
     return soldProducts.reduce((total, product) => total + (product.salePrice || 0), 0)
@@ -367,8 +370,8 @@ function Sales() {
                   </div>
                 </td>
               </tr>
-            ) : sortedSoldProducts.length > 0 ? (
-              sortedSoldProducts.map((product) => (
+            ) : pagination.paginated.length > 0 ? (
+              pagination.paginated.map((product) => (
                 <tr key={product.id}>
                   <td>
                     <button
@@ -488,6 +491,11 @@ function Sales() {
           </tbody>
         </table>
       </div>
+
+      <PaginationControls
+        result={pagination}
+        label="sales"
+      />
       {showRecordSale && (
         <RecordSaleModal
           onClose={() => setShowRecordSale(false)}

@@ -9,6 +9,7 @@ import { formatCurrency, formatDate, todayIsoDate, downloadCsv } from '../utils/
 import type { CurrencyCode } from '../utils/format'
 import LoadingState from '../components/LoadingState'
 import { FilterBar } from '../components/FilterBar'
+import { usePagination, PaginationControls } from '../components/Pagination'
 import EmptyState from '../components/EmptyState'
 
 const EMPTY_DRAFT = {
@@ -78,6 +79,8 @@ function Expenses() {
       return categoryMatch && searchMatch
     })
   }, [expenses, search, categoryFilter])
+
+  const pagination = usePagination(filteredExpenses, 50)
 
   function startAdd() {
     setDraft(EMPTY_DRAFT)
@@ -401,8 +404,8 @@ function Expenses() {
           </thead>
 
           <tbody>
-            {filteredExpenses.length > 0 ? (
-              filteredExpenses.map((expense) => (
+            {pagination.paginated.length > 0 ? (
+              pagination.paginated.map((expense) => (
                 <tr key={expense.id}>
                   <td>{formatDate(expense.expenseDate)}</td>
                   <td>
@@ -444,6 +447,11 @@ function Expenses() {
           </tbody>
         </table>
       </div>
+
+      <PaginationControls
+        result={pagination}
+        label="expenses"
+      />
     </div>
   )
 }
