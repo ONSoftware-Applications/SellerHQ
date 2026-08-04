@@ -37,9 +37,11 @@ export type PaginationResult<T> = ReturnType<typeof usePagination<T>>
 export function PaginationControls({
   result,
   label,
+  insideTable = false,
 }: {
   result: PaginationResult<unknown>
   label: string
+  insideTable?: boolean
 }) {
   const { showingStart, showingEnd, total, currentPage, totalPages, setCurrentPage, pageSize, setPageSize } = result
 
@@ -50,7 +52,7 @@ export function PaginationControls({
   if (total === 0) return null
 
   return (
-    <div className="pagination-controls">
+    <div className={insideTable ? 'pagination-controls pagination-inside-table' : 'pagination-controls'}>
       <span>Showing {showingStart}–{showingEnd} of {total} {label}</span>
       <div className="pagination-actions">
         <select

@@ -414,6 +414,12 @@
   gap: 8px;
 }
 
+.pagination-inside-table {
+  border-top: 1px solid var(--shq-border);
+  border-radius: 0 0 var(--shq-radius-lg) var(--shq-radius-lg);
+  margin-top: -1px;
+}
+
 .pagination-actions {
   display: flex;
   align-items: center;
@@ -2190,10 +2196,24 @@
   .inventory-table td[data-label="Status"],
   .inventory-table td[data-label="Marketplaces"],
   .inventory-table td[data-label="Sale"],
-  .inventory-table td[data-label="Profit"] {
+  .inventory-table td[data-label="Profit"],
+  .inventory-table td[data-label="Brand"],
+  .inventory-table td[data-label="Sale price"],
+  .inventory-table td[data-label="Sale date"],
+  .inventory-table td[data-label="Shipping date"],
+  .inventory-table td[data-label="Listing price"],
+  .inventory-table td[data-label="Date"],
+  .inventory-table td[data-label="Category"],
+  .inventory-table td[data-label="Description"],
+  .inventory-table td[data-label="Amount"],
+  .inventory-table td[data-label="Conversion rate"] {
     display: none;
   }
 
+  .pagination-inside-table {
+    border-radius: 0 0 var(--shq-radius-lg) var(--shq-radius-lg);
+    border-top: 1px solid var(--shq-border);
+  }
   .inventory-select-column {
     width: auto;
   }
@@ -2903,6 +2923,21 @@
 
   .inventory-page {
     padding: 12px;
+  }
+
+  .inventory-table-wrapper .pagination-inside-table {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .inventory-table-wrapper .pagination-inside-table .pagination-actions {
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .inventory-table-wrapper .pagination-inside-table .pagination-size {
+    flex: 1;
   }
 
   .inventory-toolbar {

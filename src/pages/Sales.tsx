@@ -373,7 +373,7 @@ function Sales() {
             ) : pagination.paginated.length > 0 ? (
               pagination.paginated.map((product) => (
                 <tr key={product.id}>
-                  <td>
+                  <td data-label="Product ID">
                     <button
                       className="product-link"
                       type="button"
@@ -383,7 +383,7 @@ function Sales() {
                     </button>
                   </td>
 
-                  <td>
+                  <td data-label="Name">
                     <button
                       className="product-link product-name-link"
                       type="button"
@@ -393,15 +393,15 @@ function Sales() {
                     </button>
                   </td>
 
-                  <td>{product.brand || '-'}</td>
+                  <td data-label="Brand">{product.brand || '-'}</td>
 
-                  <td>
+                  <td data-label="Status">
                     <span className={`status-badge status-${product.status.toLowerCase().replaceAll(' ', '-')}`}>
                       {product.status}
                     </span>
                   </td>
 
-                  <td>
+                  <td data-label="Marketplaces">
                     {product.marketplaces.length > 0
                       ? Array.isArray(product.marketplaces)
                         ? product.marketplaces.join(', ')
@@ -409,17 +409,17 @@ function Sales() {
                       : '-'}
                   </td>
 
-                   <td>{money(product.salePrice || 0, { maximumFractionDigits: 0 })}</td>
+                   <td data-label="Sale price">{money(product.salePrice || 0, { maximumFractionDigits: 0 })}</td>
 
-                   <td>
+                   <td data-label="Profit">
                      <span className={product.profit >= 0 ? 'inventory-profit-positive' : 'inventory-profit-negative'}>
                        {money(product.profit)}
                      </span>
                   </td>
 
-                  <td>{product.saleDate || '-'}</td>
+                  <td data-label="Sale date">{product.saleDate || '-'}</td>
 
-                  <td>{product.shippingDate || '-'}</td>
+                  <td data-label="Shipping date">{product.shippingDate || '-'}</td>
 
                   <td>
                     <div className="row-actions">
@@ -490,12 +490,13 @@ function Sales() {
             )}
           </tbody>
         </table>
-      </div>
 
-      <PaginationControls
-        result={pagination}
-        label="sales"
-      />
+        <PaginationControls
+          result={pagination}
+          label="sales"
+          insideTable
+        />
+      </div>
       {showRecordSale && (
         <RecordSaleModal
           onClose={() => setShowRecordSale(false)}

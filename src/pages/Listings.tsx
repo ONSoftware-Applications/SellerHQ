@@ -202,7 +202,7 @@ function Listings() {
             ) : pagination.paginated.length > 0 ? (
               pagination.paginated.map((product) => (
                 <tr key={product.id}>
-                  <td>
+                  <td data-label="Product ID">
                     <button
                       className="product-link"
                       type="button"
@@ -212,7 +212,7 @@ function Listings() {
                     </button>
                   </td>
 
-                  <td>
+                  <td data-label="Name">
                     <button
                       className="product-link product-name-link"
                       type="button"
@@ -222,15 +222,15 @@ function Listings() {
                     </button>
                   </td>
 
-                  <td>{product.brand || '-'}</td>
+                  <td data-label="Brand">{product.brand || '-'}</td>
 
-                  <td>
+                  <td data-label="Status">
                     <span className={`status-badge status-${product.status.toLowerCase().replaceAll(' ', '-')}`}>
                       {product.status}
                     </span>
                   </td>
 
-                  <td>
+                  <td data-label="Marketplaces">
                     {product.marketplaces.length > 0
                       ? Array.isArray(product.marketplaces)
                         ? product.marketplaces.join(', ')
@@ -238,9 +238,9 @@ function Listings() {
                       : '-'}
                   </td>
 
-                   <td>{money(product.listingPrice, { maximumFractionDigits: 0 })}</td>
+                   <td data-label="Listing price">{money(product.listingPrice, { maximumFractionDigits: 0 })}</td>
 
-                   <td>
+                   <td data-label="Profit">
                      <span className={product.profit >= 0 ? 'inventory-profit-positive' : 'inventory-profit-negative'}>
                        {money(product.profit, { maximumFractionDigits: 0 })}
                     </span>
@@ -301,12 +301,13 @@ function Listings() {
             )}
           </tbody>
         </table>
-      </div>
 
-      <PaginationControls
-        result={pagination}
-        label="listings"
-      />
+        <PaginationControls
+          result={pagination}
+          label="listings"
+          insideTable
+        />
+      </div>
     </div>
   )
 }
