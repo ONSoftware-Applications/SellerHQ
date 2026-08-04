@@ -407,15 +407,15 @@ function Expenses() {
             {pagination.paginated.length > 0 ? (
               pagination.paginated.map((expense) => (
                 <tr key={expense.id}>
-                  <td>{formatDate(expense.expenseDate)}</td>
-                  <td>
+                  <td data-label="Date">{formatDate(expense.expenseDate)}</td>
+                  <td data-label="Category">
                     <span className={`status-badge status-${expense.category.toLowerCase().replace(/[^a-z]+/g, '-')}`}>
                       {expense.category}
                     </span>
                   </td>
-                  <td>{expense.description}</td>
-                  <td>{expense.marketplace || '-'}</td>
-                  <td>
+                  <td data-label="Description">{expense.description}</td>
+                  <td data-label="Marketplace">{expense.marketplace || '-'}</td>
+                  <td data-label="Amount">
                     <strong>{formatCurrency(expense.amount, currency)}</strong>
                   </td>
                   <td>
@@ -446,12 +446,13 @@ function Expenses() {
             )}
           </tbody>
         </table>
-      </div>
 
-      <PaginationControls
-        result={pagination}
-        label="expenses"
-      />
+        <PaginationControls
+          result={pagination}
+          label="expenses"
+          insideTable
+        />
+      </div>
     </div>
   )
 }
