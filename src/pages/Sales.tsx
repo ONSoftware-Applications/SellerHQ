@@ -6,6 +6,7 @@ import { useCurrency } from '../hooks/useCurrency'
 import { downloadCsv } from '../utils/format'
 import { useToast } from '../hooks/useToast'
 import { RecordSaleModal } from '../components/RecordSaleModal'
+import { FilterBar } from '../components/FilterBar'
 import {
   averageProfitPerItem,
   averageSaleValue,
@@ -50,30 +51,6 @@ function Sales() {
   const soldProducts = useMemo(() => {
     return products.filter((product) => product.status === 'Sold')
   }, [products])
-
-  const quickSearchTerms = useMemo(() => {
-    const counts = new Map<string, number>()
-
-    for (const product of soldProducts) {
-      const terms = [
-        product.name,
-        product.brand,
-        product.marketplaces.join(', '),
-        product.category,
-      ]
-
-      for (const term of terms) {
-        const value = term.trim()
-        if (!value) continue
-        counts.set(value, (counts.get(value) ?? 0) + 1)
-      }
-    }
-
-    return [...counts.entries()]
-      .sort((left, right) => right[1] - left[1])
-      .slice(0, 8)
-      .map(([value]) => value)
-  }, [soldProducts])
 
   const filteredSoldProducts = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -326,14 +303,13 @@ function Sales() {
         </div>
       )}
 
-      <div className="inventory-toolbar">
-        <input
-          type="search"
-          placeholder="Search product ID, name, brand, or marketplace"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-
+      <FilterBar
+        searchValue={search}
+        searchPlaceholder="Search product ID, name, brand, or marketplace"
+        onSearchChange={setSearch}
+        filtersActive={search.trim().length > 0 || dateRange !== 'all'}
+        onClearFilters={() => { setSearch(''); setDateRange('all') }}
+      >
         <select
           value={dateRange}
           onChange={(event) => setDateRange(event.target.value as typeof dateRange)}
@@ -362,35 +338,7 @@ function Sales() {
         >
           {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
         </button>
-
-        {search.trim().length > 0 && (
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => setSearch('')}
-          >
-            Clear search
-          </button>
-        )}
-      </div>
-
-      {quickSearchTerms.length > 0 && (
-        <div className="inventory-quick-filters">
-          <span>Quick filters</span>
-          <div className="inventory-chip-list">
-            {quickSearchTerms.map((term) => (
-              <button
-                key={term}
-                type="button"
-                className="inventory-chip"
-                onClick={() => setSearch(term)}
-              >
-                {term}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      </FilterBar>
 
       <div className="inventory-table-wrapper">
         <table className="inventory-table">

@@ -8,6 +8,7 @@ import { EXPENSE_CATEGORIES, type Expense, type ExpenseCategory } from '../types
 import { formatCurrency, formatDate, todayIsoDate, downloadCsv } from '../utils/format'
 import type { CurrencyCode } from '../utils/format'
 import LoadingState from '../components/LoadingState'
+import { FilterBar } from '../components/FilterBar'
 import EmptyState from '../components/EmptyState'
 
 const EMPTY_DRAFT = {
@@ -368,14 +369,13 @@ function Expenses() {
         </div>
       )}
 
-      <div className="inventory-toolbar">
-        <input
-          type="search"
-          placeholder="Search description, category, or marketplace"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-
+      <FilterBar
+        searchValue={search}
+        searchPlaceholder="Search description, category, or marketplace"
+        onSearchChange={setSearch}
+        filtersActive={search.trim().length > 0 || categoryFilter !== 'All'}
+        onClearFilters={() => { setSearch(''); setCategoryFilter('All') }}
+      >
         <select
           value={categoryFilter}
           onChange={(event) => setCategoryFilter(event.target.value)}
@@ -385,13 +385,7 @@ function Expenses() {
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
-
-        {search.trim().length > 0 && (
-          <button className="btn btn-secondary" onClick={() => setSearch('')}>
-            Clear search
-          </button>
-        )}
-      </div>
+      </FilterBar>
 
       <div className="inventory-table-wrapper">
         <table className="inventory-table">
