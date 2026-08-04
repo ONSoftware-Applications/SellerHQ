@@ -44,7 +44,7 @@ coverage
 already_covered
 .nyc_output
 build
-lib
+/lib
 lib-cov
 test
 *.pid
