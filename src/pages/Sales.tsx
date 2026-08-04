@@ -278,7 +278,7 @@ function Sales() {
       </div>
 
       {soldProducts.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '24px' }}>
           <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '24px' }}>
             <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>Sales by marketplace</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

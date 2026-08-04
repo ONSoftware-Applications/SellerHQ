@@ -4,7 +4,12 @@ import BrandMark from './BrandMark'
 import { useAuth } from '../hooks/useAuth'
 import { useSettings } from '../hooks/useSettings'
 
-function Sidebar() {
+type SidebarProps = {
+  mobileNavOpen?: boolean
+  onCloseMobileNav?: () => void
+}
+
+function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
   const navigate = useNavigate()
   const { user, signOut } = useAuth()
   const { settings } = useSettings()
@@ -26,13 +31,20 @@ function Sidebar() {
     .slice(0, 2)
     .toUpperCase()
 
+  function handleNavClick() {
+    if (onCloseMobileNav) {
+      onCloseMobileNav()
+    }
+  }
+
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${mobileNavOpen ? 'sidebar-mobile-open' : ''}`}>
       <BrandMark className="sidebar-brand" />
 
       <nav className="navigation">
         <NavLink
           to="/dashboard"
+          onClick={handleNavClick}
           className={({ isActive }) =>
             `nav-item ${isActive ? 'active' : ''}`
           }
@@ -42,6 +54,7 @@ function Sidebar() {
 
         <NavLink
           to="/inventory"
+          onClick={handleNavClick}
           className={({ isActive }) =>
             `nav-item ${isActive ? 'active' : ''}`
           }
@@ -52,6 +65,7 @@ function Sidebar() {
         {settings.features.listingsEnabled && (
           <NavLink
             to="/listings"
+            onClick={handleNavClick}
             className={({ isActive }) =>
               `nav-item ${isActive ? 'active' : ''}`
             }
@@ -62,6 +76,7 @@ function Sidebar() {
 
         <NavLink
           to="/sales"
+          onClick={handleNavClick}
           className={({ isActive }) =>
             `nav-item ${isActive ? 'active' : ''}`
           }
@@ -72,6 +87,7 @@ function Sidebar() {
         {settings.features.expensesEnabled && (
           <NavLink
             to="/expenses"
+            onClick={handleNavClick}
             className={({ isActive }) =>
               `nav-item ${isActive ? 'active' : ''}`
             }
@@ -83,6 +99,7 @@ function Sidebar() {
         {settings.features.forecastsEnabled && (
           <NavLink
             to="/forecasts"
+            onClick={handleNavClick}
             className={({ isActive }) =>
               `nav-item ${isActive ? 'active' : ''}`
             }
@@ -93,6 +110,7 @@ function Sidebar() {
 
         <NavLink
           to="/tax"
+          onClick={handleNavClick}
           className={({ isActive }) =>
             `nav-item ${isActive ? 'active' : ''}`
           }
@@ -102,6 +120,7 @@ function Sidebar() {
 
         <NavLink
           to="/pricing"
+          onClick={handleNavClick}
           className={({ isActive }) =>
             `nav-item ${isActive ? 'active' : ''}`
           }
@@ -111,6 +130,7 @@ function Sidebar() {
 
         <NavLink
           to="/reports"
+          onClick={handleNavClick}
           className={({ isActive }) =>
             `nav-item ${isActive ? 'active' : ''}`
           }
@@ -122,6 +142,7 @@ function Sidebar() {
       <div className="sidebar-bottom">
         <NavLink
           to="/settings"
+          onClick={handleNavClick}
           className={({ isActive }) =>
             `nav-item ${isActive ? 'active' : ''}`
           }
@@ -131,6 +152,7 @@ function Sidebar() {
 
         <NavLink
           to="/profile"
+          onClick={handleNavClick}
           className={({ isActive }) =>
             `nav-item ${isActive ? 'active' : ''}`
           }
@@ -140,6 +162,7 @@ function Sidebar() {
 
         <NavLink
           to="/install"
+          onClick={handleNavClick}
           className={({ isActive }) =>
             `nav-item ${isActive ? 'active' : ''}`
           }

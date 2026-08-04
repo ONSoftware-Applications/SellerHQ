@@ -275,7 +275,7 @@ function Settings() {
           Choose which notifications you'd like to receive.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
           <Toggle
             checked={settings.notifications.emailNotifications}
             onChange={(value) => updateSettings({ notifications: { ...settings.notifications, emailNotifications: value } })}

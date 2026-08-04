@@ -441,7 +441,7 @@ function Forecast() {
               <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
                 Predictions
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
                 {forecastData.map((data, index) => (
                   <div key={index} style={{ 
                     background: index === 0 ? '#f0fdf4' : '#ffffff',
