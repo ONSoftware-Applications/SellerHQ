@@ -3,6 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 import { useBusiness } from '../hooks/useBusiness'
 
+function isInstallable() {
+  return !window.matchMedia('(display-mode: standalone)').matches &&
+    !(window.navigator as unknown as { standalone?: boolean }).standalone
+}
+
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': {
     title: 'Dashboard',
@@ -114,6 +119,29 @@ function Topbar() {
 
             <span className="chevron">{open ? '⌃' : '⌄'}</span>
           </button>
+
+          {isInstallable() && (
+            <button
+              type="button"
+              onClick={() => navigate('/install')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                border: '1px solid var(--shq-border)',
+                background: 'var(--shq-surface)',
+                color: 'var(--shq-ink)',
+                fontSize: '13px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'background var(--shq-transition)',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--shq-bg)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--shq-surface)' }}
+            >
+              ⬇ Install app
+            </button>
+          )}
 
           {open && (
             <div className="business-menu" role="listbox">

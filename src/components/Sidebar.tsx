@@ -138,6 +138,15 @@ function Sidebar() {
           Profile
         </NavLink>
 
+        <NavLink
+          to="/install"
+          className={({ isActive }) =>
+            `nav-item ${isActive ? 'active' : ''}`
+          }
+        >
+          Install App
+        </NavLink>
+
         <div className="account">
           <div className="avatar">{initials}</div>
 
