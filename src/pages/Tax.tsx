@@ -228,7 +228,7 @@ function Tax() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '24px' }}>
         <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '24px' }}>
           <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>Tax reserve</h3>
           <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--shq-ink-muted)' }}>

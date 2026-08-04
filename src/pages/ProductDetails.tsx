@@ -846,7 +846,7 @@ const product = productId
         </section>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '24px' }}>
         <section className="product-card" style={{ padding: '24px', background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px' }}>
           <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>Financial breakdown</h3>
           <BreakdownRow label="Purchase price" value={money(currentProduct.purchasePrice)} />

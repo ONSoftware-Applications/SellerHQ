@@ -41,13 +41,25 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
     title: 'Settings',
     subtitle: 'Account and business preferences.',
   },
+  '/profile': {
+    title: 'Profile',
+    subtitle: 'Your account details.',
+  },
+  '/install': {
+    title: 'Install App',
+    subtitle: 'Get SellerHQ on your device.',
+  },
   '/create-business': {
     title: 'New business',
     subtitle: 'Set up another business in SellerHQ.',
   },
 }
 
-function Topbar() {
+type TopbarProps = {
+  onToggleMobileNav?: () => void
+}
+
+function Topbar({ onToggleMobileNav }: TopbarProps) {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -76,9 +88,22 @@ function Topbar() {
   if (loading) {
     return (
       <header className="topbar">
-        <div className="topbar-heading">
-          <h1>{pageMeta.title}</h1>
-          <p>{pageMeta.subtitle}</p>
+        <div className="topbar-left">
+          <button
+            type="button"
+            className="hamburger"
+            onClick={onToggleMobileNav}
+            aria-label="Open menu"
+          >
+            <span className="hamburger-line" />
+            <span className="hamburger-line" />
+            <span className="hamburger-line" />
+          </button>
+
+          <div className="topbar-heading">
+            <h1>{pageMeta.title}</h1>
+            <p>{pageMeta.subtitle}</p>
+          </div>
         </div>
 
         <div className="business-selector business-selector-loading">
@@ -94,9 +119,22 @@ function Topbar() {
 
   return (
     <header className="topbar">
-      <div className="topbar-heading">
-        <h1>{pageMeta.title}</h1>
-        <p>{pageMeta.subtitle}</p>
+      <div className="topbar-left">
+        <button
+          type="button"
+          className="hamburger"
+          onClick={onToggleMobileNav}
+          aria-label="Open menu"
+        >
+          <span className="hamburger-line" />
+          <span className="hamburger-line" />
+          <span className="hamburger-line" />
+        </button>
+
+        <div className="topbar-heading">
+          <h1>{pageMeta.title}</h1>
+          <p>{pageMeta.subtitle}</p>
+        </div>
       </div>
 
       {currentBusiness && (
@@ -124,20 +162,7 @@ function Topbar() {
             <button
               type="button"
               onClick={() => navigate('/install')}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '8px',
-                border: '1px solid var(--shq-border)',
-                background: 'var(--shq-surface)',
-                color: 'var(--shq-ink)',
-                fontSize: '13px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'background var(--shq-transition)',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--shq-bg)' }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--shq-surface)' }}
+              className="install-btn"
             >
               ⬇ Install app
             </button>
