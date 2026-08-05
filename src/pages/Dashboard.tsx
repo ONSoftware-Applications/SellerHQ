@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useProducts } from '../hooks/useProducts'
 import { useBusiness } from '../hooks/useBusiness'
 import { useSettings } from '../hooks/useSettings'
+import { useSubscription } from '../hooks/useSubscription'
 import { useExpenses } from '../hooks/useExpenses'
 import { useCurrency } from '../hooks/useCurrency'
 import { formatDate } from '../utils/format'
@@ -40,6 +41,7 @@ function Dashboard() {
   const { products, loading } = useProducts()
   const { currentBusiness } = useBusiness()
   const { settings } = useSettings()
+  const { canUse } = useSubscription()
   const { expenses } = useExpenses()
   const { money } = useCurrency()
   const [search, setSearch] = useState('')
@@ -726,7 +728,7 @@ function Dashboard() {
           <button className="btn btn-secondary" onClick={() => navigate('/inventory')}>
             View Inventory
           </button>
-          {settings.features.listingsEnabled && (
+          {settings.features.listingsEnabled && canUse('listings') && (
             <button className="btn btn-secondary" onClick={() => navigate('/listings')}>
               Manage Listings
             </button>
@@ -739,7 +741,7 @@ function Dashboard() {
               Add Expense
             </button>
           )}
-          {settings.features.forecastsEnabled && (
+          {settings.features.forecastsEnabled && canUse('forecasts') && (
             <button className="btn btn-secondary" onClick={() => navigate('/forecasts')}>
               View Forecasts
             </button>

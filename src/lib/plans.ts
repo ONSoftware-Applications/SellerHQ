@@ -2,6 +2,69 @@ export type PlanId = 'basic' | 'growing' | 'pro' | 'business'
 
 export type BillingCycle = 'monthly' | 'annual'
 
+export type PlanFeature =
+  | 'listings'
+  | 'forecasts'
+  | 'reports'
+  | 'bundleSales'
+  | 'autoRelist'
+  | 'multiCurrency'
+  | 'qrScanner'
+  | 'fullTax'
+  | 'advancedForecasts'
+
+export const PLAN_LIMITS: Record<
+  PlanId,
+  { products: number; businesses: number }
+> = {
+  basic: { products: 50, businesses: 1 },
+  growing: { products: 500, businesses: 2 },
+  pro: { products: 5000, businesses: 5 },
+  business: { products: Infinity, businesses: Infinity },
+}
+
+const PRO_FEATURES: PlanFeature[] = [
+  'listings',
+  'forecasts',
+  'reports',
+  'bundleSales',
+  'autoRelist',
+  'multiCurrency',
+  'qrScanner',
+  'fullTax',
+  'advancedForecasts',
+]
+
+export const PLAN_FEATURES: Record<PlanId, PlanFeature[]> = {
+  basic: [],
+  growing: [
+    'listings',
+    'forecasts',
+    'reports',
+    'bundleSales',
+    'autoRelist',
+    'multiCurrency',
+    'qrScanner',
+  ],
+  pro: PRO_FEATURES,
+  business: PRO_FEATURES,
+}
+
+export function planCanUse(
+  plan: PlanId,
+  feature: PlanFeature,
+): boolean {
+  return PLAN_FEATURES[plan].includes(feature)
+}
+
+export function planProductLimit(plan: PlanId): number {
+  return PLAN_LIMITS[plan].products
+}
+
+export function planBusinessLimit(plan: PlanId): number {
+  return PLAN_LIMITS[plan].businesses
+}
+
 export type Plan = {
   id: PlanId
   name: string

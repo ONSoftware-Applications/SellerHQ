@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import BrandMark from './BrandMark'
 import { useAuth } from '../hooks/useAuth'
 import { useSettings } from '../hooks/useSettings'
+import { useSubscription } from '../hooks/useSubscription'
 
 function isMobile() {
   return /iphone|ipad|ipod|android/i.test(navigator.userAgent)
@@ -17,6 +18,7 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
   const navigate = useNavigate()
   const { user, signOut } = useAuth()
   const { settings } = useSettings()
+  const { canUse } = useSubscription()
 
   async function handleSignOut() {
     await signOut()
@@ -66,7 +68,7 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
           Inventory
         </NavLink>
 
-        {settings.features.listingsEnabled && (
+        {settings.features.listingsEnabled && canUse('listings') && (
           <NavLink
             to="/listings"
             onClick={handleNavClick}
@@ -100,7 +102,7 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
         </NavLink>
         )}
 
-        {settings.features.forecastsEnabled && (
+        {settings.features.forecastsEnabled && canUse('forecasts') && (
           <NavLink
             to="/forecasts"
             onClick={handleNavClick}
@@ -142,17 +144,19 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
           Subscriptions
         </NavLink>
 
-        <NavLink
-          to="/reports"
-          onClick={handleNavClick}
-          className={({ isActive }) =>
-            `nav-item ${isActive ? 'active' : ''}`
-          }
-        >
-          Reports
-        </NavLink>
+        {canUse('reports') && (
+          <NavLink
+            to="/reports"
+            onClick={handleNavClick}
+            className={({ isActive }) =>
+              `nav-item ${isActive ? 'active' : ''}`
+            }
+          >
+            Reports
+          </NavLink>
+        )}
 
-        {isMobile() && (
+        {isMobile() && canUse('qrScanner') && (
           <NavLink
             to="/scan"
             onClick={handleNavClick}

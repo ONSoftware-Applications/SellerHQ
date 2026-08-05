@@ -8,6 +8,8 @@ import {
 
 import { supabase } from '../lib/supabase'
 import { useBusiness } from '../hooks/useBusiness'
+import { useSubscription } from '../hooks/useSubscription'
+import { getPlan } from '../lib/plans'
 import { ProductContext } from '../hooks/useProducts'
 
 import type {
@@ -266,6 +268,7 @@ export function ProductProvider({
   children: ReactNode
 }) {
   const { currentBusiness } = useBusiness()
+  const { plan, productLimit } = useSubscription()
 
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -391,6 +394,12 @@ export function ProductProvider({
       )
     }
 
+    if (products.length >= productLimit) {
+      throw new Error(
+        `Your ${getPlan(plan).name} plan includes up to ${productLimit} products. Upgrade to add more.`,
+      )
+    }
+
     const productForBusiness = {
       ...product,
       businessId: currentBusiness.id,
@@ -427,7 +436,7 @@ export function ProductProvider({
         })
       }
     }
-  }, [currentBusiness, logEvent])
+  }, [currentBusiness, logEvent, plan, productLimit, products])
 
   const updateProduct = useCallback(
     async (product: Product) => {

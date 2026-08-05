@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { useBusiness } from '../hooks/useBusiness'
+import { useSubscription } from '../hooks/useSubscription'
 
 function isInstallable() {
   return !window.matchMedia('(display-mode: standalone)').matches &&
@@ -77,6 +78,7 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
     loading,
     switchBusiness,
   } = useBusiness()
+  const { canUse } = useSubscription()
 
   const [open, setOpen] = useState(false)
 
@@ -161,7 +163,7 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
 
       {currentBusiness && (
         <div className="business-selector-wrapper">
-          {isMobile() && (
+          {isMobile() && canUse('qrScanner') && (
             <button
               type="button"
               onClick={() => navigate('/scan')}

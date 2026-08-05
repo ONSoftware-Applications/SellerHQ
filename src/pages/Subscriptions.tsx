@@ -392,27 +392,43 @@ function PlanCard({
         )}
       </div>
 
-      <button
-        type="button"
-        className={
-          isCurrent
-            ? 'secondary-button'
-            : plan.highlighted
-              ? 'primary-button'
-              : 'secondary-button'
-        }
-        onClick={onSelect}
-        disabled={isCurrent || checkingOut}
-        style={{ width: '100%', marginTop: 20 }}
-      >
-        {isCurrent
-          ? 'Current plan'
-          : checkingOut
-            ? 'Redirecting to Stripe...'
-            : isFree
-              ? 'Choose Basic'
+      {isFree ? (
+        <div
+          style={{
+            width: '100%',
+            marginTop: 20,
+            padding: '10px 0',
+            textAlign: 'center',
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--shq-ink-muted)',
+            border: '1px dashed var(--shq-border)',
+            borderRadius: 8,
+          }}
+        >
+          {isCurrent ? 'Your current free plan' : 'Free forever'}
+        </div>
+      ) : (
+        <button
+          type="button"
+          className={
+            isCurrent
+              ? 'secondary-button'
+              : plan.highlighted
+                ? 'primary-button'
+                : 'secondary-button'
+          }
+          onClick={onSelect}
+          disabled={isCurrent || checkingOut}
+          style={{ width: '100%', marginTop: 20 }}
+        >
+          {isCurrent
+            ? 'Current plan'
+            : checkingOut
+              ? 'Redirecting to Stripe...'
               : `Choose ${plan.name}`}
-      </button>
+        </button>
+      )}
     </div>
   )
 }
