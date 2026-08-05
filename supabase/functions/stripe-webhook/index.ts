@@ -29,6 +29,7 @@ async function upsertSubscription(
     )
   if (error) {
     console.error('Failed to upsert subscription:', error)
+    throw new Error(`subscriptions upsert failed: ${error.message}`)
   }
 }
 
@@ -81,7 +82,8 @@ Deno.serve(async (request: Request) => {
 
   const supabase = createAdminClient()
 
-  switch (event.type) {
+  try {
+    switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session
       const userId = asString(session.metadata?.user_id)
@@ -141,6 +143,15 @@ Deno.serve(async (request: Request) => {
 
     default:
       break
+    }
+  } catch (err) {
+    console.error('Webhook handling error:', err)
+    const message =
+      err instanceof Error ? err.message : 'Unknown webhook error'
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 
   return new Response(JSON.stringify({ received: true }), {
