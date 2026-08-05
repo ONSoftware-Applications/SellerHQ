@@ -416,7 +416,7 @@ function Forecast() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+      <div data-mobile-hide style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
         <div>
           <div style={{ background: '#ffffff', border: '1px solid #e4e6e9', borderRadius: '12px', padding: '20px' }}>
             <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
