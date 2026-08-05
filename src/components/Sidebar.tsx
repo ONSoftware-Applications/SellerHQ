@@ -133,6 +133,16 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
         </NavLink>
 
         <NavLink
+          to="/subscriptions"
+          onClick={handleNavClick}
+          className={({ isActive }) =>
+            `nav-item ${isActive ? 'active' : ''}`
+          }
+        >
+          Subscriptions
+        </NavLink>
+
+        <NavLink
           to="/reports"
           onClick={handleNavClick}
           className={({ isActive }) =>

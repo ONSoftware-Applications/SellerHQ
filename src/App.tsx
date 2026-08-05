@@ -12,6 +12,7 @@ import { AuthProvider } from './context/AuthContext'
 import { BusinessProvider } from './context/BusinessContext'
 import { ProductProvider } from './context/ProductContext'
 import { SettingsProvider } from './context/SettingsContext'
+import { SubscriptionProvider } from './context/SubscriptionContext'
 import { AutoRelist } from './components/AutoRelist'
 import { ExpenseProvider } from './context/ExpenseContext'
 import { ToastProvider } from './context/ToastContext'
@@ -37,6 +38,7 @@ const Tax = lazy(() => import('./pages/Tax'))
 const Settings = lazy(() => import('./pages/Settings'))
 const ProductDetails = lazy(() => import('./pages/ProductDetails'))
 const Pricing = lazy(() => import('./pages/Pricing'))
+const Subscriptions = lazy(() => import('./pages/Subscriptions'))
 const Reports = lazy(() => import('./pages/Reports'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Install = lazy(() => import('./pages/Install'))
@@ -59,7 +61,8 @@ function App() {
               <SettingsProvider>
                 <ThemeController />
                 <AutoRelist />
-                <BrowserRouter>
+                <SubscriptionProvider>
+                  <BrowserRouter>
                   <ErrorBoundary>
                     <Suspense fallback={<PageLoader />}>
                       <Routes>
@@ -130,6 +133,10 @@ function App() {
                               element={<Pricing />}
                             />
                             <Route
+                              path="/subscriptions"
+                              element={<Subscriptions />}
+                            />
+                            <Route
                               path="/reports"
                               element={<Reports />}
                             />
@@ -152,6 +159,7 @@ function App() {
                     </Suspense>
                   </ErrorBoundary>
                 </BrowserRouter>
+                </SubscriptionProvider>
                 </SettingsProvider>
               </ExpenseProvider>
             </ProductProvider>
