@@ -31,8 +31,12 @@ function Subscriptions() {
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
       showToast('Payment successful - your plan is now active', 'success')
-      void refresh()
       setSearchParams({}, { replace: true })
+      void refresh()
+      const retryDelays = [1500, 4000, 8000]
+      for (const delay of retryDelays) {
+        window.setTimeout(() => void refresh(), delay)
+      }
     } else if (searchParams.get('cancelled') === 'true') {
       showToast('Checkout cancelled - no changes were made', 'info')
       setSearchParams({}, { replace: true })
