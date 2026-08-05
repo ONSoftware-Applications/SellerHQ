@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useProducts } from '../hooks/useProducts'
 import { useExpenses } from '../hooks/useExpenses'
 import { useCurrency } from '../hooks/useCurrency'
+import { useSubscription } from '../hooks/useSubscription'
 import { taxEstimate } from '../lib/finance'
 import type { Product } from '../types/product'
 import { FilterBar } from '../components/FilterBar'
@@ -151,6 +152,7 @@ function Forecast() {
   const { products } = useProducts()
   const { expenses } = useExpenses()
   const { money } = useCurrency()
+  const { canUse } = useSubscription()
 
   const [selectedPeriod, setSelectedPeriod] = useState('This year')
   const [selectedForecastType, setSelectedForecastType] = useState('Revenue')
@@ -259,6 +261,37 @@ function Forecast() {
   const healthStatus = useMemo(() => {
     return getHealthStatus(currentMetrics.avgMargin)
   }, [currentMetrics.avgMargin])
+
+  const cashFlow = useMemo(() => {
+    if (forecastData.length === 0) return []
+
+    const historicalRevenue = historicalData.reduce(
+      (sum, d) => sum + d.revenue,
+      0,
+    )
+    const historicalProfit = historicalData.reduce(
+      (sum, d) => sum + d.profit,
+      0,
+    )
+    const cogsRatio =
+      historicalRevenue > 0
+        ? Math.max(0, (historicalRevenue - historicalProfit) / historicalRevenue)
+        : 0.6
+
+    const monthlyExpenses =
+      expenses.reduce((sum, e) => sum + (e.amount || 0), 0) /
+      Math.max(historicalData.length, 1)
+
+    let cumulative = 0
+    return forecastData.map((point) => {
+      const inflow = point.revenue
+      const cogs = inflow * cogsRatio
+      const outflow = cogs + monthlyExpenses
+      const net = inflow - outflow
+      cumulative += net
+      return { month: point.month, inflow, cogs, expenses: monthlyExpenses, net, cumulative }
+    })
+  }, [forecastData, historicalData, expenses])
 
   return (
     <div className="inventory-page">
@@ -415,6 +448,50 @@ function Forecast() {
           </div>
         </div>
       </div>
+
+      {canUse('cashFlow') && cashFlow.length > 0 && (
+        <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600' }}>Cash-flow projection</h3>
+          <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: 'var(--shq-ink-muted)' }}>
+            Forecast of money in and out over the projected period, based on historical cost ratios and average monthly expenses.
+          </p>
+          <div className="table-wrapper">
+            <table className="inventory-table" style={{ minWidth: 0 }}>
+              <thead>
+                <tr>
+                  <th>Period</th>
+                  <th>Cash in</th>
+                  <th>Cost of goods</th>
+                  <th>Expenses</th>
+                  <th>Net</th>
+                  <th>Cumulative</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cashFlow.map((row) => (
+                  <tr key={row.month}>
+                    <td data-label="Period">{row.month}</td>
+                    <td data-label="Cash in">{money(row.inflow, { maximumFractionDigits: 0 })}</td>
+                    <td data-label="Cost of goods">-{money(row.cogs, { maximumFractionDigits: 0 })}</td>
+                    <td data-label="Expenses">-{money(row.expenses, { maximumFractionDigits: 0 })}</td>
+                    <td data-label="Net" style={{ color: row.net >= 0 ? '#059669' : '#dc2626', fontWeight: 600 }}>
+                      {money(row.net, { maximumFractionDigits: 0 })}
+                    </td>
+                    <td data-label="Cumulative" style={{ color: row.cumulative >= 0 ? 'var(--shq-ink)' : '#dc2626', fontWeight: 600 }}>
+                      {money(row.cumulative, { maximumFractionDigits: 0 })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ marginTop: 12, fontSize: 12, color: 'var(--shq-ink-muted)' }}>
+            {cashFlow.length > 0 && cashFlow[cashFlow.length - 1].cumulative >= 0
+              ? 'Projected cumulative cash position is positive over this period.'
+              : 'Projected cumulative cash position is negative - consider raising prices or cutting costs.'}
+          </div>
+        </div>
+      )}
 
       <div data-mobile-hide style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
         <div>

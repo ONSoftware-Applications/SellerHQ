@@ -12,6 +12,13 @@ export type PlanFeature =
   | 'qrScanner'
   | 'fullTax'
   | 'advancedForecasts'
+  | 'bundleTemplates'
+  | 'cashFlow'
+  | 'lowStock'
+  | 'backupExport'
+  | 'accountingExport'
+  | 'auditLog'
+  | 'customization'
 
 export const PLAN_LIMITS: Record<
   PlanId,
@@ -33,6 +40,17 @@ const PRO_FEATURES: PlanFeature[] = [
   'qrScanner',
   'fullTax',
   'advancedForecasts',
+  'bundleTemplates',
+  'cashFlow',
+  'lowStock',
+  'backupExport',
+]
+
+const BUSINESS_FEATURES: PlanFeature[] = [
+  ...PRO_FEATURES,
+  'accountingExport',
+  'auditLog',
+  'customization',
 ]
 
 export const PLAN_FEATURES: Record<PlanId, PlanFeature[]> = {
@@ -45,9 +63,10 @@ export const PLAN_FEATURES: Record<PlanId, PlanFeature[]> = {
     'autoRelist',
     'multiCurrency',
     'qrScanner',
+    'bundleTemplates',
   ],
   pro: PRO_FEATURES,
-  business: PRO_FEATURES,
+  business: BUSINESS_FEATURES,
 }
 
 export function planCanUse(
@@ -121,8 +140,9 @@ export const PLANS: Plan[] = [
       'Multi-currency support',
       'Mobile QR scanner',
       'Full CSV import & export',
+      'Bundle templates',
     ],
-    planned: ['Bundle templates for common sales'],
+    planned: [],
   },
   {
     id: 'pro',
@@ -138,6 +158,8 @@ export const PLANS: Plan[] = [
       'Advanced forecasts & scenario planning',
       'Full UK tax (VAT, quarterly deadlines, filing)',
       'Advanced reports & stock ageing',
+      'Cash-flow projection',
+      'Full backup export',
       'Price ladder & profit optimisation',
       'Priority support',
     ],
@@ -146,8 +168,6 @@ export const PLANS: Plan[] = [
       'Barcode scanning',
       'Custom product fields',
       'Email reminders',
-      'Cash-flow projection',
-      'Full backup export',
     ],
   },
   {
@@ -161,13 +181,14 @@ export const PLANS: Plan[] = [
       'Everything in Pro',
       'Unlimited products & businesses',
       '5 team seats',
+      'Business customization (logo & branding)',
+      'Full audit log',
+      'Accounting export',
       'Priority support',
     ],
     planned: [
       'Marketplace API integrations',
       'API & webhooks',
-      'Accounting export (Xero & QuickBooks)',
-      'Full audit log',
       'White-label branding',
     ],
   },

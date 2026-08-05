@@ -144,11 +144,18 @@ describe('costOfGoods', () => {
 })
 
 describe('totalFees', () => {
-  it('sums fees, shipping, and other fees', () => {
+  it('uses the stored fees total without double counting', () => {
     const products = [
       makeProduct({ fees: 5, shippingCost: 3, otherFees: 2, status: 'Sold' }),
     ]
-    expect(totalFees(products)).toBe(10)
+    expect(totalFees(products)).toBe(5)
+  })
+
+  it('falls back to fee components when fees is not set', () => {
+    const products = [
+      makeProduct({ fees: 0, shippingCost: 3, platformFees: 4, otherFees: 2, status: 'Sold' }),
+    ]
+    expect(totalFees(products)).toBe(9)
   })
 })
 

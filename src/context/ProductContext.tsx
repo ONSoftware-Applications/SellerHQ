@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase'
 import { useBusiness } from '../hooks/useBusiness'
 import { useSubscription } from '../hooks/useSubscription'
 import { getPlan } from '../lib/plans'
+import { logAudit } from '../lib/audit'
 import { ProductContext } from '../hooks/useProducts'
 
 import type {
@@ -425,6 +426,11 @@ export function ProductProvider({
       name: product.name,
       code: product.code,
     })
+    void logAudit(
+      'product.created',
+      { name: product.name, code: product.code },
+      currentBusiness.id,
+    )
 
     // Log marketplace listings if any
     if (product.marketplaces.length > 0) {
@@ -484,8 +490,16 @@ export function ProductProvider({
           },
         )
       }
+
+      if (currentBusiness) {
+        void logAudit(
+          'product.updated',
+          { name: product.name, code: product.code, status: product.status },
+          currentBusiness.id,
+        )
+      }
     },
-    [products, logEvent],
+    [products, logEvent, currentBusiness],
   )
 
   const deleteProduct = useCallback(async (id: string) => {
@@ -502,7 +516,16 @@ export function ProductProvider({
     setProducts((current) =>
       current.filter((product) => product.id !== id),
     )
-  }, [])
+
+    const deleted = products.find((p) => p.id === id)
+    if (currentBusiness) {
+      void logAudit(
+        'product.deleted',
+        { name: deleted?.name, code: deleted?.code },
+        currentBusiness.id,
+      )
+    }
+  }, [products, currentBusiness])
 
   const getProduct = useCallback((id: string) => {
     return products.find((product) => product.id === id)
