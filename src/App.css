@@ -2149,7 +2149,7 @@
   .inventory-table-wrapper {
     border: none;
     background: transparent;
-    overflow-x: auto;
+    overflow-x: hidden;
   }
 
   .inventory-table {
