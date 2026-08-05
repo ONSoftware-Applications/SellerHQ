@@ -1,5 +1,16 @@
 import Stripe from 'npm:stripe@16'
-import { createAdminClient } from '../_shared/supabaseAdmin.ts'
+import { createClient } from 'npm:@supabase/supabase-js@2'
+
+function createAdminClient() {
+  const url = Deno.env.get('SUPABASE_URL')
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!url || !serviceRoleKey) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
+  }
+  return createClient(url, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+}
 
 function asString(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null
@@ -30,8 +41,7 @@ async function handleSubscription(
   if (!userId || !plan) return
 
   const customerId = asString(subscription.customer) ?? undefined
-  const billing =
-    asString(subscription.metadata?.billing) ?? 'monthly'
+  const billing = asString(subscription.metadata?.billing) ?? 'monthly'
 
   await upsertSubscription(supabase, userId, {
     plan,
@@ -122,7 +132,9 @@ Deno.serve(async (request: Request) => {
             updated_at: new Date().toISOString(),
           })
           .eq('stripe_subscription_id', subscriptionId)
-        if (error) console.error('Failed to mark subscription past_due:', error)
+        if (error) {
+          console.error('Failed to mark subscription past_due:', error)
+        }
       }
       break
     }
