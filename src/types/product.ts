@@ -44,6 +44,8 @@ export type Product = {
   purchaseDate: string | null
   purchaseSource: string
 
+  quantity: number
+
   storageLocation: string
   barcode: string
   photos: string[]
@@ -95,6 +97,8 @@ export type ProductRow = {
   purchase_price: number | null
   purchase_date: string | null
   purchase_source: string | null
+
+  quantity: number | null
 
   storage_location: string | null
   barcode: string | null

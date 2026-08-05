@@ -495,21 +495,21 @@ function Forecast() {
 
       <div data-mobile-hide style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
         <div>
-          <div style={{ background: '#ffffff', border: '1px solid #e4e6e9', borderRadius: '12px', padding: '20px' }}>
+          <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '20px' }}>
             <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
               Historical {selectedForecastType} Trend
             </h3>
             <div style={{ 
               fontFamily: 'monospace', 
               fontSize: '12px', 
-              background: '#f8f9fa', 
+              background: 'var(--shq-bg)', 
               padding: '12px', 
               borderRadius: '6px',
               overflow: 'auto'
             }}>
               <pre>{drawSimpleChart(historicalData, selectedForecastType.toLowerCase(), 30)}</pre>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', fontSize: '11px', color: '#717780' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', fontSize: '11px', color: 'var(--shq-ink-muted)' }}>
               {historicalData.map((data, index) => (
                 <span key={index}>{data.month}</span>
               ))}
@@ -517,23 +517,23 @@ function Forecast() {
           </div>
 
           {showPredictions && forecastData.length > 0 && (
-            <div style={{ background: '#ffffff', border: '1px solid #e4e6e9', borderRadius: '12px', padding: '20px', marginTop: '20px' }}>
+            <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '20px', marginTop: '20px' }}>
               <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
                 Predictions
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
                 {forecastData.map((data, index) => (
                   <div key={index} style={{ 
-                    background: index === 0 ? '#f0fdf4' : '#ffffff',
-                    border: index === 0 ? '1px solid #10b981' : '1px solid #e4e6e9',
+                    background: index === 0 ? '#f0fdf4' : 'var(--shq-surface)',
+                    border: index === 0 ? '1px solid #10b981' : '1px solid var(--shq-border)',
                     borderRadius: '8px',
                     padding: '12px',
                     textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: '11px', color: '#717780', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--shq-ink-muted)', marginBottom: '4px' }}>
                       {data.month}
                     </div>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: index === 0 ? '#059669' : '#17191c' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: index === 0 ? '#059669' : 'var(--shq-ink)' }}>
                       {selectedForecastType === 'Revenue' ? money(data.revenue, { maximumFractionDigits: 0 }) :
                        selectedForecastType === 'Profit' ? money(data.profit, { maximumFractionDigits: 0 }) :
                        selectedForecastType === 'Units' ? `${data.units}` : `${data.margin.toFixed(1)}%`}
@@ -546,7 +546,7 @@ function Forecast() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ background: '#ffffff', border: '1px solid #e4e6e9', borderRadius: '12px', padding: '20px' }}>
+          <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '20px' }}>
             <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
               Business Health
             </h3>
@@ -569,13 +569,13 @@ function Forecast() {
               <div style={{ fontSize: '14px', fontWeight: '600', color: healthStatus.color, marginBottom: '4px' }}>
                 {healthStatus.status}
               </div>
-              <div style={{ fontSize: '12px', color: '#717780' }}>
+              <div style={{ fontSize: '12px', color: 'var(--shq-ink-muted)' }}>
                 Based on current performance
               </div>
             </div>
           </div>
 
-          <div style={{ background: '#ffffff', border: '1px solid #e4e6e9', borderRadius: '12px', padding: '20px' }}>
+          <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '20px' }}>
             <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
               Top performing products
             </h3>
@@ -608,7 +608,7 @@ function Forecast() {
                         <div style={{ fontSize: '13px', fontWeight: '600' }}>
                           {product.name}
                         </div>
-                        <div style={{ fontSize: '11px', color: '#717780' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--shq-ink-muted)' }}>
                           {product.code} • {product.marketplaces?.join(', ') || 'No marketplaces'}
                         </div>
                       </div>
@@ -617,7 +617,7 @@ function Forecast() {
                       <div style={{ fontSize: '13px', fontWeight: '600', color: '#059669' }}>
                         {money(product.profit, { maximumFractionDigits: 0 })}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#717780' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--shq-ink-muted)' }}>
                         Profit
                       </div>
                     </div>
@@ -625,7 +625,7 @@ function Forecast() {
                 ))}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '20px', color: '#717780' }}>
+              <div style={{ textAlign: 'center', padding: '20px', color: 'var(--shq-ink-muted)' }}>
                 <div style={{ fontSize: '14px', marginBottom: '8px' }}>
                   No sales data available
                 </div>
@@ -636,7 +636,7 @@ function Forecast() {
             )}
           </div>
 
-          <div style={{ background: '#ffffff', border: '1px solid #e4e6e9', borderRadius: '12px', padding: '20px' }}>
+          <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '20px' }}>
             <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
               Quick insights
             </h3>
@@ -663,7 +663,7 @@ function Forecast() {
                 <span style={{ fontSize: '16px' }}>📈</span>
                 <div style={{ fontSize: '13px' }}>
                   <strong>Forecast confidence:</strong> Medium
-                  <span style={{ color: '#717780', fontSize: '12px', marginLeft: '4px' }}>
+                  <span style={{ color: 'var(--shq-ink-muted)', fontSize: '12px', marginLeft: '4px' }}>
                     Based on historical patterns
                   </span>
                 </div>

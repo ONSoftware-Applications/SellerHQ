@@ -80,6 +80,7 @@ function databaseToProduct(row: ProductRow): Product {
     purchasePrice,
     purchaseDate: row.purchase_date ?? null,
     purchaseSource: row.purchase_source ?? '',
+    quantity: Number(row.quantity ?? 1),
 
     storageLocation: row.storage_location ?? '',
     barcode: row.barcode ?? '',
@@ -230,6 +231,7 @@ function productToDatabase(product: Product) {
     purchase_price: product.purchasePrice,
     purchase_date: product.purchaseDate || null,
     purchase_source: product.purchaseSource || null,
+    quantity: product.quantity,
 
     storage_location: product.storageLocation || null,
     barcode: product.barcode || null,
