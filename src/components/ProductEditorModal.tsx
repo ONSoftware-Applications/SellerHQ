@@ -30,6 +30,7 @@ const statusOptions: ProductStatus[] = [
   'Draft',
   'Listed',
   'Awaiting Shipping',
+  'In Shipping',
   'Sold',
   'Reserved',
   'Relisting Required',

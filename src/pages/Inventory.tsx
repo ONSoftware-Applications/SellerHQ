@@ -57,6 +57,7 @@ const statusOrder: ProductStatus[] = [
   'Draft',
   'Listed',
   'Awaiting Shipping',
+  'In Shipping',
   'Sold',
   'Reserved',
   'Relisting Required',
@@ -438,6 +439,14 @@ if (
       products.filter(
         (product) =>
           product.status === 'Awaiting Shipping',
+      ).length,
+    [products],
+  )
+
+  const inShippingCount = useMemo(
+    () =>
+      products.filter(
+        (product) => product.status === 'In Shipping',
       ).length,
     [products],
   )
@@ -1034,6 +1043,13 @@ if (
             <button
               type="button"
               className="secondary-button"
+              onClick={() => applyBulkStatus('In Shipping')}
+            >
+              In shipping
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
               onClick={() => applyBulkStatus('Sold')}
             >
               Sold
@@ -1096,6 +1112,11 @@ if (
         </div>
 
         <div className="inventory-stat">
+          <span>In shipping</span>
+          <strong>{inShippingCount}</strong>
+        </div>
+
+        <div className="inventory-stat">
           <span>Sold</span>
           <strong>{soldCount}</strong>
         </div>
@@ -1141,6 +1162,9 @@ if (
           <option value="Listed">Listed</option>
           <option value="Awaiting Shipping">
             Awaiting Shipping
+          </option>
+          <option value="In Shipping">
+            In Shipping
           </option>
           <option value="Sold">Sold</option>
         </select>

@@ -45,7 +45,7 @@ export function RecordSaleModal({ onClose, onSaved }: Props) {
 
   const availableProducts = useMemo(() => {
     return products.filter(
-      (p) => !['Sold', 'Returned', 'Archived'].includes(p.status),
+      (p) => !['Sold', 'In Shipping', 'Returned', 'Archived'].includes(p.status),
     )
   }, [products])
 

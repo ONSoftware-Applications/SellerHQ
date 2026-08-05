@@ -6,6 +6,7 @@ import { useCurrency } from '../hooks/useCurrency'
 import { downloadCsv } from '../utils/format'
 import { useToast } from '../hooks/useToast'
 import { RecordSaleModal } from '../components/RecordSaleModal'
+import { BundleSaleModal } from '../components/BundleSaleModal'
 import { FilterBar } from '../components/FilterBar'
 import { usePagination, PaginationControls } from '../components/Pagination'
 import {
@@ -20,6 +21,7 @@ import {
 } from '../lib/finance'
 const statusOrder: string[] = [
   'Sold',
+  'In Shipping',
   'Awaiting Shipping',
   'Listed',
   'Unlisted',
@@ -48,6 +50,7 @@ function Sales() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [dateRange, setDateRange] = useState<'all' | 'today' | 'week' | 'month'>('all')
   const [showRecordSale, setShowRecordSale] = useState(false)
+  const [showBundleSale, setShowBundleSale] = useState(false)
 
   const soldProducts = useMemo(() => {
     return products.filter((product) => product.status === 'Sold')
@@ -197,6 +200,13 @@ function Sales() {
             onClick={() => setShowRecordSale(true)}
           >
             + Record sale
+          </button>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => setShowBundleSale(true)}
+          >
+            + Bundle sale
           </button>
           <button
             className="btn btn-secondary"
@@ -503,6 +513,15 @@ function Sales() {
           onSaved={() => {
             setShowRecordSale(false)
             showToast('Sale recorded', 'success')
+          }}
+        />
+      )}
+      {showBundleSale && (
+        <BundleSaleModal
+          onClose={() => setShowBundleSale(false)}
+          onSaved={() => {
+            setShowBundleSale(false)
+            showToast('Bundle sale recorded', 'success')
           }}
         />
       )}
