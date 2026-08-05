@@ -1,43 +1,102 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import {
   PLANS,
   ANNUAL_DISCOUNT,
   annualTotal,
   annualPerMonth,
-  getPlan,
   type BillingCycle,
   type Plan,
   type PlanId,
 } from '../lib/plans'
+import { supabase } from '../lib/supabase'
 import { useSettings } from '../hooks/useSettings'
 import { useToast } from '../hooks/useToast'
 import { useCurrency } from '../hooks/useCurrency'
+import { useSubscription } from '../hooks/useSubscription'
 
 function Subscriptions() {
   const { settings, updateSettings } = useSettings()
   const { showToast } = useToast()
   const { money } = useCurrency()
+  const { plan: currentPlan, refresh } = useSubscription()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [cycle, setCycle] = useState<BillingCycle>(
     settings.subscription.billing,
   )
+  const [checkingOut, setCheckingOut] = useState<PlanId | null>(null)
 
-  const currentPlan = settings.subscription.plan
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      showToast('Payment successful - your plan is now active', 'success')
+      void refresh()
+      setSearchParams({}, { replace: true })
+    } else if (searchParams.get('cancelled') === 'true') {
+      showToast('Checkout cancelled - no changes were made', 'info')
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams, refresh, showToast])
 
-  async function selectPlan(plan: PlanId) {
-    if (plan === currentPlan) return
+  async function openCheckout(plan: Plan) {
+    const priceId =
+      cycle === 'annual'
+        ? plan.stripePriceAnnualId
+        : plan.stripePriceMonthlyId
 
-    await updateSettings({
-      subscription: { plan, billing: cycle },
-    })
+    if (!priceId) {
+      await updateSettings({
+        subscription: { plan: plan.id, billing: cycle },
+      })
+      showToast(
+        `${plan.name} plan selected (payments not connected yet)`,
+        'info',
+      )
+      return
+    }
 
-    showToast(
-      plan === 'basic'
-        ? 'Switched to the Basic free plan'
-        : `${getPlan(plan).name} plan selected`,
-      'success',
-    )
+    setCheckingOut(plan.id)
+
+    try {
+      const { data, error } = await supabase.functions.invoke<
+        { url: string } | { error: string }
+      >('create-checkout', {
+        body: { plan: plan.id, priceId, billing: cycle },
+      })
+
+      if (error || !data || !('url' in data) || !data.url) {
+        throw new Error('Checkout could not be created')
+      }
+
+      window.location.href = data.url
+    } catch (err) {
+      console.error(err)
+      await updateSettings({
+        subscription: { plan: plan.id, billing: cycle },
+      })
+      showToast(
+        'Could not reach Stripe yet - plan saved to your account locally.',
+        'info',
+      )
+      setCheckingOut(null)
+    }
+  }
+
+  async function openBillingPortal() {
+    const { data, error } = await supabase.functions.invoke<
+      { url: string } | { error: string }
+    >('billing-portal')
+
+    if (error || !data || !('url' in data) || !data.url) {
+      showToast(
+        'No active Stripe subscription yet. Upgrade below to get started.',
+        'info',
+      )
+      return
+    }
+
+    window.location.href = data.url
   }
 
   return (
@@ -47,6 +106,17 @@ function Subscriptions() {
           <h1>Subscriptions</h1>
           <p>Choose the plan that fits how you resell.</p>
         </div>
+        {currentPlan !== 'basic' && (
+          <div className="page-heading-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={openBillingPortal}
+            >
+              Manage subscription
+            </button>
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '28px' }}>
@@ -123,7 +193,8 @@ function Subscriptions() {
             cycle={cycle}
             money={money}
             isCurrent={plan.id === currentPlan}
-            onSelect={() => selectPlan(plan.id)}
+            checkingOut={checkingOut === plan.id}
+            onSelect={() => openCheckout(plan)}
           />
         ))}
       </div>
@@ -140,9 +211,9 @@ function Subscriptions() {
           lineHeight: 1.6,
         }}
       >
-        Plan selection is saved to your account. Payments will be processed
-        securely via Stripe once billing is enabled - no charges are made today.
-        You can switch between plans at any time.
+        Payments are handled securely by Stripe. Annual plans are billed once
+        a year at a 5% discount. You can switch, upgrade or cancel at any time
+        from the Stripe billing portal.
       </div>
     </div>
   )
@@ -153,12 +224,14 @@ function PlanCard({
   cycle,
   money,
   isCurrent,
+  checkingOut,
   onSelect,
 }: {
   plan: Plan
   cycle: BillingCycle
   money: (amount: number, options?: { maximumFractionDigits?: number }) => string
   isCurrent: boolean
+  checkingOut: boolean
   onSelect: () => void
 }) {
   const isFree = plan.monthlyPrice === 0
@@ -325,14 +398,16 @@ function PlanCard({
               : 'secondary-button'
         }
         onClick={onSelect}
-        disabled={isCurrent}
+        disabled={isCurrent || checkingOut}
         style={{ width: '100%', marginTop: 20 }}
       >
         {isCurrent
           ? 'Current plan'
-          : isFree
-            ? 'Choose Basic'
-            : `Choose ${plan.name}`}
+          : checkingOut
+            ? 'Redirecting to Stripe...'
+            : isFree
+              ? 'Choose Basic'
+              : `Choose ${plan.name}`}
       </button>
     </div>
   )

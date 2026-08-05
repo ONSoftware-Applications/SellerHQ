@@ -10,6 +10,8 @@ export type Plan = {
   available: string[]
   planned: string[]
   highlighted?: boolean
+  stripePriceMonthlyId: string
+  stripePriceAnnualId: string
 }
 
 export const ANNUAL_DISCOUNT = 0.05
@@ -20,6 +22,8 @@ export const PLANS: Plan[] = [
     name: 'Basic',
     tagline: 'Everything you need to start reselling.',
     monthlyPrice: 0,
+    stripePriceMonthlyId: '',
+    stripePriceAnnualId: '',
     available: [
       'Up to 50 products',
       '1 business',
@@ -40,6 +44,8 @@ export const PLANS: Plan[] = [
     name: 'Growing',
     tagline: 'For sellers scaling up their stock.',
     monthlyPrice: 5.99,
+    stripePriceMonthlyId: '',
+    stripePriceAnnualId: '',
     available: [
       'Everything in Basic',
       'Up to 500 products & 2 businesses',
@@ -61,6 +67,8 @@ export const PLANS: Plan[] = [
     tagline: 'Advanced insights for serious sellers.',
     monthlyPrice: 10.99,
     highlighted: true,
+    stripePriceMonthlyId: '',
+    stripePriceAnnualId: '',
     available: [
       'Everything in Growing',
       'Up to 5,000 products & 5 businesses',
@@ -84,6 +92,8 @@ export const PLANS: Plan[] = [
     name: 'Business',
     tagline: 'For teams and multi-channel sellers.',
     monthlyPrice: 15.99,
+    stripePriceMonthlyId: '',
+    stripePriceAnnualId: '',
     available: [
       'Everything in Pro',
       'Unlimited products & businesses',

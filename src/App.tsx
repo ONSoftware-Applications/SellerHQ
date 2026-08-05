@@ -12,6 +12,7 @@ import { AuthProvider } from './context/AuthContext'
 import { BusinessProvider } from './context/BusinessContext'
 import { ProductProvider } from './context/ProductContext'
 import { SettingsProvider } from './context/SettingsContext'
+import { SubscriptionProvider } from './context/SubscriptionContext'
 import { AutoRelist } from './components/AutoRelist'
 import { ExpenseProvider } from './context/ExpenseContext'
 import { ToastProvider } from './context/ToastContext'
@@ -60,7 +61,8 @@ function App() {
               <SettingsProvider>
                 <ThemeController />
                 <AutoRelist />
-                <BrowserRouter>
+                <SubscriptionProvider>
+                  <BrowserRouter>
                   <ErrorBoundary>
                     <Suspense fallback={<PageLoader />}>
                       <Routes>
@@ -157,6 +159,7 @@ function App() {
                     </Suspense>
                   </ErrorBoundary>
                 </BrowserRouter>
+                </SubscriptionProvider>
                 </SettingsProvider>
               </ExpenseProvider>
             </ProductProvider>
