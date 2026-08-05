@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 
 import { useProducts } from '../hooks/useProducts'
 import { useCurrency } from '../hooks/useCurrency'
+import { useSettings } from '../hooks/useSettings'
 import type { Marketplace, Product } from '../types/product'
 
 type SoldDraft = {
@@ -26,6 +27,11 @@ function todayValue() {
 export function RecordSaleModal({ onClose, onSaved }: Props) {
   const { products, updateProduct } = useProducts()
   const { money } = useCurrency()
+  const { settings } = useSettings()
+
+  const saleStatus: Product['status'] = settings.features.shippingFlowEnabled
+    ? 'Awaiting Shipping'
+    : 'Sold'
 
   const [search, setSearch] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
@@ -109,7 +115,7 @@ export function RecordSaleModal({ onClose, onSaved }: Props) {
     try {
       await updateProduct({
         ...selectedProduct,
-        status: 'Sold',
+        status: saleStatus,
         salePrice,
         saleDate: draft.saleDate || todayValue(),
         shippingDate: draft.shippingDate || null,
@@ -135,7 +141,11 @@ export function RecordSaleModal({ onClose, onSaved }: Props) {
         <div className="modal-header">
           <div>
             <h2>Record a sale</h2>
-            <p>Mark an inventory product as sold and log the financial details.</p>
+            <p>
+              {settings.features.shippingFlowEnabled
+                ? 'Log the sale details and mark the product as awaiting shipping.'
+                : 'Mark an inventory product as sold and log the financial details.'}
+            </p>
           </div>
           <button
             type="button"

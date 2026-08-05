@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useProducts } from '../hooks/useProducts'
 import { useCurrency } from '../hooks/useCurrency'
 import { useToast } from '../hooks/useToast'
+import { useSettings } from '../hooks/useSettings'
 import { escapeHtml } from '../lib/sanitize'
 import type {
   Marketplace,
@@ -47,6 +48,9 @@ const {
   } = useProducts()
   const { money } = useCurrency()
   const { showToast } = useToast()
+  const { settings } = useSettings()
+
+  const shippingFlowEnabled = settings.features.shippingFlowEnabled
 
 const product = productId
     ? getProduct(productId)
@@ -77,6 +81,7 @@ const product = productId
   const [error, setError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmRefund, setConfirmRefund] = useState(false)
+  const [confirmShippingOpen, setConfirmShippingOpen] = useState(false)
 
   if (!product) {
     return (
@@ -164,7 +169,7 @@ const product = productId
         ...currentProduct,
         status: nextStatus,
         listingDate:
-          nextStatus === 'Listed' && !currentProduct.listingDate
+          nextStatus === 'Listed'
             ? todayValue()
             : currentProduct.listingDate,
         updatedAt: new Date().toISOString(),
@@ -241,7 +246,7 @@ const product = productId
 
     await updateProduct({
       ...currentProduct,
-      status: 'Sold',
+      status: shippingFlowEnabled ? 'Awaiting Shipping' : 'Sold',
       salePrice,
       saleDate: draft.saleDate || todayValue(),
       shippingDate: draft.shippingDate || null,
@@ -274,6 +279,22 @@ const product = productId
     } catch (err) {
       console.error(err)
       setError('The refund could not be recorded. Please try again.')
+    }
+  }
+
+  async function confirmShippingProduct() {
+    setConfirmShippingOpen(false)
+
+    try {
+      await updateProduct({
+        ...currentProduct,
+        status: 'Sold',
+        updatedAt: new Date().toISOString(),
+      })
+      showToast('Shipping confirmed - product marked as sold', 'success')
+    } catch (err) {
+      console.error(err)
+      setError('Shipping could not be confirmed. Please try again.')
     }
   }
 
@@ -601,6 +622,16 @@ const product = productId
                 ? 'Update sold details'
                 : 'Mark as sold'}
             </button>
+
+            {shippingFlowEnabled && currentProduct.status === 'In Shipping' && (
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => setConfirmShippingOpen(true)}
+              >
+                ✓ Confirm shipping
+              </button>
+            )}
 
             {currentProduct.status === 'Sold' && !currentProduct.refunded && (
               <button
@@ -1041,6 +1072,16 @@ const product = productId
         variant="danger"
         onConfirm={confirmRefundProduct}
         onCancel={() => setConfirmRefund(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmShippingOpen}
+        title="Confirm shipping"
+        message={`Confirm "${currentProduct.name}" (${currentProduct.code}) has been shipped and mark it as sold?`}
+        confirmLabel="Confirm shipping"
+        cancelLabel="Cancel"
+        onConfirm={confirmShippingProduct}
+        onCancel={() => setConfirmShippingOpen(false)}
       />
     </div>
   )
