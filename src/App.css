@@ -2166,7 +2166,7 @@
     grid-template-columns: auto 1fr auto;
     grid-template-rows: auto auto;
     gap: 0 12px;
-    padding: 16px;
+    padding: 12px;
     background: var(--shq-surface);
     border: 1px solid var(--shq-border);
     border-radius: 12px;
@@ -2202,6 +2202,10 @@
     color: var(--shq-ink-muted);
   }
 
+  .inventory-table td[data-label="Name"] > div {
+    display: none;
+  }
+
   .inventory-table td[data-label="Actions"] {
     grid-column: 3;
     grid-row: 1 / 3;
@@ -2217,12 +2221,26 @@
   .inventory-table td[data-label="Sale date"],
   .inventory-table td[data-label="Shipping date"],
   .inventory-table td[data-label="Listing price"],
-  .inventory-table td[data-label="Date"],
-  .inventory-table td[data-label="Category"],
   .inventory-table td[data-label="Description"],
-  .inventory-table td[data-label="Amount"],
+  .inventory-table td[data-label="Marketplace"],
   .inventory-table td[data-label="Conversion rate"] {
     display: none;
+  }
+
+  .inventory-table td[data-label="Date"] {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .inventory-table td[data-label="Category"] {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .inventory-table td[data-label="Amount"] {
+    grid-column: 1 / 3;
+    grid-row: 2;
+    font-weight: 600;
   }
 
   .pagination-inside-table {
