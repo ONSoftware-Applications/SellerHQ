@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 
 import BrandMark from './BrandMark'
 import { useAuth } from '../hooks/useAuth'
+import { useBusiness } from '../hooks/useBusiness'
 import { useSettings } from '../hooks/useSettings'
 import { useSubscription } from '../hooks/useSubscription'
 
@@ -17,6 +18,7 @@ type SidebarProps = {
 function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
   const navigate = useNavigate()
   const { user, signOut } = useAuth()
+  const { currentBusiness } = useBusiness()
   const { settings } = useSettings()
   const { canUse } = useSubscription()
 
@@ -45,7 +47,19 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
 
   return (
     <aside className={`sidebar ${mobileNavOpen ? 'sidebar-mobile-open' : ''}`}>
-      <BrandMark className="sidebar-brand" />
+      {currentBusiness?.logo_url ? (
+        <div className="sidebar-brand">
+          <img
+            src={currentBusiness.logo_url}
+            alt={`${currentBusiness.name} logo`}
+            className="brand-mark-logo"
+            style={{ width: 34, height: 34, objectFit: 'contain' }}
+          />
+          <span className="brand-mark-wordmark">{currentBusiness.name}</span>
+        </div>
+      ) : (
+        <BrandMark className="sidebar-brand" />
+      )}
 
       <nav className="navigation">
         <NavLink

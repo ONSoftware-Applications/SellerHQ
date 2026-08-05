@@ -242,6 +242,12 @@ export function buildProductDraftFromCsv(
   const purchasePrice = parseNumber(
     getCsvField(rowMap, ['purchaseprice', 'purchase_price']),
   )
+  const quantity = Math.max(
+    1,
+    Math.round(
+      parseNumber(getCsvField(rowMap, ['quantity', 'qty', 'stock'])),
+    ) || 1,
+  )
   const purchaseDate = parseDate(
     getCsvField(rowMap, ['purchasedate', 'purchase_date']),
   )
@@ -345,6 +351,7 @@ export function buildProductDraftFromCsv(
     purchasePrice,
     purchaseDate,
     purchaseSource: purchaseSource || base.purchaseSource,
+    quantity,
     storageLocation: storageLocation || base.storageLocation,
     barcode: barcode || base.barcode,
     photos,

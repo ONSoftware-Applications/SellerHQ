@@ -213,10 +213,16 @@ export function BundleSaleModal({ onClose, onSaved }: Props) {
       for (const item of items) {
         const price = Number(item.salePrice)
         const itemProfit = price - item.product.purchasePrice - item.product.additionalCosts - feesPerItem
+        const remainingQuantity = Math.max(
+          0,
+          (item.product.quantity || 1) - 1,
+        )
 
         await updateProduct({
           ...item.product,
-          status: saleStatus,
+          quantity: remainingQuantity,
+          status:
+            remainingQuantity > 0 ? item.product.status : saleStatus,
           salePrice: price,
           saleDate: draft.saleDate || todayValue(),
           shippingDate: draft.shippingDate || null,

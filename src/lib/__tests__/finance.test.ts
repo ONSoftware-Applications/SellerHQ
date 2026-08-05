@@ -40,6 +40,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     purchasePrice: 10,
     purchaseDate: null,
     purchaseSource: '',
+    quantity: 1,
     storageLocation: '',
     barcode: '',
     photos: [],

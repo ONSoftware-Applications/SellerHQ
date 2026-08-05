@@ -20,6 +20,7 @@ import {
   productToDraft,
 } from '../lib/productDraft'
 import { generateQrDataUrl, getProductQrValue } from '../lib/qr'
+import JsBarcode from 'jsbarcode'
 
 type SoldDraft = {
   salePrice: string
@@ -400,6 +401,85 @@ const product = productId
     popup.document.close()
   }
 
+  async function handlePrintBarcode() {
+    const value =
+      currentProduct.barcode ||
+      currentProduct.code ||
+      currentProduct.sku
+
+    const popup = window.open('', '_blank', 'width=520,height=420')
+
+    if (!popup) {
+      showToast('Please allow pop-ups to print the barcode.', 'error')
+      return
+    }
+
+    const svg = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'svg',
+    )
+
+    try {
+      JsBarcode(svg, value, {
+        format: 'CODE128',
+        width: 2,
+        height: 90,
+        displayValue: true,
+        margin: 20,
+      })
+    } catch (error) {
+      console.error(error)
+      showToast('The barcode could not be generated.', 'error')
+      popup.close()
+      return
+    }
+
+    const serializer = new XMLSerializer()
+    const svgString = serializer.serializeToString(svg)
+
+    popup.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <title>Barcode for ${escapeHtml(currentProduct.code)}</title>
+          <style>
+            body {
+              margin: 0;
+              font-family: Arial, sans-serif;
+              background: #f6f7f9;
+              min-height: 100vh;
+              display: grid;
+              place-items: center;
+              padding: 24px;
+            }
+            .sheet {
+              width: 420px;
+              background: white;
+              border: 1px solid #e4e6e9;
+              border-radius: 16px;
+              padding: 24px;
+              text-align: center;
+              box-shadow: 0 12px 40px rgba(0,0,0,.08);
+            }
+            h1 { font-size: 16px; margin: 0 0 4px; color: #17191c; }
+            p { margin: 0 0 16px; font-size: 12px; color: #717780; }
+            svg { max-width: 100%; height: auto; }
+            .code { font-size: 14px; font-weight: 600; color: #17191c; margin-top: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="sheet">
+            <h1>${escapeHtml(currentProduct.name)}</h1>
+            <p>${escapeHtml(currentProduct.code)}</p>
+            ${svgString}
+            <div class="code">${escapeHtml(value)}</div>
+          </div>
+        </body>
+      </html>
+    `)
+    popup.document.close()
+  }
+
   async function handlePrintLabel() {
     const qrValue = getProductQrValue({
       productId: currentProduct.id,
@@ -664,6 +744,14 @@ const product = productId
               onClick={handlePrintLabel}
             >
               Print label
+            </button>
+
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={handlePrintBarcode}
+            >
+              Barcode
             </button>
 
             <button

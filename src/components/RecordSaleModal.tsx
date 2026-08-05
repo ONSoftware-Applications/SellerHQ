@@ -113,9 +113,16 @@ export function RecordSaleModal({ onClose, onSaved }: Props) {
     setError('')
 
     try {
+      const remainingQuantity = Math.max(
+        0,
+        (selectedProduct.quantity || 1) - 1,
+      )
+
       await updateProduct({
         ...selectedProduct,
-        status: saleStatus,
+        quantity: remainingQuantity,
+        status:
+          remainingQuantity > 0 ? selectedProduct.status : saleStatus,
         salePrice,
         saleDate: draft.saleDate || todayValue(),
         shippingDate: draft.shippingDate || null,

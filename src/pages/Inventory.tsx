@@ -1333,6 +1333,7 @@ if (
               </th>
               <th>Product ID</th>
               <th>Name</th>
+              <th>Qty</th>
               <th>Storage</th>
               <th>Status</th>
               <th>Marketplaces</th>
@@ -1423,6 +1424,10 @@ if (
                       </div>
                     )}
                   </td>
+
+                   <td data-label="Qty">
+                     {(product.quantity ?? 1) > 1 ? product.quantity : '-'}
+                   </td>
 
                    <td data-label="Storage">{product.storageLocation || '-'}</td>
 

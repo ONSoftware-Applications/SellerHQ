@@ -186,7 +186,15 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
             aria-haspopup="listbox"
           >
             <div className="business-icon">
-              {currentBusiness.name.charAt(0).toUpperCase()}
+              {currentBusiness.logo_url ? (
+                <img
+                  src={currentBusiness.logo_url}
+                  alt=""
+                  style={{ width: 24, height: 24, objectFit: 'contain' }}
+                />
+              ) : (
+                currentBusiness.name.charAt(0).toUpperCase()
+              )}
             </div>
 
             <div>

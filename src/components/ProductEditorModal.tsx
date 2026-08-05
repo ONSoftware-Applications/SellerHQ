@@ -81,6 +81,9 @@ export function ProductEditorModal({
   )
   const [purchaseSource, setPurchaseSource] =
     useState(initialProduct.purchaseSource)
+  const [quantity, setQuantity] = useState(
+    String(initialProduct.quantity ?? 1),
+  )
 
   const [storageLocation, setStorageLocation] = useState(
     initialProduct.storageLocation,
@@ -202,6 +205,7 @@ export function ProductEditorModal({
         purchasePrice: resolvedPurchasePrice,
         purchaseDate: purchaseDate || null,
         purchaseSource: purchaseSource.trim(),
+        quantity: Math.max(1, Number(quantity) || 1),
         storageLocation: storageLocation.trim(),
         barcode: barcode.trim(),
         photos,
@@ -463,6 +467,21 @@ export function ProductEditorModal({
                     value={purchaseDate}
                     onChange={(event) =>
                       setPurchaseDate(event.target.value)
+                    }
+                    disabled={submitting}
+                  />
+                </label>
+
+                <label>
+                  Quantity
+
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={quantity}
+                    onChange={(event) =>
+                      setQuantity(event.target.value)
                     }
                     disabled={submitting}
                   />
