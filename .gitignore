@@ -60,3 +60,5 @@ term**
 .nyc
 **/*.lcov
 **/*.lcov.*
+
+supabase/.temp/

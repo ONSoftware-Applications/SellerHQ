@@ -103,6 +103,8 @@ Deno.serve(async (request: Request) => {
     return jsonResponse({ url: session.url })
   } catch (err) {
     console.error('create-checkout error:', err)
-    return jsonResponse({ error: 'Internal error' }, 500)
+    const message =
+      err instanceof Error ? err.message : 'Unknown error'
+    return jsonResponse({ error: message }, 500)
   }
 })
