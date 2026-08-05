@@ -3,8 +3,9 @@ import { useMemo, useState } from 'react'
 import { useProducts } from '../hooks/useProducts'
 import { useExpenses } from '../hooks/useExpenses'
 import { useCurrency } from '../hooks/useCurrency'
-import { downloadCsv } from '../utils/format'
 import { useToast } from '../hooks/useToast'
+import { useSubscription } from '../hooks/useSubscription'
+import { downloadCsv } from '../utils/format'
 import {
   periodRange,
   soldInPeriod,
@@ -26,6 +27,7 @@ import {
   taxEstimate,
   type Period,
 } from '../lib/finance'
+import { TAX_CONFIG } from '../config/tax'
 
 const periodLabels: Record<Period, string> = {
   today: 'Today',
@@ -40,6 +42,7 @@ function Reports() {
   const { expenses } = useExpenses()
   const { money } = useCurrency()
   const { showToast } = useToast()
+  const { canUse } = useSubscription()
 
   const [period, setPeriod] = useState<Period>('year')
 
@@ -120,6 +123,34 @@ function Reports() {
     showToast('Marketplace report exported', 'success')
   }
 
+  function handleExportAccounting() {
+    const allSold = products.filter((p) => p.status === 'Sold')
+    const salesRows = allSold.map((p) => [
+      p.saleDate ?? '',
+      'Sale',
+      p.name,
+      p.saleMarketplace ?? '',
+      String((p.salePrice ?? 0).toFixed(2)),
+      String(-(p.fees ?? 0).toFixed(2)),
+      String((p.profit ?? 0).toFixed(2)),
+    ])
+    const expenseRows = expenses.map((e) => [
+      e.expenseDate ?? '',
+      'Expense',
+      e.description || e.category,
+      e.marketplace || '',
+      String((e.amount ?? 0).toFixed(2)),
+      '',
+      '',
+    ])
+    downloadCsv('accounting-export.csv', [
+      ['Date', 'Type', 'Description', 'Reference', 'Amount', 'Fees', 'Net'],
+      ...salesRows,
+      ...expenseRows,
+    ])
+    showToast('Accounting export downloaded', 'success')
+  }
+
   return (
     <div className="inventory-page">
       <div className="page-heading">
@@ -128,6 +159,15 @@ function Reports() {
           <p>Business performance overview and financial breakdown.</p>
         </div>
         <div className="page-heading-actions">
+          {canUse('accountingExport') && (
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={handleExportAccounting}
+            >
+              Export for accounting
+            </button>
+          )}
           <button
             type="button"
             className="secondary-button"
@@ -198,7 +238,7 @@ function Reports() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: 13 }}>
             <Row label="Revenue" value={money(rev)} />
             <Row label="Cost of goods sold" value={`-${money(cogs)}`} muted />
-            <Row label="Platform fees" value={`-${money(fees)}`} muted />
+            <Row label="Fees (shipping, platform & other)" value={`-${money(fees)}`} muted />
             <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid var(--shq-border)' }} />
             <Row label="Gross profit" value={money(gross)} bold />
             <Row label="Operating expenses" value={`-${money(expTotal)}`} muted />
@@ -212,7 +252,7 @@ function Reports() {
           <h3 style={{ margin: '0 0 16px' }}>Tax summary</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: 13 }}>
             <Row label="Net profit" value={money(net)} />
-            <Row label="Personal allowance" value={`-${money(25000)}`} muted />
+            <Row label="Personal allowance" value={`-${money(TAX_CONFIG.personalAllowance)}`} muted />
             <Row label="Taxable profit" value={money(tax.taxableProfit)} />
             <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid var(--shq-border)' }} />
             <Row label="Income tax" value={money(tax.incomeTax)} />

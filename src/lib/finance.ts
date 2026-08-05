@@ -68,11 +68,12 @@ export function costOfGoods(sold: Product[]): number {
 }
 
 export function totalFees(sold: Product[]): number {
-  return sold.reduce(
-    (sum, p) =>
-      sum + (p.fees || 0) + (p.shippingCost || 0) + (p.otherFees || 0),
-    0,
-  )
+  return sold.reduce((sum, p) => {
+    const componentSum =
+      (p.shippingCost || 0) + (p.platformFees || 0) + (p.otherFees || 0)
+    const fees = p.fees || 0
+    return sum + fees + Math.max(0, componentSum - fees)
+  }, 0)
 }
 
 export function grossProfit(sold: Product[]): number {

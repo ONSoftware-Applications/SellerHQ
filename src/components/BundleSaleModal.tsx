@@ -3,6 +3,13 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { useProducts } from '../hooks/useProducts'
 import { useCurrency } from '../hooks/useCurrency'
 import { useSettings } from '../hooks/useSettings'
+import { useSubscription } from '../hooks/useSubscription'
+import {
+  deleteBundleTemplate,
+  loadBundleTemplates,
+  saveBundleTemplate,
+  type BundleTemplate,
+} from '../lib/bundleTemplates'
 import type { Marketplace, Product } from '../types/product'
 
 type BundleItem = {
@@ -32,6 +39,7 @@ export function BundleSaleModal({ onClose, onSaved }: Props) {
   const { products, updateProduct } = useProducts()
   const { money } = useCurrency()
   const { settings } = useSettings()
+  const { canUse } = useSubscription()
 
   const saleStatus: Product['status'] = settings.features.shippingFlowEnabled
     ? 'Awaiting Shipping'
@@ -39,6 +47,10 @@ export function BundleSaleModal({ onClose, onSaved }: Props) {
 
   const [search, setSearch] = useState('')
   const [items, setItems] = useState<BundleItem[]>([])
+  const [templates, setTemplates] = useState<BundleTemplate[]>(() =>
+    loadBundleTemplates(),
+  )
+  const [templateName, setTemplateName] = useState('')
 
   const [draft, setDraft] = useState<BundleDraft>({
     saleDate: todayValue(),
@@ -123,6 +135,56 @@ export function BundleSaleModal({ onClose, onSaved }: Props) {
     setItems((prev) => prev.filter((item) => item.product.id !== id))
   }
 
+  function handleSaveTemplate() {
+    if (items.length === 0) return
+    if (!templateName.trim()) return
+
+    const template = saveBundleTemplate({
+      name: templateName.trim(),
+      items: items.map((item) => ({
+        productId: item.product.id,
+        salePrice: item.salePrice,
+      })),
+      saleMarketplace: draft.saleMarketplace,
+      shippingCost: draft.shippingCost,
+      platformFees: draft.platformFees,
+      otherFees: draft.otherFees,
+    })
+    setTemplates([template, ...templates])
+    setTemplateName('')
+  }
+
+  function handleLoadTemplate(template: BundleTemplate) {
+    const productMap = new Map(products.map((p) => [p.id, p]))
+    const loadedItems = template.items
+      .map((entry) => {
+        const product = productMap.get(entry.productId)
+        if (!product) return null
+        const unavailable = ['Sold', 'In Shipping', 'Returned', 'Archived'].includes(
+          product.status,
+        )
+        return unavailable
+          ? null
+          : { product, salePrice: entry.salePrice }
+      })
+      .filter((item): item is BundleItem => item !== null)
+
+    setItems(loadedItems)
+    setDraft((prev) => ({
+      ...prev,
+      saleMarketplace: template.saleMarketplace as Marketplace | '',
+      shippingCost: template.shippingCost,
+      platformFees: template.platformFees,
+      otherFees: template.otherFees,
+    }))
+    setError('')
+  }
+
+  function handleDeleteTemplate(id: string) {
+    deleteBundleTemplate(id)
+    setTemplates((prev) => prev.filter((t) => t.id !== id))
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
 
@@ -196,6 +258,97 @@ export function BundleSaleModal({ onClose, onSaved }: Props) {
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             {error && <div className="form-error">{error}</div>}
+
+            {canUse('bundleTemplates') && (
+              <div className="inventory-modal-section">
+                <h3>Bundle templates</h3>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                  <select
+                    aria-label="Load a bundle template"
+                    value=""
+                    onChange={(e) => {
+                      const template = templates.find((t) => t.id === e.target.value)
+                      if (template) handleLoadTemplate(template)
+                    }}
+                    style={{
+                      flex: 1,
+                      minWidth: 180,
+                      padding: '8px 10px',
+                      border: '1px solid var(--shq-border)',
+                      borderRadius: 8,
+                      fontSize: 13,
+                      background: 'var(--shq-bg)',
+                      color: 'var(--shq-ink)',
+                    }}
+                  >
+                    <option value="" disabled>
+                      {templates.length > 0
+                        ? 'Load a saved template...'
+                        : 'No templates saved yet'}
+                    </option>
+                    {templates.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({t.items.length} items)
+                      </option>
+                    ))}
+                  </select>
+                  {templates.length > 0 && (
+                    <select
+                      aria-label="Delete a template"
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) handleDeleteTemplate(e.target.value)
+                      }}
+                      style={{
+                        padding: '8px 10px',
+                        border: '1px solid var(--shq-border)',
+                        borderRadius: 8,
+                        fontSize: 13,
+                        background: 'var(--shq-bg)',
+                        color: 'var(--shq-ink)',
+                      }}
+                    >
+                      <option value="" disabled>
+                        Delete...
+                      </option>
+                      {templates.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                {items.length > 0 && (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type="text"
+                      placeholder="Template name, e.g. T-shirt bundle"
+                      value={templateName}
+                      onChange={(e) => setTemplateName(e.target.value)}
+                      style={{
+                        flex: 1,
+                        padding: '8px 10px',
+                        border: '1px solid var(--shq-border)',
+                        borderRadius: 8,
+                        fontSize: 13,
+                        background: 'var(--shq-bg)',
+                        color: 'var(--shq-ink)',
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={handleSaveTemplate}
+                      disabled={!templateName.trim()}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      Save as template
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="inventory-modal-section">
               <h3>Items in this sale ({items.length})</h3>

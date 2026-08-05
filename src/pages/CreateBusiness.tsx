@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useBusiness } from '../hooks/useBusiness'
 import { useSubscription } from '../hooks/useSubscription'
 import { supabase } from '../lib/supabase'
+import { logAudit } from '../lib/audit'
 
 function CreateBusiness() {
   const navigate = useNavigate()
@@ -59,6 +60,7 @@ function CreateBusiness() {
     }
 
     await refreshBusinesses()
+    void logAudit('business.created', { name: businessName.trim() })
 
     navigate('/dashboard', { replace: true })
   }

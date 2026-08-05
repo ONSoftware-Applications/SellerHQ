@@ -4,4 +4,6 @@ export type Business = {
   name: string
   business_type: string
   created_at: string
+  logo_url?: string | null
+  accent_color?: string | null
 }

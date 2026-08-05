@@ -44,6 +44,10 @@ const Reports = lazy(() => import('./pages/Reports'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Install = lazy(() => import('./pages/Install'))
 const Scan = lazy(() => import('./pages/Scan'))
+const Legal = lazy(() => import('./pages/Legal'))
+const Support = lazy(() => import('./pages/Support'))
+const AuditLog = lazy(() => import('./pages/AuditLog'))
+const BusinessCustomization = lazy(() => import('./pages/BusinessCustomization'))
 
 function PageLoader() {
   return <div className="inventory-loading" style={{ minHeight: '40vh' }}>
@@ -159,6 +163,26 @@ function App() {
                               path="/scan"
                               element={<Scan />}
                             />
+                            <Route
+                              path="/support"
+                              element={<Support />}
+                            />
+                            <Route
+                              path="/legal/:page"
+                              element={<Legal />}
+                            />
+                            <Route element={<PlanGuard feature="auditLog" />}>
+                              <Route
+                                path="/audit-log"
+                                element={<AuditLog />}
+                              />
+                            </Route>
+                            <Route element={<PlanGuard feature="customization" />}>
+                              <Route
+                                path="/business"
+                                element={<BusinessCustomization />}
+                              />
+                            </Route>
                           </Route>
                         </Route>
                       </Route>
