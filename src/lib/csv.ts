@@ -127,6 +127,7 @@ export function parseProductStatus(value: string): ProductStatus {
     case 'reserved':
       return 'Reserved'
     case 'relistingrequired':
+    case 'relistingneeded':
       return 'Relisting Required'
     case 'removed':
       return 'Removed'
@@ -290,7 +291,7 @@ export function buildProductDraftFromCsv(
     getCsvField(rowMap, ['salemarketplace', 'sale_marketplace']),
   )
   const shippingCost = parseNumber(
-    getCsvField(rowMap, ['shippingcost', 'shipping_cost']),
+    getCsvField(rowMap, ['shippingcost', 'shipping_cost', 'postagecosts']),
   )
   const platformFees = parseNumber(
     getCsvField(rowMap, ['platformfees', 'platform_fees']),
