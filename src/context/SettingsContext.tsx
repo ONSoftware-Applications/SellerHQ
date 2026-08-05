@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { SettingsContext } from '../hooks/useSettings'
+import type { BillingCycle, PlanId } from '../lib/plans'
 
 export type UserSettings = {
   features: {
@@ -13,6 +14,10 @@ export type UserSettings = {
     expensesEnabled: boolean
     autoRelistEnabled: boolean
     shippingFlowEnabled: boolean
+  }
+  subscription: {
+    plan: PlanId
+    billing: BillingCycle
   }
   business: {
     defaultCurrency: string
@@ -46,6 +51,10 @@ const defaultSettings: UserSettings = {
     expensesEnabled: true,
     autoRelistEnabled: true,
     shippingFlowEnabled: true,
+  },
+  subscription: {
+    plan: 'basic',
+    billing: 'monthly',
   },
   business: {
     defaultCurrency: 'GBP',
@@ -103,6 +112,7 @@ export function SettingsProvider({
         const stored = data.settings ?? {}
         setSettings({
           features: { ...defaultSettings.features, ...stored.features },
+          subscription: { ...defaultSettings.subscription, ...stored.subscription },
           business: { ...defaultSettings.business, ...stored.business },
           notifications: {
             ...defaultSettings.notifications,

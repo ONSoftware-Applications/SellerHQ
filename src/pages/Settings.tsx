@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useSettings } from '../hooks/useSettings'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
+import { getPlan } from '../lib/plans'
 import type { Theme } from '../utils/theme'
 
 function Settings() {
@@ -9,6 +10,8 @@ function Settings() {
   const { settings, loading, updateFeature, updateSettings } = useSettings()
   const { showToast } = useToast()
   const { user } = useAuth()
+
+  const currentPlan = getPlan(settings.subscription.plan)
 
   function saveSuccess(message: string) {
     showToast(message, 'success')
@@ -83,6 +86,23 @@ function Settings() {
           <h1>Settings</h1>
           <p>Manage your account, business, and feature preferences.</p>
         </div>
+      </div>
+
+      {/* Your plan */}
+      <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '24px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+        <div>
+          <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '600', color: 'var(--shq-ink)' }}>
+            Your plan: {currentPlan.name}
+          </h3>
+          <p style={{ margin: 0, fontSize: '13px', color: 'var(--shq-ink-muted)' }}>
+            {currentPlan.monthlyPrice === 0
+              ? 'Free plan · upgrade for more products, features and automation.'
+              : `${currentPlan.name} plan · ${settings.subscription.billing === 'annual' ? 'billed annually' : 'billed monthly'}.`}
+          </p>
+        </div>
+        <button className="primary-button" onClick={() => navigate('/subscriptions')}>
+          Manage subscription
+        </button>
       </div>
 
       {/* Features */}

@@ -37,6 +37,7 @@ const Tax = lazy(() => import('./pages/Tax'))
 const Settings = lazy(() => import('./pages/Settings'))
 const ProductDetails = lazy(() => import('./pages/ProductDetails'))
 const Pricing = lazy(() => import('./pages/Pricing'))
+const Subscriptions = lazy(() => import('./pages/Subscriptions'))
 const Reports = lazy(() => import('./pages/Reports'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Install = lazy(() => import('./pages/Install'))
@@ -128,6 +129,10 @@ function App() {
                             <Route
                               path="/pricing"
                               element={<Pricing />}
+                            />
+                            <Route
+                              path="/subscriptions"
+                              element={<Subscriptions />}
                             />
                             <Route
                               path="/reports"
