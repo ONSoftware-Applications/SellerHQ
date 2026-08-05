@@ -2155,6 +2155,27 @@
   .inventory-table {
     min-width: 0;
     width: 100%;
+    border-collapse: separate;
+  }
+
+  .inventory-table td[colSpan] {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .inventory-table .inventory-empty-state {
+    min-height: auto;
+    padding: 24px 16px;
+    text-align: center;
+  }
+
+  .inventory-table .inventory-empty-state span {
+    max-width: 100%;
+  }
+
+  .inventory-table .table-empty {
+    min-height: auto;
+    padding: 24px 16px;
   }
 
   .inventory-table thead {
