@@ -120,6 +120,8 @@ export function parseProductStatus(value: string): ProductStatus {
       return 'Listed'
     case 'awaitingshipping':
       return 'Awaiting Shipping'
+    case 'inshipping':
+      return 'In Shipping'
     case 'sold':
       return 'Sold'
     case 'reserved':

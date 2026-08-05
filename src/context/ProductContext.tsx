@@ -131,6 +131,9 @@ function databaseStatusToProductStatus(
     case 'awaiting_shipping':
       return 'Awaiting Shipping'
 
+    case 'in_shipping':
+      return 'In Shipping'
+
     case 'sold':
       return 'Sold'
 
@@ -168,6 +171,9 @@ function productStatusToDatabaseStatus(
 
     case 'Awaiting Shipping':
       return 'awaiting_shipping'
+
+    case 'In Shipping':
+      return 'in_shipping'
 
     case 'Sold':
       return 'sold'

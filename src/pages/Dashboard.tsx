@@ -50,6 +50,7 @@ function Dashboard() {
     const unlisted = products.filter(p => p.status === 'Unlisted').length
     const listed = products.filter(p => p.status === 'Listed').length
     const awaitingShipping = products.filter(p => p.status === 'Awaiting Shipping').length
+    const inShipping = products.filter(p => p.status === 'In Shipping').length
     const sold = products.filter(p => p.status === 'Sold').length
 
     const soldProducts = products.filter(p => p.status === 'Sold' && p.salePrice !== null)
@@ -87,6 +88,7 @@ function Dashboard() {
       unlisted,
       listed,
       awaitingShipping,
+      inShipping,
       sold,
       totalRevenue,
       totalProfit,
@@ -247,6 +249,7 @@ function Dashboard() {
       case 'Listed': return 'status-listed'
       case 'Sold': return 'status-sold'
       case 'Awaiting Shipping': return 'status-awaiting'
+      case 'In Shipping': return 'status-in-shipping'
       default: return 'status-unlisted'
     }
   }
@@ -508,6 +511,13 @@ function Dashboard() {
                 <span>Awaiting Shipping</span>
               </div>
               <strong>{stats.awaitingShipping}</strong>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--shq-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span className={`status-badge ${getStatusClass('In Shipping')}`} style={{ width: '10px', height: '10px', borderRadius: '50%' }}></span>
+                <span>In Shipping</span>
+              </div>
+              <strong>{stats.inShipping}</strong>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

@@ -143,6 +143,20 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
           <h1>{pageMeta.title}</h1>
           <p>{pageMeta.subtitle}</p>
         </div>
+
+        {isInstallable() && (
+          <button
+            type="button"
+            onClick={() => navigate('/install')}
+            className="install-btn"
+          >
+            <span className="install-icon">⬇</span>
+            <span>
+              <strong>Install app</strong>
+              <span>Get SellerHQ on your device</span>
+            </span>
+          </button>
+        )}
       </div>
 
       {currentBusiness && (
@@ -180,16 +194,6 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
 
             <span className="chevron">{open ? '⌃' : '⌄'}</span>
           </button>
-
-          {isInstallable() && (
-            <button
-              type="button"
-              onClick={() => navigate('/install')}
-              className="install-btn"
-            >
-              ⬇ Install app
-            </button>
-          )}
 
           {open && (
             <div className="business-menu" role="listbox">

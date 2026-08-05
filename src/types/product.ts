@@ -2,6 +2,7 @@ export type ProductStatus =
   | 'Unlisted'
   | 'Listed'
   | 'Awaiting Shipping'
+  | 'In Shipping'
   | 'Sold'
   | 'Reserved'
   | 'Relisting Required'

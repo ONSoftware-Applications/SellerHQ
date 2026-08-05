@@ -9,6 +9,7 @@ import { usePagination, PaginationControls } from '../components/Pagination'
 const statusOrder: string[] = [
   'Listed',
   'Awaiting Shipping',
+  'In Shipping',
   'Sold',
   'Unlisted',
 ]

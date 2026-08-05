@@ -560,6 +560,7 @@ const product = productId
                   'Draft',
                   'Listed',
                   'Awaiting Shipping',
+                  'In Shipping',
                   'Sold',
                   'Reserved',
                   'Relisting Required',
@@ -898,7 +899,7 @@ const product = productId
                       <td>
                         {currentProduct.status === 'Sold' && currentProduct.saleMarketplace === mp
                           ? 'Sold'
-                          : currentProduct.status === 'Listed' || currentProduct.status === 'Awaiting Shipping'
+                          : currentProduct.status === 'Listed' || currentProduct.status === 'Awaiting Shipping' || currentProduct.status === 'In Shipping'
                             ? 'Listed'
                             : 'Not listed'}
                       </td>
