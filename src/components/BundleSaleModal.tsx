@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 
 import { useProducts } from '../hooks/useProducts'
 import { useCurrency } from '../hooks/useCurrency'
+import { useSettings } from '../hooks/useSettings'
 import type { Marketplace, Product } from '../types/product'
 
 type BundleItem = {
@@ -30,6 +31,11 @@ function todayValue() {
 export function BundleSaleModal({ onClose, onSaved }: Props) {
   const { products, updateProduct } = useProducts()
   const { money } = useCurrency()
+  const { settings } = useSettings()
+
+  const saleStatus: Product['status'] = settings.features.shippingFlowEnabled
+    ? 'Awaiting Shipping'
+    : 'Sold'
 
   const [search, setSearch] = useState('')
   const [items, setItems] = useState<BundleItem[]>([])
@@ -148,7 +154,7 @@ export function BundleSaleModal({ onClose, onSaved }: Props) {
 
         await updateProduct({
           ...item.product,
-          status: 'Sold',
+          status: saleStatus,
           salePrice: price,
           saleDate: draft.saleDate || todayValue(),
           shippingDate: draft.shippingDate || null,

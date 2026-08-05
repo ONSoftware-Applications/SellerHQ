@@ -11,6 +11,8 @@ export type UserSettings = {
     forecastsEnabled: boolean
     listingsEnabled: boolean
     expensesEnabled: boolean
+    autoRelistEnabled: boolean
+    shippingFlowEnabled: boolean
   }
   business: {
     defaultCurrency: string
@@ -42,6 +44,8 @@ const defaultSettings: UserSettings = {
     forecastsEnabled: true,
     listingsEnabled: true,
     expensesEnabled: true,
+    autoRelistEnabled: true,
+    shippingFlowEnabled: true,
   },
   business: {
     defaultCurrency: 'GBP',

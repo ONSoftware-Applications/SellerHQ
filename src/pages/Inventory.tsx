@@ -5,6 +5,7 @@ import { useProducts } from '../hooks/useProducts'
 import { useBusiness } from '../hooks/useBusiness'
 import { useCurrency } from '../hooks/useCurrency'
 import { useToast } from '../hooks/useToast'
+import { useSettings } from '../hooks/useSettings'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FilterBar } from '../components/FilterBar'
 import type {
@@ -101,6 +102,9 @@ function Inventory() {
   const { currentBusiness } = useBusiness()
   const { money } = useCurrency()
   const { showToast } = useToast()
+  const { settings } = useSettings()
+
+  const shippingFlowEnabled = settings.features.shippingFlowEnabled
 
   const {
     products,
@@ -855,13 +859,29 @@ if (
         ...product,
         status,
         listingDate:
-          status === 'Listed' && !product.listingDate
+          status === 'Listed'
             ? today
             : product.listingDate,
         updatedAt: new Date().toISOString(),
       }),
       'The selected products could not be updated. Please try again.',
     )
+  }
+
+  async function confirmShipping(product: Product) {
+    setActionError('')
+
+    try {
+      await updateProduct({
+        ...product,
+        status: 'Sold',
+        updatedAt: new Date().toISOString(),
+      })
+      showToast(`${product.code} marked as sold`, 'success')
+    } catch (error) {
+      console.error(error)
+      setActionError('Shipping could not be confirmed. Please try again.')
+    }
   }
 
   async function applyBulkStorageLocation() {
@@ -1414,6 +1434,16 @@ if (
                       >
                         View
                       </button>
+
+                      {shippingFlowEnabled && product.status === 'In Shipping' && (
+                        <button
+                          type="button"
+                          className="row-action-link"
+                          onClick={() => confirmShipping(product)}
+                        >
+                          Confirm shipping
+                        </button>
+                      )}
 
                       <button
                         type="button"

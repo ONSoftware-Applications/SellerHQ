@@ -150,6 +150,34 @@ function Settings() {
               Show the Expenses page for tracking business expenses and fee breakdowns.
             </p>
           </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', border: '1px solid var(--shq-border)', borderRadius: '8px' }}>
+            <Toggle
+              checked={settings.features.autoRelistEnabled}
+              onChange={async (value) => {
+                await updateFeature('autoRelistEnabled', value)
+                saveSuccess(value ? 'Auto-relist enabled' : 'Auto-relist disabled')
+              }}
+              label="Auto-relist after 4 weeks"
+            />
+            <p style={{ margin: '-8px 0 0 0', fontSize: '12px', color: 'var(--shq-ink-muted)' }}>
+              Automatically change listed products to "Relisting Required" once they have been listed for 4 weeks.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', border: '1px solid var(--shq-border)', borderRadius: '8px' }}>
+            <Toggle
+              checked={settings.features.shippingFlowEnabled}
+              onChange={async (value) => {
+                await updateFeature('shippingFlowEnabled', value)
+                saveSuccess(value ? 'Shipping status flow enabled' : 'Shipping status flow disabled')
+              }}
+              label="Shipping status flow"
+            />
+            <p style={{ margin: '-8px 0 0 0', fontSize: '12px', color: 'var(--shq-ink-muted)' }}>
+              Record sales as "Awaiting Shipping", move to "In Shipping" when shipped, then confirm shipping to mark the product as sold. Disable to mark sales as sold immediately.
+            </p>
+          </div>
         </div>
       </div>
 
