@@ -84,6 +84,7 @@ Deno.serve(async (request: Request) => {
       mode: 'subscription',
       customer_email: user.email ?? undefined,
       line_items: [{ price: priceId, quantity: 1 }],
+      allow_promotion_codes: true,
       success_url: `${origin}/subscriptions?success=true`,
       cancel_url: `${origin}/subscriptions?cancelled=true`,
       client_reference_id: user.id,
