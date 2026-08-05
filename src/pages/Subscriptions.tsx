@@ -17,7 +17,7 @@ import { useCurrency } from '../hooks/useCurrency'
 import { useSubscription } from '../hooks/useSubscription'
 
 function Subscriptions() {
-  const { settings, updateSettings } = useSettings()
+  const { settings } = useSettings()
   const { showToast } = useToast()
   const { money } = useCurrency()
   const { plan: currentPlan, refresh } = useSubscription()
@@ -46,41 +46,45 @@ function Subscriptions() {
         : plan.stripePriceMonthlyId
 
     if (!priceId) {
-      await updateSettings({
-        subscription: { plan: plan.id, billing: cycle },
-      })
       showToast(
-        `${plan.name} plan selected (payments not connected yet)`,
-        'info',
+        `Stripe price not configured for ${plan.name} yet.`,
+        'error',
       )
       return
     }
 
     setCheckingOut(plan.id)
 
-    try {
-      const { data, error } = await supabase.functions.invoke<
-        { url: string } | { error: string }
-      >('create-checkout', {
-        body: { plan: plan.id, priceId, billing: cycle },
-      })
+    const { data, error } = await supabase.functions.invoke<
+      { url: string } | { error: string }
+    >('create-checkout', {
+      body: { plan: plan.id, priceId, billing: cycle },
+    })
 
-      if (error || !data || !('url' in data) || !data.url) {
-        throw new Error('Checkout could not be created')
+    if (error) {
+      let message = 'Could not connect to Stripe.'
+      try {
+        const response = (error as { context?: Response }).context
+        if (response) {
+          const body = (await response.json()) as { error?: string }
+          if (body.error) message = body.error
+        }
+      } catch {
+        // ignore parse failures
       }
-
-      window.location.href = data.url
-    } catch (err) {
-      console.error(err)
-      await updateSettings({
-        subscription: { plan: plan.id, billing: cycle },
-      })
-      showToast(
-        'Could not reach Stripe yet - plan saved to your account locally.',
-        'info',
-      )
+      console.error(error)
+      showToast(message, 'error')
       setCheckingOut(null)
+      return
     }
+
+    if (!data || !('url' in data) || !data.url) {
+      showToast('Stripe returned an unexpected response.', 'error')
+      setCheckingOut(null)
+      return
+    }
+
+    window.location.href = data.url
   }
 
   async function openBillingPortal() {
