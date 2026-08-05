@@ -44,8 +44,8 @@ export const PLANS: Plan[] = [
     name: 'Growing',
     tagline: 'For sellers scaling up their stock.',
     monthlyPrice: 5.99,
-    stripePriceMonthlyId: '',
-    stripePriceAnnualId: '',
+    stripePriceMonthlyId: 'price_1Tycu8LZEvUFW978bKkCw0RA',
+    stripePriceAnnualId: 'price_1U19gtLZEvUFW978imQZ37q9',
     available: [
       'Everything in Basic',
       'Up to 500 products & 2 businesses',
@@ -67,8 +67,8 @@ export const PLANS: Plan[] = [
     tagline: 'Advanced insights for serious sellers.',
     monthlyPrice: 10.99,
     highlighted: true,
-    stripePriceMonthlyId: '',
-    stripePriceAnnualId: '',
+    stripePriceMonthlyId: 'price_1TycuoLZEvUFW978trVrtQku',
+    stripePriceAnnualId: 'price_1U19kWLZEvUFW978guX6OxPS',
     available: [
       'Everything in Growing',
       'Up to 5,000 products & 5 businesses',
@@ -92,8 +92,8 @@ export const PLANS: Plan[] = [
     name: 'Business',
     tagline: 'For teams and multi-channel sellers.',
     monthlyPrice: 15.99,
-    stripePriceMonthlyId: '',
-    stripePriceAnnualId: '',
+    stripePriceMonthlyId: 'price_1TycvULZEvUFW9784K3Yl4X6',
+    stripePriceAnnualId: 'price_1U19lWLZEvUFW978AzxIX8Vi',
     available: [
       'Everything in Pro',
       'Unlimited products & businesses',
