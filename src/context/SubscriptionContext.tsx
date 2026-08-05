@@ -50,6 +50,18 @@ export function SubscriptionProvider({
 
     setLoading(true)
 
+    const { data: synced, error: syncError } = await supabase.functions.invoke<
+      { plan?: string; billing?: string; status?: string } | { error: string }
+    >('sync-subscription')
+
+    if (!syncError && synced && 'plan' in synced && synced.plan) {
+      setPlan((synced.plan as PlanId) ?? 'basic')
+      setBilling((synced.billing as BillingCycle) ?? 'monthly')
+      setStatus((synced.status as string) ?? 'active')
+      setLoading(false)
+      return
+    }
+
     const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
