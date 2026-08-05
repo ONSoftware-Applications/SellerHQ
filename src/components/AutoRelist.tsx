@@ -2,15 +2,18 @@ import { useEffect } from 'react'
 
 import { useProducts } from '../hooks/useProducts'
 import { useSettings } from '../hooks/useSettings'
+import { useSubscription } from '../hooks/useSubscription'
 
 const RELIST_AFTER_MS = 4 * 7 * 24 * 60 * 60 * 1000
 
 export function AutoRelist() {
   const { products, updateProduct } = useProducts()
   const { settings } = useSettings()
+  const { canUse } = useSubscription()
 
   useEffect(() => {
     if (!settings.features.autoRelistEnabled) return
+    if (!canUse('autoRelist')) return
 
     const cutoff = Date.now() - RELIST_AFTER_MS
     const toRelist = products.filter(
@@ -37,7 +40,7 @@ export function AutoRelist() {
     }
 
     void run()
-  }, [products, settings.features.autoRelistEnabled, updateProduct])
+  }, [products, settings.features.autoRelistEnabled, canUse, updateProduct])
 
   return null
 }

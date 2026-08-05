@@ -6,6 +6,7 @@ import { useBusiness } from '../hooks/useBusiness'
 import { useCurrency } from '../hooks/useCurrency'
 import { useToast } from '../hooks/useToast'
 import { useSettings } from '../hooks/useSettings'
+import { useSubscription } from '../hooks/useSubscription'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FilterBar } from '../components/FilterBar'
 import type {
@@ -103,6 +104,7 @@ function Inventory() {
   const { money } = useCurrency()
   const { showToast } = useToast()
   const { settings } = useSettings()
+  const { plan, productLimit } = useSubscription()
 
   const shippingFlowEnabled = settings.features.shippingFlowEnabled
 
@@ -113,6 +115,8 @@ function Inventory() {
     updateProduct,
     deleteProduct,
   } = useProducts()
+
+  const atProductLimit = products.length >= productLimit
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] =
@@ -583,15 +587,36 @@ if (
     setActionError('')
 
     try {
+      const newRows = importPreview.rows.filter(
+        (row) => !row.existingProduct,
+      )
+      const remainingSlots =
+        productLimit === Infinity
+          ? Infinity
+          : Math.max(0, productLimit - products.length)
+      const toImport = newRows.slice(
+        0,
+        remainingSlots === Infinity ? undefined : remainingSlots,
+      )
+      const skipped = newRows.length - toImport.length
+
       for (const row of importPreview.rows) {
         if (row.existingProduct) {
           await updateProduct({
             ...row.draft,
             businessId: row.existingProduct.businessId,
           })
-        } else {
-          await addProduct(row.draft)
         }
+      }
+
+      for (const row of toImport) {
+        await addProduct(row.draft)
+      }
+
+      if (skipped > 0) {
+        setActionError(
+          `${skipped} product${skipped > 1 ? 's were' : ' was'} not imported - your ${plan} plan includes up to ${productLimit} products. Upgrade to import more.`,
+        )
       }
 
       setImportPreview(null)
@@ -997,6 +1022,12 @@ if (
             className="primary-button"
             type="button"
             onClick={openCreateProduct}
+            disabled={atProductLimit}
+            title={
+              atProductLimit
+                ? `Your ${plan} plan includes up to ${productLimit} products. Upgrade to add more.`
+                : undefined
+            }
           >
             + Add product
           </button>
@@ -1005,9 +1036,15 @@ if (
             className="secondary-button"
             type="button"
             onClick={openImportPicker}
+            disabled={atProductLimit}
+            title={
+              atProductLimit
+                ? `Your ${plan} plan includes up to ${productLimit} products. Upgrade to import more.`
+                : undefined
+            }
           >
             Import CSV
-</button>
+          </button>
         </div>
       </div>
 
@@ -1118,7 +1155,11 @@ if (
       <div className="inventory-stats">
         <div className="inventory-stat">
           <span>Total products</span>
-          <strong>{products.length}</strong>
+          <strong>
+            {productLimit === Infinity
+              ? products.length
+              : `${products.length} / ${productLimit}`}
+          </strong>
         </div>
 
         <div className="inventory-stat">
@@ -1515,6 +1556,7 @@ if (
                         type="button"
                         className="primary-button"
                         onClick={openCreateProduct}
+                        disabled={atProductLimit}
                       >
                         + Add product
                       </button>

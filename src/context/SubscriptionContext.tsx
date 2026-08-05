@@ -13,7 +13,14 @@ import {
   SubscriptionContext,
   type SubscriptionInfo,
 } from '../hooks/useSubscription'
-import type { BillingCycle, PlanId } from '../lib/plans'
+import {
+  planBusinessLimit,
+  planCanUse,
+  planProductLimit,
+  type BillingCycle,
+  type PlanFeature,
+  type PlanId,
+} from '../lib/plans'
 
 export function SubscriptionProvider({
   children,
@@ -66,6 +73,11 @@ export function SubscriptionProvider({
     void refresh()
   }, [refresh])
 
+  const canUse = useCallback(
+    (feature: PlanFeature) => planCanUse(plan, feature),
+    [plan],
+  )
+
   const value = useMemo<SubscriptionInfo>(
     () => ({
       plan,
@@ -73,9 +85,12 @@ export function SubscriptionProvider({
       status,
       loading,
       isPaid: plan !== 'basic',
+      canUse,
+      productLimit: planProductLimit(plan),
+      businessLimit: planBusinessLimit(plan),
       refresh,
     }),
-    [plan, billing, status, loading, refresh],
+    [plan, billing, status, loading, canUse, refresh],
   )
 
   return (

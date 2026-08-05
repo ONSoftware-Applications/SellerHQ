@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../hooks/useAuth'
 import { useBusiness } from '../hooks/useBusiness'
+import { useSubscription } from '../hooks/useSubscription'
 import { supabase } from '../lib/supabase'
 
 function CreateBusiness() {
   const navigate = useNavigate()
   const { user } = useAuth()
-const {
-  refreshBusinesses,
-} = useBusiness()
+  const { businesses, refreshBusinesses } = useBusiness()
+  const { plan, businessLimit } = useSubscription()
 
   const [businessName, setBusinessName] = useState('')
   const [businessType, setBusinessType] = useState('Sole Trader')
@@ -25,6 +25,13 @@ const {
 
     if (!user) {
       setError('You must be logged in to create a business.')
+      return
+    }
+
+    if (businesses.length >= businessLimit) {
+      setError(
+        `Your ${plan} plan includes up to ${businessLimit} business${businessLimit === 1 ? '' : 'es'}. Upgrade to create another.`,
+      )
       return
     }
 

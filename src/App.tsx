@@ -22,6 +22,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import { PlanGuard } from './components/PlanGuard'
 
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -55,13 +56,13 @@ function App() {
     <ToastProvider>
       <ToastViewport />
       <AuthProvider>
-        <BusinessProvider>
-          <ProductProvider>
-            <ExpenseProvider>
-              <SettingsProvider>
-                <ThemeController />
-                <AutoRelist />
-                <SubscriptionProvider>
+        <SettingsProvider>
+          <SubscriptionProvider>
+            <BusinessProvider>
+              <ProductProvider>
+                <ExpenseProvider>
+                  <ThemeController />
+                  <AutoRelist />
                   <BrowserRouter>
                   <ErrorBoundary>
                     <Suspense fallback={<PageLoader />}>
@@ -104,10 +105,12 @@ function App() {
                               path="/products/:productId"
                               element={<ProductDetails />}
                             />
-                            <Route
-                              path="/listings"
-                              element={<Listings />}
-                            />
+                            <Route element={<PlanGuard feature="listings" />}>
+                              <Route
+                                path="/listings"
+                                element={<Listings />}
+                              />
+                            </Route>
                             <Route
                               path="/sales"
                               element={<Sales />}
@@ -116,10 +119,12 @@ function App() {
                               path="/expenses"
                               element={<Expenses />}
                             />
-                            <Route
-                              path="/forecasts"
-                              element={<Forecasts />}
-                            />
+                            <Route element={<PlanGuard feature="forecasts" />}>
+                              <Route
+                                path="/forecasts"
+                                element={<Forecasts />}
+                              />
+                            </Route>
                             <Route
                               path="/tax"
                               element={<Tax />}
@@ -136,10 +141,12 @@ function App() {
                               path="/subscriptions"
                               element={<Subscriptions />}
                             />
-                            <Route
-                              path="/reports"
-                              element={<Reports />}
-                            />
+                            <Route element={<PlanGuard feature="reports" />}>
+                              <Route
+                                path="/reports"
+                                element={<Reports />}
+                              />
+                            </Route>
                             <Route
                               path="/profile"
                               element={<Profile />}
@@ -158,14 +165,14 @@ function App() {
                       </Routes>
                     </Suspense>
                   </ErrorBoundary>
-                </BrowserRouter>
-                </SubscriptionProvider>
-                </SettingsProvider>
-              </ExpenseProvider>
-            </ProductProvider>
-          </BusinessProvider>
-        </AuthProvider>
-      </ToastProvider>
+                  </BrowserRouter>
+                </ExpenseProvider>
+              </ProductProvider>
+            </BusinessProvider>
+          </SubscriptionProvider>
+        </SettingsProvider>
+      </AuthProvider>
+    </ToastProvider>
     )
   }
 

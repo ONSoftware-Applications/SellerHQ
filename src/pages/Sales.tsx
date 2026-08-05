@@ -5,6 +5,7 @@ import { useProducts } from '../hooks/useProducts'
 import { useCurrency } from '../hooks/useCurrency'
 import { downloadCsv } from '../utils/format'
 import { useToast } from '../hooks/useToast'
+import { useSubscription } from '../hooks/useSubscription'
 import { RecordSaleModal } from '../components/RecordSaleModal'
 import { BundleSaleModal } from '../components/BundleSaleModal'
 import { FilterBar } from '../components/FilterBar'
@@ -44,6 +45,7 @@ function Sales() {
   const { products, loading } = useProducts()
   const { money } = useCurrency()
   const { showToast } = useToast()
+  const { canUse } = useSubscription()
 
   const [search, setSearch] = useState('')
   const [sortKey, setSortKey] = useState('saleDate')
@@ -201,13 +203,15 @@ function Sales() {
           >
             + Record sale
           </button>
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => setShowBundleSale(true)}
-          >
-            + Bundle sale
-          </button>
+          {canUse('bundleSales') && (
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => setShowBundleSale(true)}
+            >
+              + Bundle sale
+            </button>
+          )}
           <button
             className="btn btn-secondary"
             onClick={() => {
