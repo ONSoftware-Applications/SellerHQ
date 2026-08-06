@@ -20,7 +20,7 @@ function actionLabel(action: string): string {
     'product.deleted': 'Product deleted',
     'business.created': 'Business created',
   }
-  return map[action] ?? action.replaceAll('.', ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  return map[action] ?? action.replace(/\./g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 function AuditLog() {

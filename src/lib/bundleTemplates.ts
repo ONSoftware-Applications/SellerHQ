@@ -1,3 +1,5 @@
+import { uuid } from '../utils/uuid'
+
 export type BundleTemplate = {
   id: string
   name: string
@@ -28,7 +30,7 @@ export function saveBundleTemplate(
   const templates = loadBundleTemplates()
   const created: BundleTemplate = {
     ...template,
-    id: crypto.randomUUID(),
+    id: uuid(),
     createdAt: new Date().toISOString(),
   }
   localStorage.setItem(

@@ -8,6 +8,7 @@ import type {
 } from '../types/product'
 import { uploadProductPhoto } from '../lib/storage'
 import { generateProductCode } from '../lib/productDraft'
+import { uuid } from '../utils/uuid'
 import { useSubscription } from '../hooks/useSubscription'
 
 const marketplaceOptions: Marketplace[] = [
@@ -248,7 +249,7 @@ export function ProductEditorModal({
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
-      const photoUrl = await uploadProductPhoto(file, crypto.randomUUID(), i)
+      const photoUrl = await uploadProductPhoto(file, uuid(), i)
 
       if (photoUrl) {
         uploadedUrls.push(photoUrl)
