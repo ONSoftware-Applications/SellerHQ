@@ -760,21 +760,23 @@ if (
       ),
     )
 
-    const labelsMarkup = selectedProducts
-      .map((product, index) => {
-        const qrUrl = qrUrls[index]
-
-        return `
-          <article class="label-card">
-            <img src="${qrUrl}" alt="QR code for ${escapeHtml(product.code)}" />
-            <div>
-              <h1>${escapeHtml(product.name)}</h1>
-              <p><strong>Product ID:</strong> ${escapeHtml(product.code)}</p>
-            </div>
-          </article>
-        `
-      })
-      .join('')
+    const sheets: string[] = []
+    const allCards = selectedProducts.map((product, index) => {
+      const qrUrl = qrUrls[index]
+      return `
+        <article class="label-card">
+          <img src="${qrUrl}" alt="QR code for ${escapeHtml(product.code)}" />
+          <div>
+            <h1>${escapeHtml(product.name)}</h1>
+            <p><strong>Product ID:</strong> ${escapeHtml(product.code)}</p>
+          </div>
+        </article>
+      `
+    })
+    for (let i = 0; i < allCards.length; i += 8) {
+      sheets.push(`<div class="sheet">${allCards.slice(i, i + 8).join('')}</div>`)
+    }
+    const sheetsMarkup = sheets.join('')
 
     popup.document.write(`
       <!doctype html>
@@ -792,7 +794,15 @@ if (
             .sheet {
               display: grid;
               grid-template-columns: repeat(2, minmax(0, 1fr));
+              grid-template-rows: repeat(4, 1fr);
+              height: 100vh;
               gap: 16px;
+              page-break-after: always;
+              break-after: page;
+            }
+            .sheet:last-child {
+              page-break-after: auto;
+              break-after: auto;
             }
             .label-card {
               background: white;
@@ -802,6 +812,7 @@ if (
               display: flex;
               gap: 14px;
               align-items: center;
+              align-self: start;
               page-break-inside: avoid;
             }
             img {
@@ -836,7 +847,7 @@ if (
         </head>
         <body>
           <div class="sheet">
-            ${labelsMarkup}
+            ${sheetsMarkup}
           </div>
           <script>
             window.onload = () => {
