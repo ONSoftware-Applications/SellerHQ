@@ -1,13 +1,7 @@
-const CACHE_NAME = 'sellerhq-v3'
+const CACHE_NAME = 'sellerhq-v4'
 const PRECACHE = ['/', '/index.html']
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) => cache.addAll(PRECACHE))
-      .catch(() => {}),
-  )
+self.addEventListener('install', () => {
   self.skipWaiting()
 })
 
@@ -24,6 +18,8 @@ self.addEventListener('activate', (event) => {
   )
 })
 
-// No fetch handler: every request goes straight to the network.
-// This prevents stale cached JS chunks from breaking pages on Safari
-// (the previous version cached failed responses, which corrupted pages).
+// Explicit fetch handler that never calls respondWith — lets the browser
+// handle every request normally via the network.
+// This prevents the "respondWith received an error; returned response is null"
+// crash caused by the old cached sw.js intercepting requests.
+self.addEventListener('fetch', () => {})
