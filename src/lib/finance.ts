@@ -42,8 +42,10 @@ export function periodRange(period: Period): PeriodRange {
 
 export function soldInPeriod(products: Product[], range: PeriodRange): Product[] {
   return products.filter((p) => {
-    if (p.status !== 'Sold' || p.salePrice === null || !p.saleDate) return false
-    const d = new Date(p.saleDate)
+    if (p.status !== 'Sold' || p.salePrice === null) return false
+    const dateString = p.saleDate || p.updatedAt || p.createdAt
+    if (!dateString) return false
+    const d = new Date(dateString)
     return d >= range.start && d <= range.end
   })
 }
@@ -264,8 +266,9 @@ export function groupByMonth(
 ): { month: string; revenue: number; profit: number }[] {
   const map = new Map<string, { revenue: number; profit: number }>()
   for (const p of sold) {
-    if (!p.saleDate) continue
-    const d = new Date(p.saleDate)
+    const dateString = p.saleDate || p.updatedAt || p.createdAt
+    if (!dateString) continue
+    const d = new Date(dateString)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const existing = map.get(key) || { revenue: 0, profit: 0 }
     existing.revenue += p.salePrice || 0
