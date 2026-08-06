@@ -157,6 +157,24 @@ function Dashboard() {
     const mpData = groupByMarketplace(allSold)
     const topMp = mpData.length > 0 ? mpData.reduce((a, b) => (b.revenue > a.revenue ? b : a)) : null
     const totalRev = revenue(allSold)
+
+    if (canUse('lowStock')) {
+      const lowStock = products.filter(
+        (p) =>
+          p.status !== 'Sold' &&
+          (p.quantity ?? 1) > 0 &&
+          p.reorderLevel > 0 &&
+          (p.quantity ?? 1) <= p.reorderLevel,
+      )
+      if (lowStock.length > 0) {
+        result.push({
+          icon: '📦',
+          message: `${lowStock.length} product${lowStock.length > 1 ? 's are' : ' is'} at or below reorder level (${lowStock.length === 1 ? lowStock[0].name : 'restock recommended'}).`,
+          action: 'View inventory',
+          actionPath: '/inventory',
+        })
+      }
+    }
     const mpDominance = topMp && totalRev > 0 ? (topMp.revenue / totalRev) * 100 : 0
 
     const brands = bestPerforming(allSold, 'brand')
@@ -242,7 +260,7 @@ function Dashboard() {
     }
 
     return result.slice(0, 5)
-  }, [products, periodStats, stockIntel, money])
+  }, [products, periodStats, stockIntel, money, canUse])
 
   const formatCurrency = money
 

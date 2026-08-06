@@ -81,6 +81,7 @@ function databaseToProduct(row: ProductRow): Product {
     purchaseDate: row.purchase_date ?? null,
     purchaseSource: row.purchase_source ?? '',
     quantity: Number(row.quantity ?? 1),
+    reorderLevel: Number(row.reorder_level ?? 0),
 
     storageLocation: row.storage_location ?? '',
     barcode: row.barcode ?? '',
@@ -232,6 +233,7 @@ function productToDatabase(product: Product) {
     purchase_date: product.purchaseDate || null,
     purchase_source: product.purchaseSource || null,
     quantity: product.quantity,
+    reorder_level: product.reorderLevel,
 
     storage_location: product.storageLocation || null,
     barcode: product.barcode || null,

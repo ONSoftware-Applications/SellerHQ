@@ -45,6 +45,7 @@ export type Product = {
   purchaseSource: string
 
   quantity: number
+  reorderLevel: number
 
   storageLocation: string
   barcode: string
@@ -99,6 +100,7 @@ export type ProductRow = {
   purchase_source: string | null
 
   quantity: number | null
+  reorder_level: number | null
 
   storage_location: string | null
   barcode: string | null

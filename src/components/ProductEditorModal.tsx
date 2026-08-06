@@ -84,6 +84,9 @@ export function ProductEditorModal({
   const [quantity, setQuantity] = useState(
     String(initialProduct.quantity ?? 1),
   )
+  const [reorderLevel, setReorderLevel] = useState(
+    String(initialProduct.reorderLevel ?? 0),
+  )
 
   const [storageLocation, setStorageLocation] = useState(
     initialProduct.storageLocation,
@@ -206,6 +209,7 @@ export function ProductEditorModal({
         purchaseDate: purchaseDate || null,
         purchaseSource: purchaseSource.trim(),
         quantity: Math.max(1, Number(quantity) || 1),
+        reorderLevel: Math.max(0, Number(reorderLevel) || 0),
         storageLocation: storageLocation.trim(),
         barcode: barcode.trim(),
         photos,
@@ -483,6 +487,22 @@ export function ProductEditorModal({
                     onChange={(event) =>
                       setQuantity(event.target.value)
                     }
+                    disabled={submitting}
+                  />
+                </label>
+
+                <label>
+                  Reorder at
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={reorderLevel}
+                    onChange={(event) =>
+                      setReorderLevel(event.target.value)
+                    }
+                    placeholder="0 = off"
                     disabled={submitting}
                   />
                 </label>

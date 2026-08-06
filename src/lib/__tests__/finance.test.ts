@@ -41,6 +41,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     purchaseDate: null,
     purchaseSource: '',
     quantity: 1,
+    reorderLevel: 0,
     storageLocation: '',
     barcode: '',
     photos: [],
