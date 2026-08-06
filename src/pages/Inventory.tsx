@@ -696,7 +696,7 @@ if (
         product.createdAt,
         product.updatedAt,
       ]
-        .map((value) => `"${String(value).replaceAll('"', '""')}"`)
+        .map((value) => `"${String(value).replace(/"/g, '""')}"`)
         .join(',')
     })
 
@@ -1448,7 +1448,7 @@ if (
                     <span
                       className={`status-badge status-${product.status
                         .toLowerCase()
-                        .replaceAll(' ', '-')}`}
+                        .replace(/ /g, '-')}`}
                     >
                       {product.status}
                     </span>

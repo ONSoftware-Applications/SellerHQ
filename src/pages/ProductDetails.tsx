@@ -679,7 +679,7 @@ const product = productId
             <span
               className={`status-badge status-${currentProduct.status
                 .toLowerCase()
-                .replaceAll(' ', '-')}`}
+                .replace(/ /g, '-')}`}
             >
               {statusSaving ? 'Saving...' : currentProduct.status}
             </span>

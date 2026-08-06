@@ -410,7 +410,7 @@ function Sales() {
                   <td data-label="Brand">{product.brand || '-'}</td>
 
                   <td data-label="Status">
-                    <span className={`status-badge status-${product.status.toLowerCase().replaceAll(' ', '-')}`}>
+                    <span className={`status-badge status-${product.status.toLowerCase().replace(/ /g, '-')}`}>
                       {product.status}
                     </span>
                   </td>

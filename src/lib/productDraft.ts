@@ -1,4 +1,5 @@
 import type { Product, ProductDraft } from '../types/product'
+import { uuid } from '../utils/uuid'
 
 export function generateProductCode(): string {
   return `PRD-${Math.floor(Math.random() * 9000) + 1000}`
@@ -9,7 +10,7 @@ export function createBlankProductDraft(): ProductDraft {
   const code = generateProductCode()
 
   return {
-    id: crypto.randomUUID(),
+    id: uuid(),
     code,
     sku: code,
     name: '',
@@ -62,7 +63,7 @@ export function createDuplicateProductDraft(
 
   return {
     ...draft,
-    id: crypto.randomUUID(),
+    id: uuid(),
     code,
     sku: code,
     name: draft.name ? `${draft.name} copy` : 'Copy of product',

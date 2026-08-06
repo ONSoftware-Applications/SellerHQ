@@ -449,7 +449,7 @@ export function BundleSaleModal({ onClose, onSaved }: Props) {
                         </div>
                         <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--shq-ink-muted)' }}>
                           <div>{money(p.purchasePrice)}</div>
-                          <span className={`status-badge status-${p.status.toLowerCase().replaceAll(' ', '-')}`}>
+                          <span className={`status-badge status-${p.status.toLowerCase().replace(/ /g, '-')}`}>
                             {p.status}
                           </span>
                         </div>
