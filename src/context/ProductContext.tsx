@@ -87,6 +87,7 @@ function databaseToProduct(row: ProductRow): Product {
     barcode: row.barcode ?? '',
     photos: (row.images ?? []) as string[],
     labels: (row.labels ?? []) as string[],
+    customFields: (row.custom_fields as Record<string, string> | null) ?? {},
 
     status: databaseStatusToProductStatus(row.status ?? ''),
 
@@ -239,6 +240,7 @@ function productToDatabase(product: Product) {
     barcode: product.barcode || null,
     images: product.photos,
     labels: product.labels || [],
+    custom_fields: product.customFields,
 
     status: productStatusToDatabaseStatus(product.status),
 

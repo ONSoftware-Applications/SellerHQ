@@ -16,6 +16,7 @@ export type PlanFeature =
   | 'cashFlow'
   | 'lowStock'
   | 'backupExport'
+  | 'customProductFields'
   | 'accountingExport'
   | 'auditLog'
   | 'customization'
@@ -45,6 +46,7 @@ const PRO_FEATURES: PlanFeature[] = [
   'cashFlow',
   'lowStock',
   'backupExport',
+  'customProductFields',
 ]
 
 const BUSINESS_FEATURES: PlanFeature[] = [
@@ -162,13 +164,13 @@ export const PLANS: Plan[] = [
       'Advanced reports & stock ageing',
       'Low-stock & reorder alerts',
       'Cash-flow projection',
+      'Custom product fields',
       'Full backup export',
       'Price ladder & profit optimisation',
       'Priority support',
     ],
     planned: [
       'Barcode scanning',
-      'Custom product fields',
       'Email reminders',
     ],
   },

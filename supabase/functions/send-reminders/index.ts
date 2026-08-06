@@ -54,7 +54,13 @@ async function sendEmail(
   return true
 }
 
-Deno.serve(async () => {
+Deno.serve(async (request: Request) => {
+  const cronSecret = Deno.env.get('REMINDERS_CRON_SECRET')
+  const authorization = request.headers.get('authorization') ?? ''
+  if (!cronSecret || authorization !== `Bearer ${cronSecret}`) {
+    return new Response('Unauthorized', { status: 401 })
+  }
+
   const supabase = createAdminClient()
 
   const { data: userSettings } = await supabase.from('user_settings').select('*')
@@ -109,7 +115,7 @@ Deno.serve(async () => {
     if (prefs.lowStockAlerts && plan !== 'basic') {
       for (const p of userProducts) {
         if (
-          p.status !== 'Sold' &&
+          p.status !== 'sold' &&
           (p.quantity ?? 1) > 0 &&
           (p.reorder_level ?? 0) > 0 &&
           (p.quantity ?? 1) <= (p.reorder_level ?? 0)

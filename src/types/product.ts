@@ -51,6 +51,7 @@ export type Product = {
   barcode: string
   photos: string[]
   labels: string[]
+  customFields: Record<string, string>
 
   status: ProductStatus
 
@@ -106,6 +107,7 @@ export type ProductRow = {
   barcode: string | null
   images: string[] | null
   labels: string[] | null
+  custom_fields: Record<string, unknown> | null
 
   status: string | null
 

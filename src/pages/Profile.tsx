@@ -135,7 +135,7 @@ function Profile() {
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--shq-border)' }}>
             <span style={{ fontSize: '14px', color: 'var(--shq-ink-muted)' }}>Businesses</span>
             <span style={{ fontSize: '14px', color: 'var(--shq-ink)', fontWeight: '500' }}>
-              {businesses.length} {productLimit === Infinity ? '' : `/ ${Math.min(businesses.length + 1, 5)}`}
+              {businesses.length}
             </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0' }}>
