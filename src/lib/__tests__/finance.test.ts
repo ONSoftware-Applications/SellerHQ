@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   periodRange,
+  soldInPeriod,
   revenue,
   costOfGoods,
   totalFees,
@@ -143,6 +144,40 @@ describe('costOfGoods', () => {
       makeProduct({ id: '2', purchasePrice: 20, additionalCosts: 0, status: 'Sold' }),
     ]
     expect(costOfGoods(products)).toBe(35)
+  })
+})
+
+describe('soldInPeriod', () => {
+  it('includes sold products even when saleDate is missing by falling back to updatedAt', () => {
+    const now = new Date()
+    const product = makeProduct({
+      status: 'Sold',
+      salePrice: 50,
+      saleDate: null,
+      updatedAt: now.toISOString(),
+    })
+    const range = {
+      start: new Date(now.getFullYear(), now.getMonth(), 1),
+      end: now,
+      label: 'This month',
+    }
+    expect(soldInPeriod([product], range)).toHaveLength(1)
+  })
+
+  it('excludes sold products with no usable date', () => {
+    const product = makeProduct({
+      status: 'Sold',
+      salePrice: 50,
+      saleDate: null,
+      updatedAt: '',
+      createdAt: '',
+    })
+    const range = {
+      start: new Date(0),
+      end: new Date(),
+      label: 'All time',
+    }
+    expect(soldInPeriod([product], range)).toHaveLength(0)
   })
 })
 

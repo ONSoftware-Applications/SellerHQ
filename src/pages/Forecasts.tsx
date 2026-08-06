@@ -31,13 +31,13 @@ function generateHistoricalData(products: Product[], months: number) {
     const revenue = monthProducts.reduce((sum, p) => sum + (p.salePrice || 0), 0)
     const profit = monthProducts.reduce((sum, p) => sum + p.profit, 0)
     const units = monthProducts.length
-    
+
     data.push({
       month: monthStr,
       revenue,
       profit,
       units,
-      margin: units > 0 ? (profit / revenue) * 100 : 0,
+      margin: units > 0 && revenue > 0 ? (profit / revenue) * 100 : 0,
     })
   }
   

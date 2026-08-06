@@ -896,6 +896,10 @@ if (
           status === 'Listed'
             ? today
             : product.listingDate,
+        saleDate:
+          status === 'Sold' && !product.saleDate
+            ? today
+            : product.saleDate,
         updatedAt: new Date().toISOString(),
       }),
       'The selected products could not be updated. Please try again.',
