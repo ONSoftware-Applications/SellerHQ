@@ -8,6 +8,7 @@ import type {
 } from '../types/product'
 import { uploadProductPhoto } from '../lib/storage'
 import { generateProductCode } from '../lib/productDraft'
+import { useSubscription } from '../hooks/useSubscription'
 
 const marketplaceOptions: Marketplace[] = [
   'eBay',
@@ -56,6 +57,8 @@ export function ProductEditorModal({
   onClose,
   onSubmit,
 }: ProductEditorModalProps) {
+  const { canUse } = useSubscription()
+
   const [code, setCode] = useState(initialProduct.code)
   const [sku, setSku] = useState(initialProduct.sku)
   const [name, setName] = useState(initialProduct.name)
@@ -86,6 +89,14 @@ export function ProductEditorModal({
   )
   const [reorderLevel, setReorderLevel] = useState(
     String(initialProduct.reorderLevel ?? 0),
+  )
+  const [customFields, setCustomFields] = useState<
+    { key: string; value: string }[]
+  >(
+    Object.entries(initialProduct.customFields ?? {}).map(([key, value]) => ({
+      key,
+      value,
+    })),
   )
 
   const [storageLocation, setStorageLocation] = useState(
@@ -214,6 +225,11 @@ export function ProductEditorModal({
         barcode: barcode.trim(),
         photos,
         labels,
+        customFields: Object.fromEntries(
+          customFields
+            .filter((field) => field.key.trim().length > 0)
+            .map((field) => [field.key.trim(), field.value]),
+        ),
         status,
         marketplaces: selectedMarketplaces,
         listingPrice: resolvedListingPrice,
@@ -570,6 +586,72 @@ export function ProductEditorModal({
                 Separate multiple labels with commas. Used for filtering and organisation.
               </div>
             </section>
+
+            {canUse('customProductFields') && (
+              <section className="inventory-modal-section inventory-modal-full">
+                <h3>Custom fields</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {customFields.map((field, index) => (
+                    <div key={index} style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        type="text"
+                        placeholder="Field name"
+                        value={field.key}
+                        onChange={(event) =>
+                          setCustomFields((prev) =>
+                            prev.map((f, i) =>
+                              i === index ? { ...f, key: event.target.value } : f,
+                            ),
+                          )
+                        }
+                        disabled={submitting}
+                        style={{ flex: 1 }}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Value"
+                        value={field.value}
+                        onChange={(event) =>
+                          setCustomFields((prev) =>
+                            prev.map((f, i) =>
+                              i === index ? { ...f, value: event.target.value } : f,
+                            ),
+                          )
+                        }
+                        disabled={submitting}
+                        style={{ flex: 2 }}
+                      />
+                      <button
+                        type="button"
+                        className="row-action-link"
+                        onClick={() =>
+                          setCustomFields((prev) =>
+                            prev.filter((_, i) => i !== index),
+                          )
+                        }
+                        disabled={submitting}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() =>
+                      setCustomFields((prev) => [...prev, { key: '', value: '' }])
+                    }
+                    disabled={submitting}
+                    style={{ alignSelf: 'flex-start' }}
+                  >
+                    + Add field
+                  </button>
+                </div>
+                <div className="field-hint">
+                  Add extra product info, e.g. material, era, or condition notes.
+                </div>
+              </section>
+            )}
 
               <section className="inventory-modal-section inventory-modal-full">
                 <h3>Media</h3>

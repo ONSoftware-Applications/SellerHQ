@@ -115,7 +115,7 @@ Deno.serve(async (request: Request) => {
     if (prefs.lowStockAlerts && plan !== 'basic') {
       for (const p of userProducts) {
         if (
-          p.status !== 'Sold' &&
+          p.status !== 'sold' &&
           (p.quantity ?? 1) > 0 &&
           (p.reorder_level ?? 0) > 0 &&
           (p.quantity ?? 1) <= (p.reorder_level ?? 0)

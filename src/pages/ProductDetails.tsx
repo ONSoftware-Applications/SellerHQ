@@ -783,6 +783,9 @@ const product = productId
             <Field label="Colour" value={currentProduct.colour} />
             <Field label="Condition" value={currentProduct.condition} />
             <Field label="Description" value={currentProduct.description} fullWidth />
+            {Object.entries(currentProduct.customFields ?? {}).map(([key, value]) => (
+              <Field key={key} label={key} value={value} />
+            ))}
           </div>
         </section>
 
