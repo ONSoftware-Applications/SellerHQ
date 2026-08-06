@@ -16,4 +16,7 @@ export default defineConfig({
       ignored: ['**/.vs/**'],
     },
   },
+  build: {
+    target: 'es2020',
+  },
 })
