@@ -248,6 +248,12 @@ export function buildProductDraftFromCsv(
       parseNumber(getCsvField(rowMap, ['quantity', 'qty', 'stock'])),
     ) || 1,
   )
+  const reorderLevel = Math.max(
+    0,
+    Math.round(
+      parseNumber(getCsvField(rowMap, ['reorderlevel', 'reorder_level', 'lowstock'])),
+    ) || 0,
+  )
   const purchaseDate = parseDate(
     getCsvField(rowMap, ['purchasedate', 'purchase_date']),
   )
@@ -352,6 +358,7 @@ export function buildProductDraftFromCsv(
     purchaseDate,
     purchaseSource: purchaseSource || base.purchaseSource,
     quantity,
+    reorderLevel,
     storageLocation: storageLocation || base.storageLocation,
     barcode: barcode || base.barcode,
     photos,

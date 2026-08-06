@@ -48,6 +48,7 @@ const Legal = lazy(() => import('./pages/Legal'))
 const Support = lazy(() => import('./pages/Support'))
 const AuditLog = lazy(() => import('./pages/AuditLog'))
 const BusinessCustomization = lazy(() => import('./pages/BusinessCustomization'))
+const BarcodeScan = lazy(() => import('./pages/BarcodeScan'))
 
 function PageLoader() {
   return <div className="inventory-loading" style={{ minHeight: '40vh' }}>
@@ -163,6 +164,12 @@ function App() {
                               path="/scan"
                               element={<Scan />}
                             />
+                            <Route element={<PlanGuard feature="barcodeScanning" />}>
+                              <Route
+                                path="/barcode-scan"
+                                element={<BarcodeScan />}
+                              />
+                            </Route>
                             <Route
                               path="/support"
                               element={<Support />}
