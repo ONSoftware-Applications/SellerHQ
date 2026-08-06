@@ -510,7 +510,7 @@ function Forecast() {
               <pre>{drawSimpleChart(historicalData, selectedForecastType.toLowerCase(), 30)}</pre>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', fontSize: '11px', color: 'var(--shq-ink-muted)' }}>
-              {historicalData.map((data, index) => (
+              {historicalData.slice(0, 8).map((data, index) => (
                 <span key={index}>{data.month}</span>
               ))}
             </div>
