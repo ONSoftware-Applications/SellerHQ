@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react'
+import { captureError } from '../lib/errorLog'
 
 type Props = {
   children: ReactNode
@@ -21,6 +22,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
+    captureError(error, `ErrorBoundary${info.componentStack ? ': ' + info.componentStack.split('\n')[1]?.trim() : ''}`)
     console.error('ErrorBoundary caught:', error, info.componentStack)
   }
 

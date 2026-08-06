@@ -49,6 +49,7 @@ const Support = lazy(() => import('./pages/Support'))
 const AuditLog = lazy(() => import('./pages/AuditLog'))
 const BusinessCustomization = lazy(() => import('./pages/BusinessCustomization'))
 const BarcodeScan = lazy(() => import('./pages/BarcodeScan'))
+const DebugErrors = lazy(() => import('./pages/DebugErrors'))
 
 function PageLoader() {
   return <div className="inventory-loading" style={{ minHeight: '40vh' }}>
@@ -83,6 +84,10 @@ function App() {
                       />
 
                       <Route element={<Layout />}>
+                        <Route
+                          path="/debug/errors"
+                          element={<DebugErrors />}
+                        />
                         <Route
                           path="/"
                           element={
