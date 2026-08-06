@@ -846,9 +846,7 @@ if (
           </style>
         </head>
         <body>
-          <div class="sheet">
-            ${sheetsMarkup}
-          </div>
+          ${sheetsMarkup}
           <script>
             window.onload = () => {
               window.focus();

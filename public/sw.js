@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sellerhq-v2'
+const CACHE_NAME = 'sellerhq-v3'
 const PRECACHE = ['/', '/index.html']
 
 self.addEventListener('install', (event) => {
@@ -24,26 +24,6 @@ self.addEventListener('activate', (event) => {
   )
 })
 
-self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return
-
-  const url = new URL(event.request.url)
-  if (url.origin !== self.location.origin) return
-  if (event.request.mode === 'navigate') return
-
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response.ok) {
-          const clone = response.clone()
-          caches
-            .open(CACHE_NAME)
-            .then((cache) => cache.put(event.request, clone))
-        }
-        return response
-      })
-      .catch(() =>
-        caches.match(event.request).then((cached) => cached ?? Response.error()),
-      ),
-  )
-})
+// No fetch handler: every request goes straight to the network.
+// This prevents stale cached JS chunks from breaking pages on Safari
+// (the previous version cached failed responses, which corrupted pages).
