@@ -25,11 +25,19 @@ export function captureError(error: unknown, source?: string) {
       timestamp: Date.now(),
     }
 
-    const existing = loadErrorLog()
+    const raw = sessionStorage.getItem(STORAGE_KEY)
+    const existing: CapturedError[] = (() => {
+      try {
+        const parsed = JSON.parse(raw ?? '[]')
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    })()
     const updated = [entry, ...existing].slice(0, MAX_ERRORS)
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
   } catch {
-    sessionStorage.setItem(STORAGE_KEY, '[]')
+    // sessionStorage is unavailable — silently ignore
   }
 }
 
@@ -45,5 +53,9 @@ export function loadErrorLog(): CapturedError[] {
 }
 
 export function clearErrorLog() {
-  sessionStorage.removeItem(STORAGE_KEY)
+  try {
+    sessionStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // ignore
+  }
 }
