@@ -165,10 +165,12 @@ function App() {
                               path="/install"
                               element={<Install />}
                             />
-                            <Route
-                              path="/scan"
-                              element={<Scan />}
-                            />
+                            <Route element={<PlanGuard feature="qrScanner" />}>
+                              <Route
+                                path="/scan"
+                                element={<Scan />}
+                              />
+                            </Route>
                             <Route element={<PlanGuard feature="barcodeScanning" />}>
                               <Route
                                 path="/barcode-scan"

@@ -32,11 +32,17 @@ function AuditLog() {
 
   useEffect(() => {
     const load = async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('audit_logs')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100)
+
+      if (currentBusiness) {
+        query = query.eq('business_id', currentBusiness.id)
+      }
+
+      const { data, error } = await query
 
       if (error) {
         showToast('Could not load audit log', 'error')
@@ -46,7 +52,7 @@ function AuditLog() {
       setLoading(false)
     }
     void load()
-  }, [showToast])
+  }, [showToast, currentBusiness])
 
   return (
     <div className="inventory-page" style={{ maxWidth: 720 }}>
