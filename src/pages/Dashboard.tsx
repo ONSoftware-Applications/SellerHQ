@@ -270,6 +270,7 @@ function Dashboard() {
       case 'Sold': return 'status-sold'
       case 'Awaiting Shipping': return 'status-awaiting'
       case 'In Shipping': return 'status-in-shipping'
+      case 'Issue': return 'status-issue'
       default: return 'status-unlisted'
     }
   }

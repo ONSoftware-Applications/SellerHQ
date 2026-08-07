@@ -85,6 +85,7 @@ function makeExpense(overrides: Partial<Expense> = {}): Expense {
     supplier: '',
     paymentMethod: '',
     notes: '',
+    receiptUrl: '',
     createdAt: '2025-06-15',
     updatedAt: '2025-06-15',
     ...overrides,

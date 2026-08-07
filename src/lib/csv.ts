@@ -129,6 +129,10 @@ export function parseProductStatus(value: string): ProductStatus {
     case 'relistingrequired':
     case 'relistingneeded':
       return 'Relisting Required'
+
+    case 'issue':
+      return 'Issue'
+
     case 'removed':
       return 'Removed'
     case 'returned':
