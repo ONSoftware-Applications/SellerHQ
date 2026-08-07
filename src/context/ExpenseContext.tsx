@@ -23,6 +23,7 @@ function databaseToExpense(row: ExpenseRow): Expense {
     supplier: row.supplier ?? '',
     paymentMethod: row.payment_method ?? '',
     notes: row.notes ?? '',
+    receiptUrl: row.receipt_url ?? '',
     createdAt: row.created_at ?? '',
     updatedAt: row.updated_at ?? '',
   }
@@ -77,6 +78,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         supplier: expense.supplier || null,
         payment_method: expense.paymentMethod || null,
         notes: expense.notes || null,
+        receipt_url: expense.receiptUrl || null,
       })
       .select()
       .single()
@@ -101,6 +103,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         supplier: expense.supplier || null,
         payment_method: expense.paymentMethod || null,
         notes: expense.notes || null,
+        receipt_url: expense.receiptUrl || null,
       })
       .eq('id', expense.id)
       .select()

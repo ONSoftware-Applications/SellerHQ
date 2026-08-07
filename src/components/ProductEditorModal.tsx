@@ -35,6 +35,7 @@ const statusOptions: ProductStatus[] = [
   'In Shipping',
   'Sold',
   'Reserved',
+  'Issue',
   'Relisting Required',
   'Removed',
   'Returned',

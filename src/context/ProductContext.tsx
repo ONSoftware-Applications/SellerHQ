@@ -149,6 +149,9 @@ function databaseStatusToProductStatus(
     case 'relisting_required':
       return 'Relisting Required'
 
+    case 'issue':
+      return 'Issue'
+
     case 'removed':
       return 'Removed'
 
@@ -189,6 +192,9 @@ function productStatusToDatabaseStatus(
 
     case 'Relisting Required':
       return 'relisting_required'
+
+    case 'Issue':
+      return 'issue'
 
     case 'Removed':
       return 'removed'

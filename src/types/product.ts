@@ -6,6 +6,7 @@ export type ProductStatus =
   | 'Sold'
   | 'Reserved'
   | 'Relisting Required'
+  | 'Issue'
   | 'Removed'
   | 'Returned'
   | 'Archived'

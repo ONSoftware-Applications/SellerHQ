@@ -11,7 +11,7 @@ function Settings() {
   const { settings, loading, updateFeature, updateSettings } = useSettings()
   const { showToast } = useToast()
   const { user } = useAuth()
-  const { plan: currentPlanId, billing: currentBilling } = useSubscription()
+  const { plan: currentPlanId, billing: currentBilling, canUse } = useSubscription()
 
   const currentPlan = getPlan(currentPlanId)
 
@@ -217,25 +217,49 @@ function Settings() {
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--shq-ink)' }}>
               Default currency
             </label>
-            <select
-              value={settings.business.defaultCurrency}
-              onChange={async (e) => {
-                await updateSettings({ business: { ...settings.business, defaultCurrency: e.target.value } })
-                saveSuccess('Default currency updated')
-              }}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid var(--shq-border)',
-                borderRadius: '8px',
-                fontSize: '14px',
-                background: 'var(--shq-surface)',
-              }}
-            >
-              <option value="GBP">GBP (£)</option>
-              <option value="EUR">EUR (€)</option>
-              <option value="USD">USD ($)</option>
-            </select>
+            {canUse('multiCurrency') ? (
+              <select
+                value={settings.business.defaultCurrency}
+                onChange={async (e) => {
+                  await updateSettings({ business: { ...settings.business, defaultCurrency: e.target.value } })
+                  saveSuccess('Default currency updated')
+                }}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid var(--shq-border)',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  background: 'var(--shq-surface)',
+                }}
+              >
+                <option value="GBP">GBP (£)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="USD">USD ($)</option>
+              </select>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  border: '1px solid var(--shq-border)',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  background: 'var(--shq-surface-muted)',
+                  color: 'var(--shq-ink-muted)',
+                }}>
+                  GBP (£)
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => navigate('/subscriptions')}
+                  style={{ padding: '10px 14px', fontSize: '12px', whiteSpace: 'nowrap' }}
+                >
+                  Upgrade
+                </button>
+              </div>
+            )}
           </div>
 
           <div>
@@ -327,19 +351,9 @@ function Settings() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
           <Toggle
-            checked={settings.notifications.emailNotifications}
-            onChange={(value) => updateSettings({ notifications: { ...settings.notifications, emailNotifications: value } })}
-            label="Email notifications"
-          />
-          <Toggle
             checked={settings.notifications.lowStockAlerts}
             onChange={(value) => updateSettings({ notifications: { ...settings.notifications, lowStockAlerts: value } })}
             label="Low stock alerts"
-          />
-          <Toggle
-            checked={settings.notifications.salesReminders}
-            onChange={(value) => updateSettings({ notifications: { ...settings.notifications, salesReminders: value } })}
-            label="Sales reminders"
           />
           <Toggle
             checked={settings.notifications.taxDeadlines}

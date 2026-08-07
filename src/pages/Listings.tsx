@@ -12,6 +12,7 @@ const statusOrder: string[] = [
   'In Shipping',
   'Sold',
   'Unlisted',
+  'Issue',
 ]
 
 const sortLabels: Record<string, string> = {

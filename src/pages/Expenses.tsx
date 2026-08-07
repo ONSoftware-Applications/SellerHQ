@@ -10,6 +10,7 @@ import type { CurrencyCode } from '../utils/format'
 import LoadingState from '../components/LoadingState'
 import { FilterBar } from '../components/FilterBar'
 import { usePagination, PaginationControls } from '../components/Pagination'
+import { compressImage } from '../lib/compressImage'
 import EmptyState from '../components/EmptyState'
 
 const EMPTY_DRAFT = {
@@ -21,6 +22,7 @@ const EMPTY_DRAFT = {
   supplier: '',
   paymentMethod: '',
   notes: '',
+  receiptUrl: '',
 }
 
 function Expenses() {
@@ -98,6 +100,7 @@ function Expenses() {
       supplier: expense.supplier,
       paymentMethod: expense.paymentMethod,
       notes: expense.notes,
+      receiptUrl: expense.receiptUrl,
     })
     setEditingId(expense.id)
     setShowForm(true)
@@ -123,6 +126,7 @@ function Expenses() {
           supplier: draft.supplier.trim(),
           paymentMethod: draft.paymentMethod.trim(),
           notes: draft.notes.trim(),
+          receiptUrl: draft.receiptUrl,
           createdAt: '',
           updatedAt: '',
         })
@@ -137,6 +141,7 @@ function Expenses() {
           supplier: draft.supplier.trim(),
           paymentMethod: draft.paymentMethod.trim(),
           notes: draft.notes.trim(),
+          receiptUrl: draft.receiptUrl,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         })
@@ -349,7 +354,7 @@ function Expenses() {
               />
             </div>
           </div>
-          <div style={{ marginTop: '12px' }}>
+           <div style={{ marginTop: '12px' }}>
             <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', fontWeight: '600', color: 'var(--shq-ink-muted)' }}>
               Notes
             </label>
@@ -360,6 +365,52 @@ function Expenses() {
               onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
               style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
             />
+          </div>
+          <div style={{ marginTop: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', fontWeight: '600', color: 'var(--shq-ink-muted)' }}>
+              Receipt
+            </label>
+            {draft.receiptUrl ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img
+                  src={draft.receiptUrl}
+                  alt="Receipt"
+                  style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--shq-border)' }}
+                />
+                <span style={{ fontSize: 13, color: 'var(--shq-ink-muted)' }}>Receipt attached</span>
+                <button
+                  type="button"
+                  className="row-action-link"
+                  onClick={() => setDraft({ ...draft, receiptUrl: '' })}
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    try {
+                      const compressed = await compressImage(file)
+                      const data = new FileReader()
+                      data.onload = () => setDraft({ ...draft, receiptUrl: data.result as string })
+                      data.readAsDataURL(compressed)
+                    } catch (error) {
+                      console.error(error)
+                      showToast('Could not upload receipt', 'error')
+                    }
+                  }}
+                  style={{ fontSize: 13 }}
+                />
+                <div style={{ fontSize: 11, color: 'var(--shq-ink-faint)', marginTop: 4 }}>
+                  Upload a photo or PDF of your receipt. Images will be compressed.
+                </div>
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
             <button className="btn btn-secondary" onClick={() => setShowForm(false)}>
@@ -392,33 +443,49 @@ function Expenses() {
 
       <div className="inventory-table-wrapper">
         <table className="inventory-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Category</th>
-              <th>Description</th>
-              <th>Marketplace</th>
-              <th>Amount</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+           <thead>
+             <tr>
+               <th>Date</th>
+               <th>Category</th>
+               <th>Description</th>
+               <th>Marketplace</th>
+               <th>Amount</th>
+               <th>Receipt</th>
+               <th>Actions</th>
+             </tr>
+           </thead>
 
-          <tbody>
-            {pagination.paginated.length > 0 ? (
-              pagination.paginated.map((expense) => (
-                <tr key={expense.id}>
-                  <td data-label="Date">{formatDate(expense.expenseDate)}</td>
-                  <td data-label="Category">
-                    <span className={`status-badge status-${expense.category.toLowerCase().replace(/[^a-z]+/g, '-')}`}>
-                      {expense.category}
-                    </span>
-                  </td>
-                  <td data-label="Description">{expense.description}</td>
-                  <td data-label="Marketplace">{expense.marketplace || '-'}</td>
-                  <td data-label="Amount">
-                    <strong>{formatCurrency(expense.amount, currency)}</strong>
-                  </td>
-                  <td>
+           <tbody>
+             {pagination.paginated.length > 0 ? (
+               pagination.paginated.map((expense) => (
+                 <tr key={expense.id}>
+                   <td data-label="Date">{formatDate(expense.expenseDate)}</td>
+                   <td data-label="Category">
+                     <span className={`status-badge status-${expense.category.toLowerCase().replace(/[^a-z]+/g, '-')}`}>
+                       {expense.category}
+                     </span>
+                   </td>
+                   <td data-label="Description">{expense.description}</td>
+                   <td data-label="Marketplace">{expense.marketplace || '-'}</td>
+                   <td data-label="Amount">
+                     <strong>{formatCurrency(expense.amount, currency)}</strong>
+                   </td>
+                   <td data-label="Receipt">
+                     {expense.receiptUrl ? (
+                       <a
+                         href={expense.receiptUrl}
+                         target="_blank"
+                         rel="noreferrer"
+                         style={{ fontSize: 18, textDecoration: 'none' }}
+                         title="View receipt"
+                       >
+                         📄
+                       </a>
+                     ) : (
+                       <span style={{ color: 'var(--shq-ink-faint)' }}>—</span>
+                     )}
+                   </td>
+                   <td>
                     <div className="row-actions">
                       <button className="row-action-link" onClick={() => startEdit(expense)}>
                         Edit

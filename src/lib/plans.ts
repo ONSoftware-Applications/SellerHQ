@@ -171,7 +171,6 @@ export const PLANS: Plan[] = [
     ],
     planned: [
       'Barcode scanning',
-      'Email reminders',
     ],
   },
   {

@@ -27,9 +27,7 @@ export type UserSettings = {
     address: string
   }
   notifications: {
-    emailNotifications: boolean
     lowStockAlerts: boolean
-    salesReminders: boolean
     taxDeadlines: boolean
   }
   appearance: {
@@ -64,9 +62,7 @@ const defaultSettings: UserSettings = {
     address: '',
   },
   notifications: {
-    emailNotifications: true,
     lowStockAlerts: true,
-    salesReminders: true,
     taxDeadlines: true,
   },
   appearance: {

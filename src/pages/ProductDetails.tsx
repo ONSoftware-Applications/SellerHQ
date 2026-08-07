@@ -664,6 +664,7 @@ const product = productId
                   'In Shipping',
                   'Sold',
                   'Reserved',
+                  'Issue',
                   'Relisting Required',
                   'Removed',
                   'Returned',

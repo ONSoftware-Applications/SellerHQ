@@ -19,6 +19,7 @@ export type Expense = {
   supplier: string
   paymentMethod: string
   notes: string
+  receiptUrl: string
   createdAt: string
   updatedAt: string
 }
@@ -36,6 +37,7 @@ export type ExpenseRow = {
   supplier: string | null
   payment_method: string | null
   notes: string | null
+  receipt_url: string | null
   created_at: string | null
   updated_at: string | null
 }

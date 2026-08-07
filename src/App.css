@@ -1308,6 +1308,12 @@
   border: 1px solid var(--shq-accent-muted);
 }
 
+.status-issue {
+  background: var(--shq-danger-bg);
+  color: var(--shq-danger);
+  border: 1px solid var(--shq-danger-border);
+}
+
 .status-sold {
   background: var(--shq-info-bg);
   color: var(--shq-info);

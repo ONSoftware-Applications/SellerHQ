@@ -62,6 +62,7 @@ const statusOrder: ProductStatus[] = [
   'In Shipping',
   'Sold',
   'Reserved',
+  'Issue',
   'Relisting Required',
   'Removed',
   'Returned',
@@ -1233,6 +1234,7 @@ if (
         >
           <option value="All">All statuses</option>
           <option value="Unlisted">Unlisted</option>
+          <option value="Draft">Draft</option>
           <option value="Listed">Listed</option>
           <option value="Awaiting Shipping">
             Awaiting Shipping
@@ -1241,6 +1243,12 @@ if (
             In Shipping
           </option>
           <option value="Sold">Sold</option>
+          <option value="Reserved">Reserved</option>
+          <option value="Issue">Issue</option>
+          <option value="Relisting Required">Relisting Required</option>
+          <option value="Removed">Removed</option>
+          <option value="Returned">Returned</option>
+          <option value="Archived">Archived</option>
         </select>
 
         <select
