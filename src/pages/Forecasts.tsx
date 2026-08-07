@@ -377,8 +377,9 @@ function Forecast() {
         ))}
       </div>
 
-      <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600' }}>Scenario planning</h3>
+      {canUse('advancedForecasts') && (
+        <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600' }}>Scenario planning</h3>
         <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: 'var(--shq-ink-muted)' }}>
           Adjust the sliders to model the impact on revenue, profit, tax and cash flow.
         </p>
@@ -445,9 +446,10 @@ function Forecast() {
             <div style={{ fontSize: '12px', color: 'var(--shq-ink-muted)', marginBottom: '6px' }}>Projected units</div>
             <div style={{ fontSize: '18px', fontWeight: '600' }}>{scenario.newUnits}</div>
             <div style={{ fontSize: '12px', color: 'var(--shq-ink-faint)' }}>avg {money(scenario.newAvgPrice, { maximumFractionDigits: 0 })}</div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {canUse('cashFlow') && cashFlow.length > 0 && (
         <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
