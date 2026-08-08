@@ -158,18 +158,6 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
           Subscriptions
         </NavLink>
 
-        {canUse('reports') && (
-          <NavLink
-            to="/reports"
-            onClick={handleNavClick}
-            className={({ isActive }) =>
-              `nav-item ${isActive ? 'active' : ''}`
-            }
-          >
-            Reports
-          </NavLink>
-        )}
-
         {isMobile() && canUse('qrScanner') && (
           <NavLink
             to="/scan"
@@ -227,16 +215,6 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
             Business &amp; Team
           </NavLink>
         )}
-
-        <NavLink
-          to="/team"
-          onClick={handleNavClick}
-          className={({ isActive }) =>
-            `nav-item ${isActive ? 'active' : ''}`
-          }
-        >
-          Team
-        </NavLink>
 
         {canUse('auditLog') && (
           <NavLink

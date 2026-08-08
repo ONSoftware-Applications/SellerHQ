@@ -47,7 +47,10 @@ export type TeamContextType = {
   isAdminOrOwner: boolean
   canUse: (page: string, action: 'view' | 'edit' | 'delete') => boolean
   refresh: () => Promise<void>
-  inviteMember: (email: string, role: BusinessRole) => Promise<void>
+  inviteMember: (
+    email: string,
+    role: BusinessRole,
+  ) => Promise<{ emailSent: boolean }>
   removeMember: (memberId: string) => Promise<void>
   changeRole: (memberId: string, role: BusinessRole) => Promise<void>
   updatePermissions: (role: string, permissions: PagePermission[]) => Promise<void>
@@ -181,7 +184,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const inviteMember = useCallback(
     async (email: string, role: BusinessRole) => {
-      if (!currentBusiness) return
+      if (!currentBusiness) return { emailSent: false }
 
       const maxSeats = 5
       const activeCount = members.filter((m) => m.status === 'active').length
@@ -209,7 +212,37 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         throw error
       }
 
+      let emailSent = false
+
+      try {
+        const result = await supabase.functions.invoke<{
+          sent?: boolean
+          error?: string
+        }>('send-invite-email', {
+          body: {
+            email,
+            token,
+            businessName: currentBusiness.name,
+            role,
+          },
+        })
+
+        if (result.data?.sent) {
+          emailSent = true
+        } else if (result.data?.error || result.error) {
+          const errMsg =
+            result.data?.error ?? result.error.message ?? 'Failed to send invite email.'
+          console.error('Failed to send invite email:', errMsg)
+        } else {
+          console.warn('Invite email request returned an unexpected response.')
+        }
+      } catch (emailError) {
+        console.error('Failed to send invite email:', emailError)
+      }
+
       await refresh()
+
+      return { emailSent }
     },
     [currentBusiness, members, invites, refresh],
   )

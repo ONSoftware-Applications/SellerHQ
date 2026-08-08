@@ -107,6 +107,37 @@ function Settings() {
         </button>
       </div>
 
+      {/* Quick links */}
+      <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
+        <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '600', color: 'var(--shq-ink)' }}>
+          Quick links
+        </h3>
+        <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--shq-ink-muted)' }}>
+          Pages moved out of the sidebar. Open them directly from here.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+          {canUse('reports') && (
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => navigate('/reports')}
+              style={{ padding: '14px 16px', fontSize: '14px', fontWeight: '600', height: 'auto' }}
+            >
+              Reports
+            </button>
+          )}
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => navigate('/team')}
+            style={{ padding: '14px 16px', fontSize: '14px', fontWeight: '600', height: 'auto' }}
+          >
+            Team
+          </button>
+        </div>
+      </div>
+
       {/* Features */}
       <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
         <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '600', color: 'var(--shq-ink)' }}>
