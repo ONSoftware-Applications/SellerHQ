@@ -51,6 +51,7 @@ const Support = lazy(() => import('./pages/Support'))
 const AuditLog = lazy(() => import('./pages/AuditLog'))
 const BusinessCustomization = lazy(() => import('./pages/BusinessCustomization'))
 const AcceptInvite = lazy(() => import('./pages/AcceptInvite'))
+const Relay = lazy(() => import('./pages/Relay'))
 const DebugErrors = lazy(() => import('./pages/DebugErrors'))
 
 function PageLoader() {
@@ -187,6 +188,12 @@ function App() {
                               path="/scan"
                               element={<Scan />}
                             />
+                            </Route>
+                            <Route element={<PlanGuard feature="qrRelay" />}>
+                              <Route
+                                path="/relay"
+                                element={<Relay />}
+                              />
                             </Route>
                             <Route
                               path="/support"

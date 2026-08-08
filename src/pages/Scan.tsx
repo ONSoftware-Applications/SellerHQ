@@ -2,7 +2,8 @@ import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { QrScanner } from '../components/QrScanner'
-import { useBluetooth } from '../hooks/useBluetooth'
+import { useBusiness } from '../hooks/useBusiness'
+import { useQrRelay } from '../hooks/useQrRelay'
 import { useSubscription } from '../hooks/useSubscription'
 
 function isMobile() {
@@ -11,51 +12,43 @@ function isMobile() {
 
 function Scan() {
   const navigate = useNavigate()
+  const { currentBusiness } = useBusiness()
   const { canUse } = useSubscription()
-  const bluetooth = useBluetooth()
+  const { send: relaySend, error: relayError } = useQrRelay()
 
   const [result, setResult] = useState('')
   const [error, setError] = useState('')
   const [relayEnabled, setRelayEnabled] = useState(false)
+  const [relayed, setRelayed] = useState(false)
+
+  const businessId = currentBusiness?.id
 
   const handleScan = useCallback(
     async (value: string) => {
       setError('')
       setResult(value)
+      setRelayed(false)
 
-      if (!relayEnabled) {
-        if (value.startsWith(window.location.origin)) {
-          const match = value.match(/\/products\/(.+)$/)
-          if (match) {
-            navigate(`/products/${match[1]}`)
-            return
-          }
+      if (relayEnabled && businessId) {
+        const sent = await relaySend(value, businessId)
+        if (sent) {
+          setRelayed(true)
+        } else {
+          setError('Could not relay to the laptop. Please try again.')
         }
-        setError(`Scanned: ${value} — not a recognised product QR code.`)
         return
       }
 
-      // Bluetooth relay mode: send scan result to already-connected device
-      if (!bluetooth.connected) {
-        setError('Connect to your laptop via Bluetooth first.')
-        return
-      }
-
-      const sent = await bluetooth.send(value)
-      if (sent) {
-        setResult(value)
-      } else {
-        setError('Scanned but failed to relay via Bluetooth. Showing locally instead.')
-        if (value.startsWith(window.location.origin)) {
-          const match = value.match(/\/products\/(.+)$/)
-          if (match) {
-            navigate(`/products/${match[1]}`)
-            return
-          }
+      if (value.startsWith(window.location.origin)) {
+        const match = value.match(/\/products\/(.+)$/)
+        if (match) {
+          navigate(`/products/${match[1]}`)
+          return
         }
       }
+      setError(`Scanned: ${value} — not a recognised product QR code.`)
     },
-    [navigate, relayEnabled, bluetooth],
+    [navigate, relayEnabled, businessId, relaySend],
   )
 
   if (!isMobile()) {
@@ -97,7 +90,7 @@ function Scan() {
         Point your camera at a product label QR code to open the product details.
       </p>
 
-      {canUse('bluetoothScanning') && (
+      {canUse('qrRelay') && (
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -110,22 +103,16 @@ function Scan() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: '13px' }}>
-              <strong>Bluetooth relay</strong>
+              <strong>Sync to laptop</strong>
               <div style={{ fontSize: '11px', color: 'var(--shq-ink-muted)', marginTop: '2px' }}>
-                {bluetooth.connected ? 'Connected to laptop' : 'Send scans to a paired laptop'}
+                Scans are forwarded to your laptop over the internet
               </div>
             </div>
             <label style={{ position: 'relative', display: 'inline-block', width: '40px', height: '24px' }}>
               <input
                 type="checkbox"
                 checked={relayEnabled}
-                onChange={(e) => {
-                  const enabled = e.target.checked
-                  setRelayEnabled(enabled)
-                  if (enabled && !bluetooth.connected) {
-                    bluetooth.scanForDevices()
-                  }
-                }}
+                onChange={(e) => setRelayEnabled(e.target.checked)}
                 style={{ opacity: 0, width: 0, height: 0 }}
               />
               <span style={{
@@ -153,43 +140,16 @@ function Scan() {
             </label>
           </div>
 
-          {relayEnabled && !bluetooth.connected && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {bluetooth.pairedDevices.length > 0 && (
-                <div style={{ fontSize: '11px', color: 'var(--shq-ink-muted)', marginBottom: '4px' }}>
-                  Found {bluetooth.pairedDevices.length} paired device(s) from your phone's Bluetooth settings
-                </div>
-              )}
-              <button
-                type="button"
-                className="primary-button"
-                onClick={() => {
-                  setError('')
-                  bluetooth.connect(bluetooth.pairedDevices.length > 0).then((connResult) => {
-                    if (!connResult) {
-                      setError(bluetooth.error || 'Failed to connect to Bluetooth device.')
-                    }
-                  })
-                }}
-              >
-                {bluetooth.pairedDevices.length > 0 ? 'Connect paired device' : 'Connect to laptop'}
-              </button>
-            </div>
+          {relayEnabled && (
+            <p style={{ margin: 0, fontSize: '12px', color: 'var(--shq-ink-muted)', lineHeight: '1.5' }}>
+              Open <strong>Relay</strong> in Seller Hub on your laptop (with the same
+              business selected) to receive scans instantly. No Bluetooth pairing needed.
+            </p>
           )}
 
-          {relayEnabled && bluetooth.connected && (
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => bluetooth.disconnect()}
-            >
-              Disconnect
-            </button>
-          )}
-
-          {relayEnabled && bluetooth.connected && bluetooth.error && (
+          {relayEnabled && relayError && (
             <div style={{ fontSize: '12px', color: 'var(--shq-error-text)' }}>
-              {bluetooth.error}
+              {relayError}
             </div>
           )}
         </div>
@@ -213,7 +173,13 @@ function Scan() {
 
       <QrScanner onScan={handleScan} />
 
-      {result && !error && (
+      {relayed && (
+        <p style={{ marginTop: '16px', fontSize: '13px', color: 'var(--shq-accent)', textAlign: 'center', fontWeight: '600' }}>
+          Relayed to laptop
+        </p>
+      )}
+
+      {result && !error && !relayed && (
         <p style={{ marginTop: '16px', fontSize: '13px', color: 'var(--shq-ink-muted)', textAlign: 'center' }}>
           Scanned: {result}
         </p>
