@@ -20,7 +20,6 @@ export type PlanFeature =
   | 'accountingExport'
   | 'auditLog'
   | 'customization'
-  | 'barcodeScanning'
 
 export const PLAN_LIMITS: Record<
   PlanId,
@@ -54,7 +53,6 @@ const BUSINESS_FEATURES: PlanFeature[] = [
   'accountingExport',
   'auditLog',
   'customization',
-  'barcodeScanning',
 ]
 
 export const PLAN_FEATURES: Record<PlanId, PlanFeature[]> = {
@@ -169,9 +167,7 @@ export const PLANS: Plan[] = [
       'Price ladder & profit optimisation',
       'Priority support',
     ],
-    planned: [
-      'Barcode scanning',
-    ],
+    planned: [],
   },
   {
     id: 'business',
@@ -187,7 +183,6 @@ export const PLANS: Plan[] = [
       'Business customization (logo & branding)',
       'Full audit log',
       'Accounting export',
-      'Barcode scanning',
       'Priority support',
     ],
     planned: [

@@ -50,7 +50,6 @@ const Legal = lazy(() => import('./pages/Legal'))
 const Support = lazy(() => import('./pages/Support'))
 const AuditLog = lazy(() => import('./pages/AuditLog'))
 const BusinessCustomization = lazy(() => import('./pages/BusinessCustomization'))
-const BarcodeScan = lazy(() => import('./pages/BarcodeScan'))
 const AcceptInvite = lazy(() => import('./pages/AcceptInvite'))
 const DebugErrors = lazy(() => import('./pages/DebugErrors'))
 
@@ -184,16 +183,10 @@ function App() {
                               element={<Install />}
                             />
                             <Route element={<PlanGuard feature="qrScanner" />}>
-                              <Route
-                                path="/scan"
-                                element={<Scan />}
-                              />
-                            </Route>
-                            <Route element={<PlanGuard feature="barcodeScanning" />}>
-                              <Route
-                                path="/barcode-scan"
-                                element={<BarcodeScan />}
-                              />
+                            <Route
+                              path="/scan"
+                              element={<Scan />}
+                            />
                             </Route>
                             <Route
                               path="/support"
