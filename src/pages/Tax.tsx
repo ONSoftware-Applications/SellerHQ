@@ -10,80 +10,40 @@ import {
   TAX_CONFIG,
   calculateIncomeTax,
   calculateClass4Ni,
-  calculateNetVatLiability,
 } from '../config/tax'
 import type { Product } from '../types/product'
 
 const ukTaxYears = ['Current year', 'Next year (2026/27)', 'Next year (2027/28)']
 const taxCalculationMethods = ['Cash basis', 'Accruals']
 
-function calculateUkTaxLiability(products: Product[], method: 'cash' | 'accruals', vatEnabled: boolean, businessExpenses: number) {
-  // Aggregate purchase prices for input VAT calculation
-  const totalPurchasePrice = products
-    .filter(p => p.purchasePrice > 0)
-    .reduce((sum, p) => sum + p.purchasePrice, 0)
-
+function calculateUkTaxLiability(products: Product[], method: 'cash' | 'accruals', businessExpenses: number) {
   const soldProducts = products.filter(p => {
     if (p.status !== 'Sold' || p.salePrice === null) return false
     if (method === 'cash') {
-      // Cash basis: only include sales where payment has been received (saleDate set)
       return !!p.saleDate
     }
-    // Accruals: include all completed sales regardless of payment timing
     return true
   })
 
   let taxableProfit = 0
-  let outputTax = 0
 
   soldProducts.forEach(product => {
     taxableProfit += product.profit || 0
-    if (vatEnabled) {
-      // Output VAT = salePrice (net) × VAT rate. salePrice is VAT-exclusive.
-      outputTax += (product.salePrice || 0) * TAX_CONFIG.vatRate
-    }
   })
 
   taxableProfit = Math.max(0, taxableProfit - businessExpenses)
-  
+
   const taxableIncome = Math.max(0, taxableProfit - TAX_CONFIG.personalAllowance)
   const incomeTax = calculateIncomeTax(taxableIncome)
   const nationalInsurance = calculateClass4Ni(taxableIncome)
-  
-  // Net VAT liability = output tax collected - input tax paid on purchases and expenses
-  const vatLiability = vatEnabled
-    ? calculateNetVatLiability(outputTax, totalPurchasePrice, businessExpenses)
-    : 0
-  const totalTax = incomeTax + vatLiability + nationalInsurance
-  
+  const totalTax = incomeTax + nationalInsurance
+
   return {
     taxableProfit,
     incomeTax,
     nationalInsurance,
-    vatLiability,
     totalTax,
     taxableIncome
-  }
-}
-
-function getVatRegistrationStatus(products: Product[]): { status: 'registered' | 'should-register' | 'not-needed'; revenue: number } {
-  // VAT registration threshold is based on VAT-inclusive turnover over 12 months.
-  // Since salePrice is stored VAT-exclusive, we convert to VAT-inclusive by
-  // dividing by (1 - vatRate), giving the gross amount the customer paid.
-  const yearlyRevenue = products.reduce((sum, p) => {
-    if (p.status === 'Sold' && p.salePrice !== null) {
-      const vatInclusive = p.salePrice / (1 - TAX_CONFIG.vatRate)
-      return sum + vatInclusive
-    }
-    return sum
-  }, 0)
-  
-  if (yearlyRevenue >= TAX_CONFIG.vatRegistrationThreshold) {
-    return { status: 'registered', revenue: yearlyRevenue }
-  } else if (yearlyRevenue > 0) {
-    return { status: 'should-register', revenue: yearlyRevenue }
-  } else {
-    return { status: 'not-needed', revenue: yearlyRevenue }
   }
 }
 
@@ -95,7 +55,6 @@ function Tax() {
   const { money } = useCurrency()
   const { showToast } = useToast()
 
-  const vatEnabled = settings.features.vatEnabled
   const reservedAmount = settings.tax?.reservedAmount ?? 0
   const filingStatus = settings.tax?.filingStatus ?? 'not-filed'
 
@@ -109,12 +68,8 @@ function Tax() {
   const [showDetails, setShowDetails] = useState(false)
 
   const taxResults = useMemo(() => {
-    return calculateUkTaxLiability(products, calculationMethod as 'cash' | 'accruals', vatEnabled, totalExpenses)
-  }, [products, calculationMethod, vatEnabled, totalExpenses])
-
-  const vatStatus = useMemo(() => {
-    return getVatRegistrationStatus(products)
-  }, [products])
+    return calculateUkTaxLiability(products, calculationMethod as 'cash' | 'accruals', totalExpenses)
+  }, [products, calculationMethod, totalExpenses])
 
   const yearlyRevenue = useMemo(() => {
     return products.reduce((sum, p) => {
@@ -132,7 +87,7 @@ function Tax() {
   const recentSales = useMemo(() => {
     const sixMonthsAgo = new Date()
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
-    
+
     return products
       .filter(p => p.status === 'Sold' && p.saleDate)
       .sort((a, b) => new Date(b.saleDate!).getTime() - new Date(a.saleDate!).getTime())
@@ -147,22 +102,11 @@ function Tax() {
       { label: 'Q3', range: 'Oct-Dec', deadline: '31 Jan', status: currentMonth >= 10 && currentMonth <= 12 ? 'in-progress' : 'upcoming' },
       { label: 'Q4', range: 'Jan-Mar', deadline: '31 Apr', status: currentMonth >= 1 && currentMonth <= 3 ? 'in-progress' : 'upcoming' },
     ]
-    
+
     return quarters
   }, [])
 
   const taxTips = [
-    ...(vatEnabled
-      ? [{
-          icon: '💳',
-          title: 'VAT Registration',
-          content: vatStatus.status === 'registered' 
-            ? 'You are registered for VAT. File quarterly returns and submit VAT returns.'
-            : vatStatus.status === 'should-register'
-            ? `Your projected VAT-inclusive revenue (${money(vatStatus.revenue)}) is approaching the £85,000 threshold. Register for VAT when it exceeds this limit.`
-            : 'You do not need to register for VAT, but consider registering if you expect growth.'
-        }]
-      : []),
     {
       icon: '📊',
       title: 'Making Tax Digital',
@@ -190,7 +134,7 @@ function Tax() {
       </div>
 
       <div className="inventory-stats">
-        <div className={`inventory-stat ${vatStatus.status === 'registered' ? 'inventory-stat-listed' : vatStatus.status === 'should-register' ? 'inventory-stat-unlisted' : ''}`}>
+        <div className="inventory-stat inventory-stat-listed">
           <span>Annual revenue</span>
           <strong>{money(yearlyRevenue)}</strong>
           <span className="stat-label">
@@ -213,16 +157,6 @@ function Tax() {
             Personal tax liability
           </span>
         </div>
-
-        {vatEnabled && (
-          <div className="inventory-stat">
-            <span>VAT liability</span>
-            <strong>{money(taxResults.vatLiability)}</strong>
-            <span className="stat-label">
-              Quarterly payments required
-            </span>
-          </div>
-        )}
 
         <div className="inventory-stat">
           <span>National Insurance</span>
@@ -380,46 +314,20 @@ function Tax() {
               ))}
             </select>
           </div>
-
-          {vatEnabled && (
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--shq-ink)' }}>
-              VAT status
-            </label>
-            <div style={{
-              padding: '10px 12px',
-              borderRadius: '8px',
-              fontSize: '14px',
-              background: vatStatus.status === 'registered' ? '#f0fdf4' :
-                         vatStatus.status === 'should-register' ? '#fef3c7' :
-                         '#f3f4f6',
-              border: `1px solid ${vatStatus.status === 'registered' ? 'var(--shq-success)' :
-                                vatStatus.status === 'should-register' ? '#f59e0b' :
-                                '#d1d5db'}`,
-              color: vatStatus.status === 'registered' ? '#065f46' :
-                     vatStatus.status === 'should-register' ? '#92400e' :
-                     '#374151'
-            }}>
-              {vatStatus.status === 'registered' ? '✓ Registered' :
-               vatStatus.status === 'should-register' ? '⚠️ Should register' :
-               '✓ Not needed'}
-            </div>
-          </div>
-          )}
         </div>
       </div>
 
       <div data-mobile-hide style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginBottom: '24px' }}>
         <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '20px' }}>
           <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
-            Recent sales & deadlines
+            Recent sales
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {recentSales.length > 0 ? (
               recentSales.map((sale) => (
-                <div key={sale.id} style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                <div key={sale.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '12px',
                   border: '1px solid #f1f2f4',
@@ -443,8 +351,8 @@ function Tax() {
                       <div style={{ fontSize: '13px', fontWeight: '600' }}>
                         {sale.name}
                       </div>
-              <div style={{ fontSize: '11px', color: 'var(--shq-ink-muted)' }}>
-                Sold on {new Date(sale.saleDate!).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                      <div style={{ fontSize: '11px', color: 'var(--shq-ink-muted)' }}>
+                        Sold on {new Date(sale.saleDate!).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                       </div>
                     </div>
                   </div>
@@ -452,11 +360,6 @@ function Tax() {
                     <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--shq-success)' }}>
                       {money(sale.profit || 0)}
                     </div>
-                    {vatEnabled && (
-                        <div style={{ fontSize: '11px', color: 'var(--shq-ink-muted)' }}>
-                          VAT liability: {money((sale.salePrice || 0) * TAX_CONFIG.vatRate)}
-                      </div>
-                    )}
                   </div>
                 </div>
               ))
@@ -484,9 +387,9 @@ function Tax() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '12px',
-                border: `1px solid ${quarter.status === 'completed' ? '#d1fae5' : 
-                                     quarter.status === 'in-progress' ? '#fed7aa' : 
-                                     '#e5e7eb'}`,
+                border: `1px solid ${quarter.status === 'completed' ? '#d1fae5' :
+                                       quarter.status === 'in-progress' ? '#fed7aa' :
+                                       '#e5e7eb'}`,
                 borderRadius: '8px',
                 background: quarter.status === 'completed' ? '#f0fdf4' :
                            quarter.status === 'in-progress' ? '#fffbeb' :
@@ -596,18 +499,6 @@ function Tax() {
               <div style={{ fontSize: '13px', color: 'var(--shq-ink-muted)', marginBottom: '8px' }}>Personal allowance used</div>
               <div style={{ fontSize: '18px', fontWeight: '600', color: '#3b82f6' }}>{money(Math.min(taxResults.taxableIncome, 12570))}</div>
             </div>
-            {vatEnabled && (
-              <div style={{ padding: '16px', background: 'var(--shq-surface)', borderRadius: '8px', border: '1px solid var(--shq-border)' }}>
-                <div style={{ fontSize: '13px', color: 'var(--shq-ink-muted)', marginBottom: '8px' }}>VAT rate applied</div>
-                <div style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shq-success)' }}>20%</div>
-              </div>
-            )}
-            {vatEnabled && (
-              <div style={{ padding: '16px', background: 'var(--shq-surface)', borderRadius: '8px', border: '1px solid var(--shq-border)' }}>
-                <div style={{ fontSize: '13px', color: 'var(--shq-ink-muted)', marginBottom: '8px' }}>Net VAT liability</div>
-                <div style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shq-ink)' }}>{money(taxResults.vatLiability)}</div>
-              </div>
-            )}
           </div>
         </div>
       )}

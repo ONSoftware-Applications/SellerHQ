@@ -147,21 +147,7 @@ function Settings() {
           Enable or disable optional modules. Disabled features are hidden from navigation and won't be calculated.
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', border: '1px solid var(--shq-border)', borderRadius: '8px' }}>
-            <Toggle
-              checked={settings.features.vatEnabled}
-              onChange={async (value) => {
-                await updateFeature('vatEnabled', value)
-                saveSuccess(value ? 'VAT calculations enabled' : 'VAT calculations disabled')
-              }}
-              label="VAT calculations"
-            />
-            <p style={{ margin: '-8px 0 0 0', fontSize: '12px', color: 'var(--shq-ink-muted)' }}>
-              Show VAT liability, VAT registration status, and quarterly VAT deadlines in the Tax page. Disable if you are not VAT registered.
-            </p>
-          </div>
-
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', border: '1px solid var(--shq-border)', borderRadius: '8px' }}>
             <Toggle
               checked={settings.features.listingsEnabled}
@@ -240,7 +226,7 @@ function Settings() {
           Business
         </h3>
         <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: 'var(--shq-ink-muted)' }}>
-          Default currency and VAT registration details.
+          Default currency and business details.
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
@@ -291,34 +277,6 @@ function Settings() {
                 </button>
               </div>
             )}
-          </div>
-
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--shq-ink)' }}>
-              VAT number
-            </label>
-            <input
-              type="text"
-              value={settings.business.vatNumber}
-              placeholder="GB 123 456 789"
-              onChange={(e) => updateSettings({ business: { ...settings.business, vatNumber: e.target.value } })}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid var(--shq-border)',
-                borderRadius: '8px',
-                fontSize: '14px',
-                background: 'var(--shq-surface)',
-              }}
-            />
-          </div>
-
-          <div style={{ padding: '16px 0' }}>
-            <Toggle
-              checked={settings.business.vatRegistered}
-              onChange={(value) => updateSettings({ business: { ...settings.business, vatRegistered: value } })}
-              label="VAT registered"
-            />
           </div>
         </div>
       </div>

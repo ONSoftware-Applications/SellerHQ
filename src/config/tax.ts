@@ -13,12 +13,6 @@ export const TAX_CONFIG = {
   // National Insurance (self-employed, Class 4)
   niThreshold: 12570,
   niRate: 0.06,
-
-  // VAT
-  vatRate: 0.2,
-  vatRegistrationThreshold: 85000,
-  // Assumed input VAT recovery rate: purchases are treated as VAT-exclusive
-  // at the standard rate, so input VAT = purchasePrice * vatRate.
 } as const
 
 export const INCOME_TAX_BRACKETS = [
@@ -47,22 +41,4 @@ export function calculateClass4Ni(taxableIncome: number): number {
   return taxableIncome > TAX_CONFIG.niThreshold
     ? (taxableIncome - TAX_CONFIG.niThreshold) * TAX_CONFIG.niRate
     : 0
-}
-
-/**
- * Calculate net VAT liability: output tax collected on sales minus input tax
- * paid on purchases/expenses. Assumes all sales and purchases are at the
- * standard 20% VAT rate. Sales are VAT-exclusive (salePrice is the net amount),
- * so output VAT = salePrice * vatRate. Purchases are also treated as
- * VAT-exclusive, so input VAT = purchasePrice * vatRate.
- */
-export function calculateNetVatLiability(
-  outputTax: number,
-  totalPurchasePrice: number,
-  totalExpenses: number,
-): number {
-  const inputVatPurchases = totalPurchasePrice * TAX_CONFIG.vatRate
-  const inputVatExpenses = totalExpenses * TAX_CONFIG.vatRate
-  const totalInputVat = inputVatPurchases + inputVatExpenses
-  return Math.max(0, outputTax - totalInputVat)
 }

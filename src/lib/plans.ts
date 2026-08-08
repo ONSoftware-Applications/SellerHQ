@@ -160,7 +160,7 @@ export const PLANS: Plan[] = [
       'Everything in Growing',
       'Up to 5,000 products & 5 businesses',
       'Advanced forecasts & scenario planning',
-      'Full UK tax (VAT, quarterly deadlines, filing)',
+      'Full UK tax (quarterly deadlines, filing)',
       'Advanced reports & stock ageing',
       'Low-stock & reorder alerts',
       'Cash-flow projection',
