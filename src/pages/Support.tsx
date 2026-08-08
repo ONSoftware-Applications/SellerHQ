@@ -65,7 +65,7 @@ function Support() {
               Email support
             </div>
             <div style={{ fontSize: 13, color: 'var(--shq-ink-muted)', lineHeight: 1.5 }}>
-              support@sellerhq.onsoftware.uk
+             adminonsoftware@gmail.com
               <br />
               Pre-filled with your account details
             </div>
@@ -98,7 +98,7 @@ function Support() {
         </a>
 
         <a
-          href="mailto:support@sellerhq.onsoftware.uk?subject=Feature%20request"
+          href="mailto:adminonsoftware@gmail.com?subject=Feature%20request"
           style={{ textDecoration: 'none', color: 'inherit' }}
         >
           <div
