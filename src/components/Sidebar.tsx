@@ -158,18 +158,6 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
           Subscriptions
         </NavLink>
 
-        {isMobile() && canUse('qrScanner') && (
-          <NavLink
-            to="/scan"
-            onClick={handleNavClick}
-            className={({ isActive }) =>
-              `nav-item ${isActive ? 'active' : ''}`
-            }
-          >
-            Scan QR
-          </NavLink>
-        )}
-
         {!isMobile() && canUse('qrRelay') && (
           <NavLink
             to="/relay"
