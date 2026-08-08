@@ -5,8 +5,11 @@ export type BusinessContextValue = {
   businesses: Business[]
   currentBusiness: Business | null
   loading: boolean
-  refreshBusinesses: () => Promise<void>
+  refreshBusinesses: () => Promise<Business[]>
   switchBusiness: (businessId: string) => void
+  joinWithCode: (
+    code: string,
+  ) => Promise<{ success: boolean; businessId?: string; error?: string }>
 }
 
 export const BusinessContext = createContext<BusinessContextValue | undefined>(

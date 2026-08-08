@@ -29,28 +29,24 @@ export type PagePermission = {
   canDelete: boolean
 }
 
-export type TeamInvite = {
+export type TeamInviteCode = {
   id: string
-  email: string
   role: BusinessRole
-  status: 'pending' | 'accepted' | 'expired' | 'revoked'
+  code: string
   expiresAt: string
   createdAt: string
 }
 
 export type TeamContextType = {
   members: TeamMember[]
-  invites: TeamInvite[]
+  inviteCodes: Record<string, TeamInviteCode | null>
   permissions: Record<string, PagePermission[]>
   loading: boolean
   isOwner: boolean
   isAdminOrOwner: boolean
   canUse: (page: string, action: 'view' | 'edit' | 'delete') => boolean
   refresh: () => Promise<void>
-  inviteMember: (
-    email: string,
-    role: BusinessRole,
-  ) => Promise<{ emailSent: boolean }>
+  generateInviteCode: (role: BusinessRole) => Promise<void>
   removeMember: (memberId: string) => Promise<void>
   changeRole: (memberId: string, role: BusinessRole) => Promise<void>
   updatePermissions: (role: string, permissions: PagePermission[]) => Promise<void>
@@ -70,7 +66,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const { currentBusiness } = useBusiness()
 
   const [members, setMembers] = useState<TeamMember[]>([])
-  const [invites, setInvites] = useState<TeamInvite[]>([])
+  const [inviteCodes, setInviteCodes] = useState<
+    Record<string, TeamInviteCode | null>
+  >({ admin: null, member: null })
   const [permissions, setPermissions] = useState<Record<string, PagePermission[]>>({})
   const [loading, setLoading] = useState(true)
 
@@ -80,7 +78,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     if (!currentBusiness) {
       setMembers([])
-      setInvites([])
+      setInviteCodes({ admin: null, member: null })
       setPermissions({})
       setLoading(false)
       return
@@ -88,7 +86,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
     setLoading(true)
 
-    const [membersResult, invitesResult, permissionsResult] = await Promise.all([
+    const [membersResult, codesResult, permissionsResult] = await Promise.all([
       supabase
         .from('business_members')
         .select('id, user_id, email, role, status, invited_at, joined_at')
@@ -97,11 +95,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         .order('invited_at', { ascending: false }),
 
       supabase
-        .from('business_invites')
-        .select('*')
-        .eq('business_id', currentBusiness.id)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false }),
+        .from('business_invite_codes')
+        .select('id, role, code, expires_at, created_at')
+        .eq('business_id', currentBusiness.id),
 
       supabase
         .from('business_role_permissions')
@@ -125,19 +121,23 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       )
     }
 
-    if (invitesResult.error) {
-      console.error('Failed to load invites:', invitesResult.error)
+    if (codesResult.error) {
+      console.error('Failed to load invite codes:', codesResult.error)
     } else {
-      setInvites(
-        (invitesResult.data ?? []).map((row) => ({
+      const codes: Record<string, TeamInviteCode | null> = {
+        admin: null,
+        member: null,
+      }
+      for (const row of codesResult.data ?? []) {
+        codes[row.role as BusinessRole] = {
           id: row.id,
-          email: row.email,
           role: row.role as BusinessRole,
-          status: row.status as 'pending' | 'accepted' | 'expired' | 'revoked',
+          code: row.code,
           expiresAt: row.expires_at,
           createdAt: row.created_at,
-        })),
-      )
+        }
+      }
+      setInviteCodes(codes)
     }
 
     if (permissionsResult.error) {
@@ -182,71 +182,40 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     [permissions, isOwner, currentBusiness?.memberRole],
   )
 
-  const inviteMember = useCallback(
-    async (email: string, role: BusinessRole) => {
-      if (!currentBusiness) return { emailSent: false }
+  const generateInviteCode = useCallback(
+    async (role: BusinessRole) => {
+      if (!currentBusiness) return
 
-      const maxSeats = 5
-      const activeCount = members.filter((m) => m.status === 'active').length
-      const pendingCount = invites.length + members.filter((m) => m.status === 'pending').length
-
-      if (activeCount + pendingCount >= maxSeats) {
-        throw new Error(`Team is full (${maxSeats}/${maxSeats} seats). Remove a member before inviting another.`)
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+      let code = ''
+      const bytes = crypto.getRandomValues(new Uint8Array(8))
+      for (let i = 0; i < 8; i++) {
+        code += chars[bytes[i] % chars.length]
       }
 
-      const token = crypto.randomUUID()
       const expiresAt = new Date()
-      expiresAt.setDate(expiresAt.getDate() + 7)
+      expiresAt.setDate(expiresAt.getDate() + 30)
 
-      const { error } = await supabase.from('business_invites').insert({
-        business_id: currentBusiness.id,
-        email,
-        role,
-        token,
-        invited_by: (await supabase.auth.getUser()).data.user?.id,
-        expires_at: expiresAt.toISOString(),
-      })
+      const { error } = await supabase.from('business_invite_codes').upsert(
+        {
+          business_id: currentBusiness.id,
+          role,
+          code,
+          expires_at: expiresAt.toISOString(),
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+        },
+        { onConflict: 'business_id, role' },
+      )
 
       if (error) {
-        console.error('Failed to invite member:', error)
+        console.error('Failed to generate invite code:', error)
         throw error
       }
 
-      let emailSent = false
-
-      try {
-        const result = await supabase.functions.invoke<{
-          sent?: boolean
-          error?: string
-        }>('send-invite-email', {
-          body: {
-            email,
-            token,
-            businessName: currentBusiness.name,
-            role,
-          },
-        })
-
-        if (result.data?.sent) {
-          emailSent = true
-        } else if (result.data?.error || result.error) {
-          const errMsg =
-            result.data?.error ?? result.error.message ?? 'Failed to send invite email.'
-          console.error('Failed to send invite email:', errMsg)
-        } else {
-          console.warn('Invite email request returned an unexpected response.')
-        }
-      } catch (emailError) {
-        console.error('Failed to send invite email:', emailError)
-      }
-
       await refresh()
-
-      return { emailSent }
     },
-    [currentBusiness, members, invites, refresh],
+    [currentBusiness, refresh],
   )
-
   const removeMember = useCallback(
     async (memberId: string) => {
       const { error } = await supabase
@@ -314,19 +283,32 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const value = useMemo<TeamContextType>(
     () => ({
       members,
-      invites,
+      inviteCodes,
       permissions,
       loading,
       isOwner,
       isAdminOrOwner,
       canUse,
       refresh,
-      inviteMember,
+      generateInviteCode,
       removeMember,
       changeRole,
       updatePermissions,
     }),
-    [members, invites, permissions, loading, isOwner, isAdminOrOwner, canUse, refresh, inviteMember, removeMember, changeRole, updatePermissions],
+    [
+      members,
+      inviteCodes,
+      permissions,
+      loading,
+      isOwner,
+      isAdminOrOwner,
+      canUse,
+      refresh,
+      generateInviteCode,
+      removeMember,
+      changeRole,
+      updatePermissions,
+    ],
   )
 
   return (
