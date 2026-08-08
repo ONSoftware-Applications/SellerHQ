@@ -93,22 +93,9 @@ export function useBluetooth() {
     }
 
     try {
-      let dev: BluetoothDeviceEx
-
-      try {
-        dev = await navigator.bluetooth!.requestDevice({
-          filters: [{ services: [SERVICE_UUID] }],
-        }) as BluetoothDeviceEx
-      } catch (filterErr) {
-        if (filterErr instanceof Error && filterErr.message.includes('Invalid')) {
-          throw new Error('Invalid Bluetooth service UUID. Use the full 128-bit format.')
-        }
-        // Fall back to any device if no service filter matches
-        dev = await navigator.bluetooth!.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: [SERVICE_UUID],
-        }) as BluetoothDeviceEx
-      }
+      const dev = await navigator.bluetooth!.requestDevice({
+        filters: [{ services: [SERVICE_UUID] }],
+      }) as BluetoothDeviceEx
 
       dev.addEventListener('gattserverdisconnected', () => {
         setConnected(false)
