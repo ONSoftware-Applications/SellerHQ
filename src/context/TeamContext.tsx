@@ -183,6 +183,14 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     async (email: string, role: BusinessRole) => {
       if (!currentBusiness) return
 
+      const maxSeats = 5
+      const activeCount = members.filter((m) => m.status === 'active').length
+      const pendingCount = invites.length + members.filter((m) => m.status === 'pending').length
+
+      if (activeCount + pendingCount >= maxSeats) {
+        throw new Error(`Team is full (${maxSeats}/${maxSeats} seats). Remove a member before inviting another.`)
+      }
+
       const token = crypto.randomUUID()
       const expiresAt = new Date()
       expiresAt.setDate(expiresAt.getDate() + 7)
@@ -203,7 +211,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
       await refresh()
     },
-    [currentBusiness, refresh],
+    [currentBusiness, members, invites, refresh],
   )
 
   const removeMember = useCallback(

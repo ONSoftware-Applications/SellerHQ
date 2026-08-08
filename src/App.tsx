@@ -50,6 +50,7 @@ const Support = lazy(() => import('./pages/Support'))
 const AuditLog = lazy(() => import('./pages/AuditLog'))
 const BusinessCustomization = lazy(() => import('./pages/BusinessCustomization'))
 const BarcodeScan = lazy(() => import('./pages/BarcodeScan'))
+const AcceptInvite = lazy(() => import('./pages/AcceptInvite'))
 const DebugErrors = lazy(() => import('./pages/DebugErrors'))
 
 function PageLoader() {
@@ -83,6 +84,10 @@ function App() {
                       <Route
                         path="/register"
                         element={<Register />}
+                      />
+                      <Route
+                        path="/invite/:token"
+                        element={<AcceptInvite />}
                       />
 
                       <Route element={<Layout />}>

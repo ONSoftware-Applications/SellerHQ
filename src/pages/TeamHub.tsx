@@ -24,7 +24,7 @@ function TeamHub() {
   const [error, setError] = useState('')
 
   async function handleInvite() {
-    if (!inviteEmail.trim()) return
+    if (!inviteEmail.trim() || seatsFull) return
     setError('')
     setInviting(true)
 
@@ -33,7 +33,7 @@ function TeamHub() {
       setInviteEmail('')
     } catch (inviteError) {
       console.error(inviteError)
-      setError('Could not send invitation. The email may already be invited.')
+      setError('Could not send invitation. The email may already be invited or a member.')
     } finally {
       setInviting(false)
     }
@@ -59,7 +59,10 @@ function TeamHub() {
   }
 
   const totalSeats = 5
-  const usedSeats = members.filter((m) => m.status === 'active').length
+  const activeCount = members.filter((m) => m.status === 'active').length
+  const pendingCount = invites.length + members.filter((m) => m.status === 'pending').length
+  const usedSeats = activeCount + pendingCount
+  const seatsFull = usedSeats >= totalSeats
 
   return (
     <div className="inventory-page">
@@ -84,26 +87,41 @@ function TeamHub() {
       {isOwner && (
         <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
           <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '600' }}>Invite a team member</h3>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <input
-              type="email"
-              placeholder="colleague@example.com"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              style={{ flex: 1, minWidth: '240px', padding: '10px 12px', border: '1px solid var(--shq-border)', borderRadius: '8px', fontSize: '14px', background: 'var(--shq-bg)', color: 'var(--shq-ink)' }}
-            />
-            <select
-              value={inviteRole}
-              onChange={(e) => setInviteRole(e.target.value as BusinessRole)}
-              style={{ padding: '10px 12px', border: '1px solid var(--shq-border)', borderRadius: '8px', fontSize: '14px', background: 'var(--shq-bg)', color: 'var(--shq-ink)' }}
+          {seatsFull ? (
+            <div
+              style={{
+                padding: '12px 16px',
+                background: 'var(--shq-warning-bg)',
+                border: '1px solid var(--shq-warning-border)',
+                borderRadius: 8,
+                fontSize: 13,
+                color: 'var(--shq-warning)',
+              }}
             >
-              <option value="member">Member</option>
-              <option value="admin">Admin</option>
-            </select>
-            <button className="primary-button" onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
-              {inviting ? 'Sending...' : 'Send invite'}
-            </button>
-          </div>
+              Team is full ({usedSeats}/{totalSeats} seats). Remove a member or upgrade to add more.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <input
+                type="email"
+                placeholder="colleague@example.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                style={{ flex: 1, minWidth: '240px', padding: '10px 12px', border: '1px solid var(--shq-border)', borderRadius: '8px', fontSize: '14px', background: 'var(--shq-bg)', color: 'var(--shq-ink)' }}
+              />
+              <select
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value as BusinessRole)}
+                style={{ padding: '10px 12px', border: '1px solid var(--shq-border)', borderRadius: '8px', fontSize: '14px', background: 'var(--shq-bg)', color: 'var(--shq-ink)' }}
+              >
+                <option value="member">Member</option>
+                <option value="admin">Admin</option>
+              </select>
+              <button className="primary-button" onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
+                {inviting ? 'Sending...' : 'Send invite'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
