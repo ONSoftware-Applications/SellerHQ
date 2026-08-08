@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { useTeam } from '../context/TeamContext'
+import { useToast } from '../hooks/useToast'
 import type { BusinessRole } from '../types/business'
 
 const PAGES = ['inventory', 'sales', 'expenses', 'listings', 'forecasts', 'reports', 'tax']
@@ -17,6 +18,7 @@ function TeamHub() {
     changeRole,
     updatePermissions,
   } = useTeam()
+  const { showToast } = useToast()
 
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<BusinessRole>('member')
@@ -24,13 +26,23 @@ function TeamHub() {
   const [error, setError] = useState('')
 
   async function handleInvite() {
-    if (!inviteEmail.trim() || seatsFull) return
+    const email = inviteEmail.trim().toLowerCase()
+    if (!email || seatsFull) return
     setError('')
     setInviting(true)
 
     try {
-      await inviteMember(inviteEmail.trim().toLowerCase(), inviteRole)
+      const result = await inviteMember(email, inviteRole)
       setInviteEmail('')
+
+      if (result.emailSent) {
+        showToast(`Invitation sent to ${email}.`, 'success')
+      } else {
+        showToast(
+          `Invitation created but the email could not be sent. Copy the invite link and send it manually from the team list.`,
+          'warning',
+        )
+      }
     } catch (inviteError) {
       console.error(inviteError)
       setError('Could not send invitation. The email may already be invited or a member.')

@@ -58,6 +58,18 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
     title: 'Scan QR',
     subtitle: 'Scan a product label QR code.',
   },
+  '/subscriptions': {
+    title: 'Subscriptions',
+    subtitle: 'Manage your plan and billing.',
+  },
+  '/reports': {
+    title: 'Reports',
+    subtitle: 'Business performance and financial reports.',
+  },
+  '/team': {
+    title: 'Team',
+    subtitle: 'Manage team members and permissions.',
+  },
   '/create-business': {
     title: 'New business',
     subtitle: 'Set up another business in SellerHQ.',

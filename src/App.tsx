@@ -41,6 +41,7 @@ const Settings = lazy(() => import('./pages/Settings'))
 const ProductDetails = lazy(() => import('./pages/ProductDetails'))
 const Pricing = lazy(() => import('./pages/Pricing'))
 const Subscriptions = lazy(() => import('./pages/Subscriptions'))
+const Reports = lazy(() => import('./pages/Reports'))
 const TeamHub = lazy(() => import('./pages/TeamHub'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Install = lazy(() => import('./pages/Install'))
@@ -158,6 +159,12 @@ function App() {
                               path="/subscriptions"
                               element={<Subscriptions />}
                             />
+                            <Route element={<PlanGuard feature="reports" />}>
+                              <Route
+                                path="/reports"
+                                element={<Reports />}
+                              />
+                            </Route>
                             <Route
                               path="/team"
                               element={<TeamHub />}
@@ -196,12 +203,6 @@ function App() {
                               path="/legal/:page"
                               element={<Legal />}
                             />
-                            <Route element={<PlanGuard feature="auditLog" />}>
-                              <Route
-                                path="/audit-log"
-                                element={<AuditLog />}
-                              />
-                            </Route>
                             <Route element={<PlanGuard feature="customization" />}>
                               <Route
                                 path="/business"
