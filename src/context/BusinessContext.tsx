@@ -36,8 +36,9 @@ export function BusinessProvider({
     try {
       const { data, error } = await supabase
         .from('businesses')
-        .select('*')
-        .eq('owner_id', user.id)
+        .select('*, business_members!inner(role)')
+        .eq('business_members.user_id', user.id)
+        .eq('business_members.status', 'active')
         .order('created_at', {
           ascending: true,
         })
@@ -53,7 +54,10 @@ export function BusinessProvider({
         return
       }
 
-      const loadedBusinesses = data ?? []
+      const loadedBusinesses = (data ?? []).map(({ business_members, ...business }) => ({
+        ...business,
+        memberRole: business_members?.[0]?.role ?? 'member',
+      }))
 
       setBusinesses(loadedBusinesses)
 

@@ -1,3 +1,5 @@
+export type BusinessRole = 'owner' | 'admin' | 'member'
+
 export type Business = {
   id: string
   owner_id: string
@@ -6,4 +8,5 @@ export type Business = {
   created_at: string
   logo_url?: string | null
   accent_color?: string | null
+  memberRole?: BusinessRole
 }

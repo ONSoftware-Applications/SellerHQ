@@ -228,6 +228,16 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
           </NavLink>
         )}
 
+        <NavLink
+          to="/team"
+          onClick={handleNavClick}
+          className={({ isActive }) =>
+            `nav-item ${isActive ? 'active' : ''}`
+          }
+        >
+          Team
+        </NavLink>
+
         {canUse('auditLog') && (
           <NavLink
             to="/audit-log"
