@@ -129,8 +129,8 @@ export function BusinessProvider({
         }
       }
 
-      const joined = (data as Array<{ business_id: string }>) [0]
-      const businessId = joined.business_id
+      const joined = (data as Array<{ out_business_id: string }>) [0]
+      const businessId = joined.out_business_id
 
       const refreshed = await refreshBusinesses()
       const target = refreshed.find((b) => b.id === businessId)
