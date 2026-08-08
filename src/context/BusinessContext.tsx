@@ -23,12 +23,12 @@ export function BusinessProvider({
 
   const [loading, setLoading] = useState(true)
 
-  const refreshBusinesses = useCallback(async () => {
+  const refreshBusinesses = useCallback(async (): Promise<Business[]> => {
     if (!user) {
       setBusinesses([])
       setCurrentBusiness(null)
       setLoading(false)
-      return
+      return []
     }
 
     setLoading(true)
@@ -51,7 +51,7 @@ export function BusinessProvider({
 
         setBusinesses([])
         setCurrentBusiness(null)
-        return
+        return []
       }
 
       const loadedBusinesses = (data ?? []).map(({ business_members, ...business }) => ({
@@ -82,10 +82,13 @@ export function BusinessProvider({
           )
         }
       }
+
+      return loadedBusinesses
     } catch (err) {
       console.error('Failed to load businesses:', err)
       setBusinesses([])
       setCurrentBusiness(null)
+      return []
     } finally {
       setLoading(false)
     }
@@ -108,6 +111,40 @@ export function BusinessProvider({
     )
   }
 
+  const joinWithCode = useCallback(
+    async (code: string): Promise<{ success: boolean; businessId?: string; error?: string }> => {
+      const trimmed = code.trim().toUpperCase()
+      if (!trimmed) {
+        return { success: false, error: 'Please enter an invite code.' }
+      }
+
+      const { data, error } = await supabase.rpc('accept_invite_code', {
+        p_code: trimmed,
+      })
+
+      if (error || !data || data.length === 0) {
+        return {
+          success: false,
+          error: error?.message ?? 'Could not join the business. The code may be invalid or expired.',
+        }
+      }
+
+      const joined = (data as Array<{ business_id: string }>) [0]
+      const businessId = joined.business_id
+
+      const refreshed = await refreshBusinesses()
+      const target = refreshed.find((b) => b.id === businessId)
+
+      if (target) {
+        setCurrentBusiness(target)
+        localStorage.setItem('sellerhq_current_business', target.id)
+      }
+
+      return { success: true, businessId }
+    },
+    [refreshBusinesses],
+  )
+
   useEffect(() => {
     if (authLoading) {
       return
@@ -124,6 +161,7 @@ export function BusinessProvider({
         loading: authLoading || loading,
         refreshBusinesses,
         switchBusiness,
+        joinWithCode,
       }}
     >
       {children}

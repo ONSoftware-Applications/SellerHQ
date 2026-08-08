@@ -6,48 +6,39 @@ import type { BusinessRole } from '../types/business'
 
 const PAGES = ['inventory', 'sales', 'expenses', 'listings', 'forecasts', 'reports', 'tax']
 
+const ROLES: { value: BusinessRole; label: string }[] = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'member', label: 'Member' },
+]
+
 function TeamHub() {
   const {
     members,
-    invites,
+    inviteCodes,
     permissions,
     loading,
     isOwner,
-    inviteMember,
+    generateInviteCode,
     removeMember,
     changeRole,
     updatePermissions,
   } = useTeam()
   const { showToast } = useToast()
 
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteRole, setInviteRole] = useState<BusinessRole>('member')
-  const [inviting, setInviting] = useState(false)
+  const [generating, setGenerating] = useState<BusinessRole | null>(null)
   const [error, setError] = useState('')
 
-  async function handleInvite() {
-    const email = inviteEmail.trim().toLowerCase()
-    if (!email || seatsFull) return
+  async function handleGenerateCode(role: BusinessRole) {
     setError('')
-    setInviting(true)
-
+    setGenerating(role)
     try {
-      const result = await inviteMember(email, inviteRole)
-      setInviteEmail('')
-
-      if (result.emailSent) {
-        showToast(`Invitation sent to ${email}.`, 'success')
-      } else {
-        showToast(
-          `Invitation created but the email could not be sent. Copy the invite link and send it manually from the team list.`,
-          'warning',
-        )
-      }
-    } catch (inviteError) {
-      console.error(inviteError)
-      setError('Could not send invitation. The email may already be invited or a member.')
+      await generateInviteCode(role)
+      showToast(`New ${role} invite code generated.`, 'success')
+    } catch (genError) {
+      console.error(genError)
+      setError('Could not generate the invite code. Please try again.')
     } finally {
-      setInviting(false)
+      setGenerating(null)
     }
   }
 
@@ -72,8 +63,7 @@ function TeamHub() {
 
   const totalSeats = 5
   const activeCount = members.filter((m) => m.status === 'active').length
-  const pendingCount = invites.length + members.filter((m) => m.status === 'pending').length
-  const usedSeats = activeCount + pendingCount
+  const usedSeats = activeCount
   const seatsFull = usedSeats >= totalSeats
 
   return (
@@ -95,11 +85,15 @@ function TeamHub() {
         </div>
       </div>
 
-      {/* Invite form (owner only) */}
+      {/* Invite codes (owner only) */}
       {isOwner && (
         <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
-          <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '600' }}>Invite a team member</h3>
-          {seatsFull ? (
+          <h3 style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: '600' }}>Invite codes</h3>
+          <p style={{ margin: '0 0 16px', fontSize: '13px', color: 'var(--shq-ink-muted)' }}>
+            Share a code to add someone to the team. Each code is reusable and joins people as the role shown below. Codes expire after 30 days or whenever you generate a new one. Members enter the code in the business selector.
+          </p>
+
+          {seatsFull && (
             <div
               style={{
                 padding: '12px 16px',
@@ -108,32 +102,66 @@ function TeamHub() {
                 borderRadius: 8,
                 fontSize: 13,
                 color: 'var(--shq-warning)',
+                marginBottom: '12px',
               }}
             >
-              Team is full ({usedSeats}/{totalSeats} seats). Remove a member or upgrade to add more.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <input
-                type="email"
-                placeholder="colleague@example.com"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                style={{ flex: 1, minWidth: '240px', padding: '10px 12px', border: '1px solid var(--shq-border)', borderRadius: '8px', fontSize: '14px', background: 'var(--shq-bg)', color: 'var(--shq-ink)' }}
-              />
-              <select
-                value={inviteRole}
-                onChange={(e) => setInviteRole(e.target.value as BusinessRole)}
-                style={{ padding: '10px 12px', border: '1px solid var(--shq-border)', borderRadius: '8px', fontSize: '14px', background: 'var(--shq-bg)', color: 'var(--shq-ink)' }}
-              >
-                <option value="member">Member</option>
-                <option value="admin">Admin</option>
-              </select>
-              <button className="primary-button" onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
-                {inviting ? 'Sending...' : 'Send invite'}
-              </button>
+              Team is full ({usedSeats}/{totalSeats} seats). Remove a member before generating new codes.
             </div>
           )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {ROLES.map(({ value: role, label }) => {
+              const code = inviteCodes[role]
+              const generatingThis = generating === role
+
+              return (
+                <div
+                  key={role}
+                  style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}
+                >
+                  <span style={{ fontSize: '13px', fontWeight: '600', minWidth: '56px' }}>{label}:</span>
+                  {code ? (
+                    <>
+                      <code
+                        style={{
+                          fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                          fontSize: '15px',
+                          background: 'var(--shq-surface-muted)',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--shq-border)',
+                          wordBreak: 'break-all',
+                        }}
+                        title={code.code}
+                      >
+                        {code.code}
+                      </code>
+                      <span style={{ fontSize: '11px', color: 'var(--shq-ink-muted)' }}>
+                        expires {new Date(code.expiresAt).toLocaleDateString()}
+                      </span>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: '12px', color: 'var(--shq-ink-muted)' }}>
+                      No code yet
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => void handleGenerateCode(role)}
+                    disabled={generatingThis || seatsFull}
+                    style={{ padding: '8px 14px', fontSize: '12px' }}
+                  >
+                    {generatingThis ? 'Generating…' : code ? 'Regenerate' : 'Generate code'}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+
+          <p style={{ margin: '12px 0 0', fontSize: '11px', color: 'var(--shq-ink-muted)' }}>
+            Copy a code and share it with the person you want to add. They enter it in the business selector (under "Add another business").
+          </p>
         </div>
       )}
 
@@ -171,22 +199,9 @@ function TeamHub() {
               )}
             </div>
           ))}
-          {invites.map((invite) => (
-            <div
-              key={invite.id}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '12px', background: 'var(--shq-surface-muted)', borderRadius: '8px', border: '1px dashed var(--shq-border)', flexWrap: 'wrap' }}
-            >
-              <div>
-                <div style={{ fontWeight: 500, fontSize: '13px' }}>{invite.email}</div>
-                <div style={{ fontSize: '12px', color: 'var(--shq-ink-muted)' }}>
-                  {invite.role === 'admin' ? 'Admin' : 'Member'} · invitation pending
-                </div>
-              </div>
-              <span style={{ fontSize: '12px', color: 'var(--shq-ink-faint)' }}>
-                Expires {new Date(invite.expiresAt).toLocaleDateString()}
-              </span>
-            </div>
-          ))}
+          {members.length === 0 && (
+            <div style={{ fontSize: '13px', color: 'var(--shq-ink-muted)' }}>No team members yet.</div>
+          )}
         </div>
       </div>
 

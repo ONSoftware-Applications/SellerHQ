@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 import { useBusiness } from '../hooks/useBusiness'
 import { useSubscription } from '../hooks/useSubscription'
+import { useToast } from '../hooks/useToast'
 
 function isInstallable() {
   return !window.matchMedia('(display-mode: standalone)').matches &&
@@ -89,10 +90,14 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
     currentBusiness,
     loading,
     switchBusiness,
+    joinWithCode,
   } = useBusiness()
   const { canUse } = useSubscription()
+  const { showToast } = useToast()
 
   const [open, setOpen] = useState(false)
+  const [codeInput, setCodeInput] = useState('')
+  const [joining, setJoining] = useState(false)
 
   const productMatch = location.pathname.match(
     /^\/products\/([^/]+)$/,
@@ -104,8 +109,28 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
       }
     : pageTitles[location.pathname] ?? {
         title: 'SellerHQ',
-        subtitle: 'Manage your reselling business.',
+         subtitle: 'Manage your reselling business.',
+       }
+
+  async function handleJoinCode() {
+    if (!codeInput.trim() || joining) return
+    setJoining(true)
+    try {
+      const result = await joinWithCode(codeInput)
+      if (result.success) {
+        setCodeInput('')
+        setOpen(false)
+        showToast('You have joined the business.', 'success')
+      } else {
+        showToast(result.error ?? 'Could not join the business.', 'error')
       }
+    } catch (err) {
+      console.error(err)
+      showToast('Could not join the business.', 'error')
+    } finally {
+      setJoining(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -268,23 +293,74 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
 
               <div className="business-menu-divider" />
 
-              <button
-                type="button"
-                className="business-menu-add"
-                onClick={() => {
-                  setOpen(false)
-                  navigate('/create-business')
-                }}
-              >
-                <span>+</span>
-                Add another business
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </header>
-  )
+               <button
+                 type="button"
+                 className="business-menu-add"
+                 onClick={() => {
+                   setOpen(false)
+                   navigate('/create-business')
+                 }}
+               >
+                 <span>+</span>
+                 Add another business
+               </button>
+
+               <div className="business-menu-divider" />
+
+               <div>
+                 <p style={{
+                   margin: '8px 12px 4px',
+                   fontSize: '11px',
+                   fontWeight: 600,
+                   color: 'var(--shq-ink-muted)',
+                   textTransform: 'uppercase',
+                   letterSpacing: '0.04em',
+                 }}>
+                   Join a business with a code
+                 </p>
+                 <input
+                   type="text"
+                   placeholder="Enter invite code"
+                   value={codeInput}
+                   onChange={(e) => setCodeInput(e.target.value)}
+                   onKeyDown={(e) => {
+                     if (e.key === 'Enter') {
+                       e.preventDefault()
+                       void handleJoinCode()
+                     }
+                   }}
+                   style={{
+                     margin: '0 12px 8px',
+                     width: 'calc(100% - 24px)',
+                     padding: '8px 10px',
+                     borderRadius: '6px',
+                     border: '1px solid var(--shq-border)',
+                     fontSize: '13px',
+                     background: 'var(--shq-surface)',
+                     color: 'var(--shq-ink)',
+                   }}
+                 />
+                 <button
+                   type="button"
+                   className="primary-button"
+                   onClick={() => void handleJoinCode()}
+                   disabled={joining || !codeInput.trim()}
+                   style={{
+                     margin: '0 12px 8px',
+                     width: 'calc(100% - 24px)',
+                     padding: '8px 10px',
+                     fontSize: '13px',
+                   }}
+                 >
+                   {joining ? 'Joining…' : 'Join business'}
+                 </button>
+               </div>
+             </div>
+           )}
+         </div>
+       )}
+     </header>
+   )
 }
 
 export default Topbar
