@@ -32,11 +32,16 @@ create policy "Owners can manage invite codes"
 -- 3. RPC: redeem a code to join a business. SECURITY DEFINER lets it read the
 -- (owner-only) code and insert a membership on behalf of the calling user,
 -- bypassing the caller's row-level restrictions.
+--
+-- NOTE: the returned column names are prefixed (out_*) on purpose. A function's
+-- RETURNS TABLE columns are also output parameters, and naming one `business_id`
+-- or `role` collides with the same-named table columns in the body queries and
+-- raises "column reference is ambiguous".
 create or replace function public.accept_invite_code(p_code text)
 returns table (
-  business_id uuid,
-  business_name text,
-  role text
+  out_business_id uuid,
+  out_business_name text,
+  out_role text
 )
 language plpgsql
 security definer
@@ -59,7 +64,7 @@ begin
   limit 1;
 
   if _business_id is null then
-    raise exception 'invalid_or_expired_code';
+    raise exception 'The invite code you entered is invalid or has expired.';
   end if;
 
   -- Already an active member? nothing to do, just report the business.
@@ -69,9 +74,9 @@ begin
       and user_id = auth.uid()
       and status = 'active'
   ) then
-    business_id := _business_id;
-    business_name := _business_name;
-    role := _role;
+    out_business_id := _business_id;
+    out_business_name := _business_name;
+    out_role := _role;
     return next;
     return;
   end if;
@@ -83,22 +88,22 @@ begin
     and status = 'active';
 
   if _active_count >= _seat_limit then
-    raise exception 'team_full';
+    raise exception 'The team is full. Remove a member before joining.';
   end if;
 
   -- Add (or re-activate) the caller as a member with the code's role.
   insert into public.business_members
     (business_id, user_id, email, role, status, invited_by, joined_at)
   values
-    (_business_id, auth.uid(), auth.email(), _role, 'active', auth.uid(), now())
+    (_business_id, auth.uid(), coalesce(auth.email(), ''), _role, 'active', auth.uid(), now())
   on conflict (business_id, user_id) do update
     set status = 'active',
         role = excluded.role,
         joined_at = now();
 
-  business_id := _business_id;
-  business_name := _business_name;
-  role := _role;
+  out_business_id := _business_id;
+  out_business_name := _business_name;
+  out_role := _role;
   return next;
 end;
 $$;
