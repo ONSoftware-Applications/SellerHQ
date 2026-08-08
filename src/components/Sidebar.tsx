@@ -169,18 +169,6 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
             Scan QR
           </NavLink>
         )}
-
-        {isMobile() && canUse('barcodeScanning') && (
-          <NavLink
-            to="/barcode-scan"
-            onClick={handleNavClick}
-            className={({ isActive }) =>
-              `nav-item ${isActive ? 'active' : ''}`
-            }
-          >
-            Scan Barcode
-          </NavLink>
-        )}
       </nav>
 
       <div className="sidebar-bottom">
