@@ -2,6 +2,8 @@ import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { QrScanner } from '../components/QrScanner'
+import { useBluetooth } from '../hooks/useBluetooth'
+import { useSubscription } from '../hooks/useSubscription'
 
 function isMobile() {
   return /iphone|ipad|ipod|android/i.test(navigator.userAgent)
@@ -9,24 +11,54 @@ function isMobile() {
 
 function Scan() {
   const navigate = useNavigate()
+  const { canUse } = useSubscription()
+  const bluetooth = useBluetooth()
+
   const [result, setResult] = useState('')
   const [error, setError] = useState('')
+  const [relayEnabled, setRelayEnabled] = useState(false)
 
   const handleScan = useCallback(
-    (value: string) => {
+    async (value: string) => {
+      setError('')
       setResult(value)
 
-      if (value.startsWith(window.location.origin)) {
-        const match = value.match(/\/products\/(.+)$/)
-        if (match) {
-          navigate(`/products/${match[1]}`)
+      if (!relayEnabled) {
+        if (value.startsWith(window.location.origin)) {
+          const match = value.match(/\/products\/(.+)$/)
+          if (match) {
+            navigate(`/products/${match[1]}`)
+            return
+          }
+        }
+        setError(`Scanned: ${value} — not a recognised product QR code.`)
+        return
+      }
+
+      // Bluetooth relay mode: send scan result to connected device
+      if (!bluetooth.connected) {
+        const conn = await bluetooth.connect()
+        if (!conn) {
+          setError(bluetooth.error || 'Failed to connect to Bluetooth device.')
           return
         }
       }
 
-      setError(`Scanned: ${value} — not a recognised product QR code.`)
+      const sent = await bluetooth.send(value)
+      if (sent) {
+        setResult(value)
+      } else {
+        setError('Scanned but failed to relay via Bluetooth. Showing locally instead.')
+        if (value.startsWith(window.location.origin)) {
+          const match = value.match(/\/products\/(.+)$/)
+          if (match) {
+            navigate(`/products/${match[1]}`)
+            return
+          }
+        }
+      }
     },
-    [navigate],
+    [navigate, relayEnabled, bluetooth],
   )
 
   if (!isMobile()) {
@@ -67,6 +99,61 @@ function Scan() {
       <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: 'var(--shq-ink-muted)', lineHeight: '1.6' }}>
         Point your camera at a product label QR code to open the product details.
       </p>
+
+      {canUse('bluetoothScanning') && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px',
+          background: 'var(--shq-surface)',
+          border: '1px solid var(--shq-border)',
+          borderRadius: '8px',
+          marginBottom: '16px',
+        }}>
+          <div style={{ fontSize: '13px' }}>
+            <strong>Bluetooth relay</strong>
+            <div style={{ fontSize: '11px', color: 'var(--shq-ink-muted)', marginTop: '2px' }}>
+              {bluetooth.connected ? 'Connected to laptop' : 'Send scans to a paired laptop'}
+            </div>
+          </div>
+          <label style={{ position: 'relative', display: 'inline-block', width: '40px', height: '24px' }}>
+            <input
+              type="checkbox"
+              checked={relayEnabled}
+              onChange={(e) => {
+                setRelayEnabled(e.target.checked)
+                if (e.target.checked && !bluetooth.connected) {
+                  bluetooth.connect()
+                }
+              }}
+              style={{ opacity: 0, width: 0, height: 0 }}
+            />
+            <span style={{
+              position: 'absolute',
+              cursor: 'pointer',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: relayEnabled ? 'var(--shq-accent)' : '#ccc',
+              transition: '.4s',
+              borderRadius: '24px',
+            }}>
+              <span style={{
+                position: 'absolute',
+                height: '16px',
+                width: '16px',
+                left: relayEnabled ? '22px' : '4px',
+                bottom: '4px',
+                background: 'white',
+                transition: '.4s',
+                borderRadius: '50%',
+              }} />
+            </span>
+          </label>
+        </div>
+      )}
 
       {error && (
         <div
