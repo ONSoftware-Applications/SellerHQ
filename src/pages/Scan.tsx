@@ -119,7 +119,13 @@ function Scan() {
               <input
                 type="checkbox"
                 checked={relayEnabled}
-                onChange={(e) => setRelayEnabled(e.target.checked)}
+                onChange={(e) => {
+                  const enabled = e.target.checked
+                  setRelayEnabled(enabled)
+                  if (enabled && !bluetooth.connected) {
+                    bluetooth.scanForDevices()
+                  }
+                }}
                 style={{ opacity: 0, width: 0, height: 0 }}
               />
               <span style={{
@@ -148,20 +154,27 @@ function Scan() {
           </div>
 
           {relayEnabled && !bluetooth.connected && (
-            <button
-              type="button"
-              className="primary-button"
-              onClick={() => {
-                setError('')
-                bluetooth.connect().then((connResult) => {
-                  if (!connResult) {
-                    setError(bluetooth.error || 'Failed to connect to Bluetooth device.')
-                  }
-                })
-              }}
-            >
-              Connect to laptop
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {bluetooth.pairedDevices.length > 0 && (
+                <div style={{ fontSize: '11px', color: 'var(--shq-ink-muted)', marginBottom: '4px' }}>
+                  Found {bluetooth.pairedDevices.length} paired device(s) from your phone's Bluetooth settings
+                </div>
+              )}
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => {
+                  setError('')
+                  bluetooth.connect(bluetooth.pairedDevices.length > 0).then((connResult) => {
+                    if (!connResult) {
+                      setError(bluetooth.error || 'Failed to connect to Bluetooth device.')
+                    }
+                  })
+                }}
+              >
+                {bluetooth.pairedDevices.length > 0 ? 'Connect paired device' : 'Connect to laptop'}
+              </button>
+            </div>
           )}
 
           {relayEnabled && bluetooth.connected && (
