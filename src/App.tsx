@@ -64,15 +64,15 @@ function App() {
     <ToastProvider>
       <ToastViewport />
       <AuthProvider>
-              <SettingsProvider>
-                <SubscriptionProvider>
+            <SettingsProvider>
+              <SubscriptionProvider>
+                <BusinessProvider>
                   <TeamProvider>
-                    <BusinessProvider>
-              <ProductProvider>
-                <ExpenseProvider>
-                  <ThemeController />
-                  <AutoRelist />
-                  <BrowserRouter>
+                    <ProductProvider>
+                      <ExpenseProvider>
+                        <ThemeController />
+                        <AutoRelist />
+                        <BrowserRouter>
                   <ErrorBoundary>
                     <Suspense fallback={<PageLoader />}>
                       <Routes>
@@ -217,8 +217,8 @@ function App() {
                   </BrowserRouter>
                 </ExpenseProvider>
               </ProductProvider>
-            </BusinessProvider>
             </TeamProvider>
+          </BusinessProvider>
           </SubscriptionProvider>
         </SettingsProvider>
       </AuthProvider>
