@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 
-const SERVICE_UUID = '0000ffe0'
-const CHARACTERISTIC_UUID = '0000ffe1'
+const SERVICE_UUID = '0000ff30-0000-1000-8000-00805f9b34fb'
+const CHARACTERISTIC_UUID = '0000ff31-0000-1000-8000-00805f9b34fb'
 
 interface BluetoothRemoteGATTCharacteristic {
   writeValue(data: BufferSource): Promise<void>
@@ -93,9 +93,22 @@ export function useBluetooth() {
     }
 
     try {
-      const dev = await navigator.bluetooth!.requestDevice({
-        filters: [{ services: [SERVICE_UUID] }],
-      }) as BluetoothDeviceEx
+      let dev: BluetoothDeviceEx
+
+      try {
+        dev = await navigator.bluetooth!.requestDevice({
+          filters: [{ services: [SERVICE_UUID] }],
+        }) as BluetoothDeviceEx
+      } catch (filterErr) {
+        if (filterErr instanceof Error && filterErr.message.includes('Invalid')) {
+          throw new Error('Invalid Bluetooth service UUID. Use the full 128-bit format.')
+        }
+        // Fall back to any device if no service filter matches
+        dev = await navigator.bluetooth!.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: [SERVICE_UUID],
+        }) as BluetoothDeviceEx
+      }
 
       dev.addEventListener('gattserverdisconnected', () => {
         setConnected(false)
