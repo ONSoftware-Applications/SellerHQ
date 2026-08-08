@@ -10,6 +10,7 @@ import {
   TAX_CONFIG,
   calculateIncomeTax,
   calculateClass4Ni,
+  calculateNetVatLiability,
 } from '../config/tax'
 import type { Product } from '../types/product'
 
@@ -17,34 +18,42 @@ const ukTaxYears = ['Current year', 'Next year (2026/27)', 'Next year (2027/28)'
 const taxCalculationMethods = ['Cash basis', 'Accruals']
 
 function calculateUkTaxLiability(products: Product[], method: 'cash' | 'accruals', vatEnabled: boolean, businessExpenses: number) {
-  const soldProducts = products.filter(p => p.status === 'Sold' && p.salePrice !== null)
+  // Aggregate purchase prices for input VAT calculation
+  const totalPurchasePrice = products
+    .filter(p => p.purchasePrice > 0)
+    .reduce((sum, p) => sum + p.purchasePrice, 0)
+
+  const soldProducts = products.filter(p => {
+    if (p.status !== 'Sold' || p.salePrice === null) return false
+    if (method === 'cash') {
+      // Cash basis: only include sales where payment has been received (saleDate set)
+      return !!p.saleDate
+    }
+    // Accruals: include all completed sales regardless of payment timing
+    return true
+  })
 
   let taxableProfit = 0
-  let vatLiability = 0
+  let outputTax = 0
 
-  if (method === 'cash') {
-    soldProducts.forEach(product => {
-      if (product.saleDate) {
-        taxableProfit += product.profit || 0
-        if (vatEnabled) {
-          vatLiability += (product.salePrice || 0) * TAX_CONFIG.vatRate
-        }
-      }
-    })
-  } else {
-    soldProducts.forEach(product => {
-      taxableProfit += product.profit || 0
-      if (product.saleDate && vatEnabled) {
-        vatLiability += (product.salePrice || 0) * TAX_CONFIG.vatRate
-      }
-    })
-  }
+  soldProducts.forEach(product => {
+    taxableProfit += product.profit || 0
+    if (vatEnabled) {
+      // Output VAT = salePrice (net) × VAT rate. salePrice is VAT-exclusive.
+      outputTax += (product.salePrice || 0) * TAX_CONFIG.vatRate
+    }
+  })
 
   taxableProfit = Math.max(0, taxableProfit - businessExpenses)
   
   const taxableIncome = Math.max(0, taxableProfit - TAX_CONFIG.personalAllowance)
   const incomeTax = calculateIncomeTax(taxableIncome)
   const nationalInsurance = calculateClass4Ni(taxableIncome)
+  
+  // Net VAT liability = output tax collected - input tax paid on purchases and expenses
+  const vatLiability = vatEnabled
+    ? calculateNetVatLiability(outputTax, totalPurchasePrice, businessExpenses)
+    : 0
   const totalTax = incomeTax + vatLiability + nationalInsurance
   
   return {
@@ -57,20 +66,24 @@ function calculateUkTaxLiability(products: Product[], method: 'cash' | 'accruals
   }
 }
 
-function getVatRegistrationStatus(products: Product[]): { status: 'registered' | 'should-register' | 'not-needed' } {
+function getVatRegistrationStatus(products: Product[]): { status: 'registered' | 'should-register' | 'not-needed'; revenue: number } {
+  // VAT registration threshold is based on VAT-inclusive turnover over 12 months.
+  // Since salePrice is stored VAT-exclusive, we convert to VAT-inclusive by
+  // dividing by (1 - vatRate), giving the gross amount the customer paid.
   const yearlyRevenue = products.reduce((sum, p) => {
     if (p.status === 'Sold' && p.salePrice !== null) {
-      return sum + p.salePrice
+      const vatInclusive = p.salePrice / (1 - TAX_CONFIG.vatRate)
+      return sum + vatInclusive
     }
     return sum
   }, 0)
   
   if (yearlyRevenue >= TAX_CONFIG.vatRegistrationThreshold) {
-    return { status: 'registered' }
+    return { status: 'registered', revenue: yearlyRevenue }
   } else if (yearlyRevenue > 0) {
-    return { status: 'should-register' }
+    return { status: 'should-register', revenue: yearlyRevenue }
   } else {
-    return { status: 'not-needed' }
+    return { status: 'not-needed', revenue: yearlyRevenue }
   }
 }
 
@@ -146,7 +159,7 @@ function Tax() {
           content: vatStatus.status === 'registered' 
             ? 'You are registered for VAT. File quarterly returns and submit VAT returns.'
             : vatStatus.status === 'should-register'
-            ? `Your projected revenue (${money(yearlyRevenue)}) exceeds the £85,000 threshold. Register for VAT by ${new Date().getMonth() + 4}/${new Date().getFullYear() + (new Date().getMonth() >= 10 ? 1 : 0)}.`
+            ? `Your projected VAT-inclusive revenue (${money(vatStatus.revenue)}) is approaching the £85,000 threshold. Register for VAT when it exceeds this limit.`
             : 'You do not need to register for VAT, but consider registering if you expect growth.'
         }]
       : []),
@@ -587,6 +600,12 @@ function Tax() {
               <div style={{ padding: '16px', background: 'var(--shq-surface)', borderRadius: '8px', border: '1px solid var(--shq-border)' }}>
                 <div style={{ fontSize: '13px', color: 'var(--shq-ink-muted)', marginBottom: '8px' }}>VAT rate applied</div>
                 <div style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shq-success)' }}>20%</div>
+              </div>
+            )}
+            {vatEnabled && (
+              <div style={{ padding: '16px', background: 'var(--shq-surface)', borderRadius: '8px', border: '1px solid var(--shq-border)' }}>
+                <div style={{ fontSize: '13px', color: 'var(--shq-ink-muted)', marginBottom: '8px' }}>Net VAT liability</div>
+                <div style={{ fontSize: '18px', fontWeight: '600', color: 'var(--shq-ink)' }}>{money(taxResults.vatLiability)}</div>
               </div>
             )}
           </div>
