@@ -212,7 +212,7 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
               `nav-item ${isActive ? 'active' : ''}`
             }
           >
-            Business &amp; Team
+            Business
           </NavLink>
         )}
 
@@ -227,16 +227,6 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
             Audit log
           </NavLink>
         )}
-
-        <NavLink
-          to="/install"
-          onClick={handleNavClick}
-          className={({ isActive }) =>
-            `nav-item ${isActive ? 'active' : ''}`
-          }
-        >
-          Install App
-        </NavLink>
 
         <NavLink
           to="/support"
