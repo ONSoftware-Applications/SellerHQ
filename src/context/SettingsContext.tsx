@@ -7,7 +7,6 @@ import type { BillingCycle, PlanId } from '../lib/plans'
 
 export type UserSettings = {
   features: {
-    vatEnabled: boolean
     multiCurrency: boolean
     forecastsEnabled: boolean
     listingsEnabled: boolean
@@ -22,8 +21,6 @@ export type UserSettings = {
   business: {
     defaultCurrency: string
     businessName: string
-    vatNumber: string
-    vatRegistered: boolean
     address: string
   }
   notifications: {
@@ -42,7 +39,6 @@ export type UserSettings = {
 
 const defaultSettings: UserSettings = {
   features: {
-    vatEnabled: true,
     multiCurrency: false,
     forecastsEnabled: true,
     listingsEnabled: true,
@@ -57,8 +53,6 @@ const defaultSettings: UserSettings = {
   business: {
     defaultCurrency: 'GBP',
     businessName: '',
-    vatNumber: '',
-    vatRegistered: false,
     address: '',
   },
   notifications: {
