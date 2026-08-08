@@ -13,7 +13,7 @@ function Support() {
   const body = encodeURIComponent(
     `Plan: ${plan}\nBusiness: ${settings.business.businessName || '—'}\n\n`,
   )
-  const mailto = `mailto:support@sellerhq.onsoftware.uk?subject=${subject}&body=${body}`
+  const mailto = `mailto:adminonsoftware@gmail.com?subject=${subject}&body=${body}`
 
   return (
     <div className="inventory-page" style={{ maxWidth: 680 }}>
