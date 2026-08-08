@@ -1,4 +1,4 @@
-import { useRef, useState, type DragEvent, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type DragEvent, type FormEvent } from 'react'
 
 import type {
   Marketplace,
@@ -117,6 +117,26 @@ export function ProductEditorModal({
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [showCamera, setShowCamera] = useState(false)
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
+
+  useEffect(() => {
+    if (!cameraStream || !videoRef.current) return
+
+    const video = videoRef.current
+    video.srcObject = cameraStream
+
+    video.play().catch(() => {
+      // Video play may be blocked by autoplay policies
+    })
+
+    return () => {
+      if (video && video.srcObject) {
+        const stream = video.srcObject as MediaStream
+        stream.getTracks().forEach((track) => track.stop())
+        video.srcObject = null
+      }
+    }
+  }, [cameraStream])
 
   const [status, setStatus] = useState(initialProduct.status)
   const [selectedMarketplaces, setSelectedMarketplaces] =
@@ -285,11 +305,8 @@ export function ProductEditorModal({
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' },
       })
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
-        setShowCamera(true)
-      }
+      setCameraStream(stream)
+      setShowCamera(true)
     } catch (err) {
       console.error('Camera access denied:', err)
     }
@@ -297,11 +314,10 @@ export function ProductEditorModal({
 
   function stopCamera() {
     setShowCamera(false)
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream
-      stream.getTracks().forEach((track) => track.stop())
-      videoRef.current.srcObject = null
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop())
     }
+    setCameraStream(null)
   }
 
   async function capturePhoto() {
