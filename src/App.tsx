@@ -13,6 +13,7 @@ import { BusinessProvider } from './context/BusinessContext'
 import { ProductProvider } from './context/ProductContext'
 import { SettingsProvider } from './context/SettingsContext'
 import { SubscriptionProvider } from './context/SubscriptionContext'
+import { TeamProvider } from './context/TeamContext'
 import { AutoRelist } from './components/AutoRelist'
 import { ExpenseProvider } from './context/ExpenseContext'
 import { ToastProvider } from './context/ToastContext'
@@ -40,7 +41,7 @@ const Settings = lazy(() => import('./pages/Settings'))
 const ProductDetails = lazy(() => import('./pages/ProductDetails'))
 const Pricing = lazy(() => import('./pages/Pricing'))
 const Subscriptions = lazy(() => import('./pages/Subscriptions'))
-const Reports = lazy(() => import('./pages/Reports'))
+const TeamHub = lazy(() => import('./pages/TeamHub'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Install = lazy(() => import('./pages/Install'))
 const Scan = lazy(() => import('./pages/Scan'))
@@ -49,6 +50,7 @@ const Support = lazy(() => import('./pages/Support'))
 const AuditLog = lazy(() => import('./pages/AuditLog'))
 const BusinessCustomization = lazy(() => import('./pages/BusinessCustomization'))
 const BarcodeScan = lazy(() => import('./pages/BarcodeScan'))
+const AcceptInvite = lazy(() => import('./pages/AcceptInvite'))
 const DebugErrors = lazy(() => import('./pages/DebugErrors'))
 
 function PageLoader() {
@@ -62,9 +64,10 @@ function App() {
     <ToastProvider>
       <ToastViewport />
       <AuthProvider>
-        <SettingsProvider>
-          <SubscriptionProvider>
-            <BusinessProvider>
+              <SettingsProvider>
+                <SubscriptionProvider>
+                  <TeamProvider>
+                    <BusinessProvider>
               <ProductProvider>
                 <ExpenseProvider>
                   <ThemeController />
@@ -81,6 +84,10 @@ function App() {
                       <Route
                         path="/register"
                         element={<Register />}
+                      />
+                      <Route
+                        path="/invite/:token"
+                        element={<AcceptInvite />}
                       />
 
                       <Route element={<Layout />}>
@@ -151,10 +158,14 @@ function App() {
                               path="/subscriptions"
                               element={<Subscriptions />}
                             />
-                            <Route element={<PlanGuard feature="reports" />}>
+                            <Route
+                              path="/team"
+                              element={<TeamHub />}
+                            />
+                            <Route element={<PlanGuard feature="auditLog" />}>
                               <Route
-                                path="/reports"
-                                element={<Reports />}
+                                path="/audit-log"
+                                element={<AuditLog />}
                               />
                             </Route>
                             <Route
@@ -207,6 +218,7 @@ function App() {
                 </ExpenseProvider>
               </ProductProvider>
             </BusinessProvider>
+            </TeamProvider>
           </SubscriptionProvider>
         </SettingsProvider>
       </AuthProvider>
