@@ -16,6 +16,7 @@ function BarcodeScan() {
 
   const handleScan = useCallback(
     (value: string) => {
+      setError('')
       setResult(value)
       const normalized = value.trim().toLowerCase()
 

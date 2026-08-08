@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { BrowserMultiFormatReader } from '@zxing/browser'
+import { BrowserMultiFormatReader, BarcodeFormat } from '@zxing/browser'
+import type { IScannerControls } from '@zxing/browser'
+import { DecodeHintType } from '@zxing/library'
 
 type BarcodeScannerProps = {
   onScan: (value: string) => void
@@ -14,13 +16,28 @@ export function BarcodeScanner({ onScan, onError }: BarcodeScannerProps) {
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState('')
   const scanningRef = useRef(true)
+  const controlsInstanceRef = useRef<IScannerControls | null>(null)
+  const [torchOn, setTorchOn] = useState(false)
+  const [torchAvailable, setTorchAvailable] = useState(false)
 
   useEffect(() => {
     let cancelled = false
 
     async function start() {
       try {
-        const reader = new BrowserMultiFormatReader()
+        // Restrict to common 1D product barcode formats for faster scanning
+        const hints = new Map()
+        hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+          BarcodeFormat.UPC_A,
+          BarcodeFormat.UPC_E,
+          BarcodeFormat.EAN_13,
+          BarcodeFormat.EAN_8,
+          BarcodeFormat.CODE_39,
+          BarcodeFormat.CODE_93,
+          BarcodeFormat.CODE_128,
+        ])
+
+        const reader = new BrowserMultiFormatReader(hints)
 
         const video = videoRef.current
         if (!video) return
@@ -31,15 +48,29 @@ export function BarcodeScanner({ onScan, onError }: BarcodeScannerProps) {
           (result) => {
             if (!scanningRef.current || cancelled) return
             if (result && result.getText()) {
-              scanningRef.current = false
-              setScanning(false)
-              onScan(result.getText())
+              const text = result.getText().trim()
+              onScan(text)
             }
           },
         )
 
         if (cancelled) return
         setScanning(true)
+        controlsInstanceRef.current = controlsRef.current as unknown as IScannerControls
+
+        // Check torch capability
+        if (controlsInstanceRef.current?.streamVideoCapabilitiesGet) {
+          try {
+            const caps = controlsInstanceRef.current.streamVideoCapabilitiesGet(
+              () => []
+            )
+            if (caps && 'torch' in caps) {
+              setTorchAvailable(true)
+            }
+          } catch {
+            // Torch capability check not supported
+          }
+        }
       } catch (err) {
         const msg =
           err instanceof Error ? err.message : 'Unable to access camera'
@@ -57,6 +88,17 @@ export function BarcodeScanner({ onScan, onError }: BarcodeScannerProps) {
       controlsRef.current = null
     }
   }, [onScan, onError])
+
+  const toggleTorch = async () => {
+    if (!controlsInstanceRef.current?.switchTorch) return
+    const newTorchState = !torchOn
+    try {
+      await controlsInstanceRef.current.switchTorch(newTorchState)
+      setTorchOn(newTorchState)
+    } catch {
+      // Torch toggle failed
+    }
+ 	}
 
   return (
     <div style={{ position: 'relative', width: '100%', maxWidth: '400px', margin: '0 auto' }}>
@@ -84,20 +126,51 @@ export function BarcodeScanner({ onScan, onError }: BarcodeScannerProps) {
       )}
 
       {scanning && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '70%',
-            height: '45%',
-            border: '3px solid var(--shq-accent)',
-            borderRadius: '12px',
-            boxShadow: '0 0 0 1000px rgb(0 0 0 / 30%)',
-            pointerEvents: 'none',
-          }}
-        />
+        <>
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '70%',
+              height: '45%',
+              border: '3px solid var(--shq-accent)',
+              borderRadius: '12px',
+              boxShadow: '0 0 0 1000px rgb(0 0 0 / 30%)',
+              pointerEvents: 'none',
+            }}
+          />
+
+          {torchAvailable && (
+            <button
+              type="button"
+              onClick={toggleTorch}
+              aria-label={torchOn ? 'Turn off torch' : 'Turn on torch'}
+              title={torchOn ? 'Turn off torch' : 'Turn on torch'}
+              style={{
+                position: 'absolute',
+                bottom: '12px',
+                right: '12px',
+                width: '44px',
+                height: '44px',
+                borderRadius: '50%',
+                border: 'none',
+                background: torchOn ? 'var(--shq-accent)' : 'rgba(255 255 255 / 0.9)',
+                color: torchOn ? 'var(--shq-surface)' : 'var(--shq-ink)',
+                fontSize: '18px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 8px rgb(0 0 0 / 20%)',
+                transition: 'all 0.2s',
+              }}
+            >
+              {torchOn ? '🔦' : '⚡'}
+            </button>
+          )}
+        </>
       )}
     </div>
   )
