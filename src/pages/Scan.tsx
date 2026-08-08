@@ -35,13 +35,10 @@ function Scan() {
         return
       }
 
-      // Bluetooth relay mode: send scan result to connected device
+      // Bluetooth relay mode: send scan result to already-connected device
       if (!bluetooth.connected) {
-        const conn = await bluetooth.connect()
-        if (!conn) {
-          setError(bluetooth.error || 'Failed to connect to Bluetooth device.')
-          return
-        }
+        setError('Connect to your laptop via Bluetooth first.')
+        return
       }
 
       const sent = await bluetooth.send(value)
@@ -103,55 +100,85 @@ function Scan() {
       {canUse('bluetoothScanning') && (
         <div style={{
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 16px',
+          flexDirection: 'column',
+          gap: '12px',
+          padding: '16px',
           background: 'var(--shq-surface)',
           border: '1px solid var(--shq-border)',
           borderRadius: '8px',
           marginBottom: '16px',
         }}>
-          <div style={{ fontSize: '13px' }}>
-            <strong>Bluetooth relay</strong>
-            <div style={{ fontSize: '11px', color: 'var(--shq-ink-muted)', marginTop: '2px' }}>
-              {bluetooth.connected ? 'Connected to laptop' : 'Send scans to a paired laptop'}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: '13px' }}>
+              <strong>Bluetooth relay</strong>
+              <div style={{ fontSize: '11px', color: 'var(--shq-ink-muted)', marginTop: '2px' }}>
+                {bluetooth.connected ? 'Connected to laptop' : 'Send scans to a paired laptop'}
+              </div>
             </div>
-          </div>
-          <label style={{ position: 'relative', display: 'inline-block', width: '40px', height: '24px' }}>
-            <input
-              type="checkbox"
-              checked={relayEnabled}
-              onChange={(e) => {
-                setRelayEnabled(e.target.checked)
-                if (e.target.checked && !bluetooth.connected) {
-                  bluetooth.connect()
-                }
-              }}
-              style={{ opacity: 0, width: 0, height: 0 }}
-            />
-            <span style={{
-              position: 'absolute',
-              cursor: 'pointer',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: relayEnabled ? 'var(--shq-accent)' : '#ccc',
-              transition: '.4s',
-              borderRadius: '24px',
-            }}>
+            <label style={{ position: 'relative', display: 'inline-block', width: '40px', height: '24px' }}>
+              <input
+                type="checkbox"
+                checked={relayEnabled}
+                onChange={(e) => setRelayEnabled(e.target.checked)}
+                style={{ opacity: 0, width: 0, height: 0 }}
+              />
               <span style={{
                 position: 'absolute',
-                height: '16px',
-                width: '16px',
-                left: relayEnabled ? '22px' : '4px',
-                bottom: '4px',
-                background: 'white',
+                cursor: 'pointer',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: relayEnabled ? 'var(--shq-accent)' : '#ccc',
                 transition: '.4s',
-                borderRadius: '50%',
-              }} />
-            </span>
-          </label>
+                borderRadius: '24px',
+              }}>
+                <span style={{
+                  position: 'absolute',
+                  height: '16px',
+                  width: '16px',
+                  left: relayEnabled ? '22px' : '4px',
+                  bottom: '4px',
+                  background: 'white',
+                  transition: '.4s',
+                  borderRadius: '50%',
+                }} />
+              </span>
+            </label>
+          </div>
+
+          {relayEnabled && !bluetooth.connected && (
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => {
+                setError('')
+                bluetooth.connect().then((connResult) => {
+                  if (!connResult) {
+                    setError(bluetooth.error || 'Failed to connect to Bluetooth device.')
+                  }
+                })
+              }}
+            >
+              Connect to laptop
+            </button>
+          )}
+
+          {relayEnabled && bluetooth.connected && (
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => bluetooth.disconnect()}
+            >
+              Disconnect
+            </button>
+          )}
+
+          {relayEnabled && bluetooth.connected && bluetooth.error && (
+            <div style={{ fontSize: '12px', color: 'var(--shq-error-text)' }}>
+              {bluetooth.error}
+            </div>
+          )}
         </div>
       )}
 
