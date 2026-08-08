@@ -59,6 +59,7 @@ type BluetoothRequestOptions = {
 
 interface Bluetooth {
   requestDevice(options: BluetoothRequestOptions): Promise<BluetoothDevice>
+  getDevices(): Promise<BluetoothDevice[]>
 }
 
 interface NavigatorBluetooth {
@@ -80,37 +81,68 @@ export function useBluetooth() {
   const [device, setDevice] = useState<BluetoothDeviceEx | null>(null)
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState('')
+  const [pairedDevices, setPairedDevices] = useState<BluetoothDeviceEx[]>([])
 
   const isSupported = useCallback(
     () => !!navigator.bluetooth,
     [],
   )
 
-  const connect = useCallback(async () => {
+  const connectToDevice = useCallback(async (dev: BluetoothDeviceEx) => {
+    dev.addEventListener('gattserverdisconnected', () => {
+      setConnected(false)
+      setDevice(null)
+    })
+
+    await dev.gatt.connect()
+    setConnected(true)
+    setDevice(dev)
+    setError('')
+    return dev
+  }, [])
+
+  const connect = useCallback(async (useExisting: boolean = false) => {
     if (!isSupported()) {
       setError('Bluetooth is not supported on this browser. Use Chrome or Edge.')
       return null
     }
 
     try {
-      const dev = await navigator.bluetooth!.requestDevice({
-        filters: [{ services: [SERVICE_UUID] }],
-      }) as BluetoothDeviceEx
+      let dev: BluetoothDeviceEx
 
-      dev.addEventListener('gattserverdisconnected', () => {
-        setConnected(false)
-        setDevice(null)
-      })
+      if (useExisting && pairedDevices.length > 0) {
+        // Use pre-paired device (no dialog)
+        dev = pairedDevices[0]
+      } else {
+        // Fall back to Chrome's device picker dialog
+        dev = await navigator.bluetooth!.requestDevice({
+          filters: [{ services: [SERVICE_UUID] }],
+        }) as BluetoothDeviceEx
+      }
 
-      const server = await dev.gatt.connect()
-      setConnected(true)
-      setDevice(dev)
-      setError('')
-      return { device: dev, server }
+      await connectToDevice(dev)
+      return dev
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Bluetooth connection failed'
       setError(msg)
       return null
+    }
+  }, [isSupported, pairedDevices, connectToDevice])
+
+  const scanForDevices = useCallback(async () => {
+    if (!isSupported()) {
+      setError('Bluetooth is not supported on this browser.')
+      return []
+    }
+
+    try {
+      const devices = await navigator.bluetooth!.getDevices() as BluetoothDeviceEx[]
+      setPairedDevices(devices)
+      return devices
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to scan for devices'
+      setError(msg)
+      return []
     }
   }, [isSupported])
 
@@ -137,5 +169,5 @@ export function useBluetooth() {
     }
   }, [device])
 
-  return { connect, send, disconnect, connected, error, isSupported }
+  return { connect, send, disconnect, connected, error, isSupported, pairedDevices, scanForDevices, connectToDevice }
 }
