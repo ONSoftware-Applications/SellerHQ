@@ -169,6 +169,18 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
             Scan QR
           </NavLink>
         )}
+
+        {!isMobile() && canUse('qrRelay') && (
+          <NavLink
+            to="/relay"
+            onClick={handleNavClick}
+            className={({ isActive }) =>
+              `nav-item ${isActive ? 'active' : ''}`
+            }
+          >
+            QR Relay
+          </NavLink>
+        )}
       </nav>
 
       <div className="sidebar-bottom">

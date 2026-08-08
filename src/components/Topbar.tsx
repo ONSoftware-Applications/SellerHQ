@@ -59,6 +59,10 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
     title: 'Scan QR',
     subtitle: 'Scan a product label QR code.',
   },
+  '/relay': {
+    title: 'QR Relay',
+    subtitle: 'Receive scans from your phone in real time.',
+  },
   '/subscriptions': {
     title: 'Subscriptions',
     subtitle: 'Manage your plan and billing.',
