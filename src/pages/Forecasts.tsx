@@ -13,7 +13,7 @@ const periodOptions = ['All time', 'This year', 'This quarter', 'This month', 'C
 const forecastTypes = ['Revenue', 'Profit', 'Units', 'Growth']
 
 function generateHistoricalData(products: Product[], months: number) {
-  const data = []
+  const data: ForecastDataPoint[] = []
   const startDate = new Date()
   startDate.setMonth(startDate.getMonth() - months + 1)
   
@@ -29,7 +29,7 @@ function generateHistoricalData(products: Product[], months: number) {
     })
     
     const revenue = monthProducts.reduce((sum, p) => sum + (p.salePrice || 0), 0)
-    const profit = monthProducts.reduce((sum, p) => sum + p.profit, 0)
+    const profit = monthProducts.reduce((sum, p) => sum + (p.profit || 0), 0)
     const units = monthProducts.length
 
     data.push({
@@ -60,20 +60,22 @@ function calculateForecast(data: ForecastDataPoint[], monthsToForecast: number) 
   const avgRevenue = recent.reduce((sum, d) => sum + d.revenue, 0) / recent.length
   const avgProfit = recent.reduce((sum, d) => sum + d.profit, 0) / recent.length
   const avgUnits = recent.reduce((sum, d) => sum + d.units, 0) / recent.length
-  const avgMargin = data.reduce((sum, d) => sum + d.margin, 0) / data.length
+  const avgMargin = recent.length > 0 ? (avgProfit / avgRevenue) * 100 : 0
   
-  // Calculate trend from recent data
-  const trend = recent.length >= 2
-    ? (recent[recent.length - 1].revenue - recent[0].revenue) / recent[0].revenue / recent.length
+  // Calculate trend from recent data - guard against zero baseline
+  const trend = recent.length >= 2 && recent[0].revenue > 0
+    ? ((recent[recent.length - 1].revenue - recent[0].revenue) / recent[0].revenue) / recent.length
     : 0
   
-  const forecast = []
+  const forecast: ForecastDataPoint[] = []
   for (let i = 1; i <= monthsToForecast; i++) {
     const trendFactor = 1 + trend * i
+    const forecastRevenue = avgRevenue * trendFactor
+    const forecastProfit = avgMargin > 0 ? forecastRevenue * (avgMargin / 100) : 0
     forecast.push({
       month: `Forecast ${i}`,
-      revenue: avgRevenue * trendFactor,
-      profit: avgProfit * trendFactor,
+      revenue: forecastRevenue,
+      profit: forecastProfit,
       units: Math.round(avgUnits * trendFactor),
       margin: avgMargin,
       forecast: true,
@@ -86,8 +88,10 @@ function calculateForecast(data: ForecastDataPoint[], monthsToForecast: number) 
 function calculateGrowthRates(data: ForecastDataPoint[]) {
   if (data.length < 2) return { revenueGrowth: 0, profitGrowth: 0, unitsGrowth: 0 }
   
-  const recent = data.slice(-3)
-  const previous = data.slice(-6, -3)
+  // Split into two halves: recent vs previous, ensuring each has at least 1 data point
+  const cutoff = Math.ceil(data.length / 2)
+  const recent = data.slice(cutoff)
+  const previous = data.slice(0, cutoff)
   
   if (recent.length === 0 || previous.length === 0) return { revenueGrowth: 0, profitGrowth: 0, unitsGrowth: 0 }
   
@@ -208,14 +212,23 @@ function Forecast() {
   const baselineExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0)
   const baselineUnits = baselineSold.length
   const baselineAvgPrice = baselineUnits > 0 ? baselineRevenue / baselineUnits : 0
+  const baselineMargin = baselineRevenue > 0 ? baselineProfit / baselineRevenue : 0
+
+  // Estimate monthly expenses for the forecast period
+  const forecastMonths = selectedPeriod === 'All time' ? 6 :
+                         selectedPeriod === 'This year' ? 3 :
+                         selectedPeriod === 'This quarter' ? 1 :
+                         selectedPeriod === 'This month' ? 1 : 6
+  const baselineMonths = historicalData.length || 1
+  const monthlyExpenses = baselineExpenses / baselineMonths
 
   const scenario = useMemo(() => {
     const newUnits = Math.round(baselineUnits * (1 + volumeChange / 100))
     const newAvgPrice = Math.max(0, baselineAvgPrice + priceChange)
     const newRevenue = newUnits * newAvgPrice
-    const baselineMargin = baselineRevenue > 0 ? baselineProfit / baselineRevenue : 0
     const newProfit = newRevenue * baselineMargin
-    const newNet = newProfit - baselineExpenses
+    const periodExpenses = monthlyExpenses * forecastMonths
+    const newNet = newProfit - periodExpenses
     const newTax = taxEstimate(newNet)
     const revenueDelta = newRevenue - baselineRevenue
     const profitDelta = newProfit - baselineProfit
@@ -229,7 +242,7 @@ function Forecast() {
       revenueDelta,
       profitDelta,
     }
-  }, [baselineUnits, baselineAvgPrice, baselineRevenue, baselineProfit, baselineExpenses, volumeChange, priceChange])
+  }, [baselineUnits, baselineAvgPrice, baselineRevenue, baselineProfit, baselineMargin, monthlyExpenses, forecastMonths, volumeChange, priceChange])
 
   const getMetricChange = (current: number, previous: number) => {
     if (previous === 0) return { value: current, change: 0, trend: 'up' as const }
