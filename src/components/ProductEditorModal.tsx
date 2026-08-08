@@ -114,6 +114,9 @@ export function ProductEditorModal({
     initialProduct.photos.join('\n'),
   )
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const [showCamera, setShowCamera] = useState(false)
 
   const [status, setStatus] = useState(initialProduct.status)
   const [selectedMarketplaces, setSelectedMarketplaces] =
@@ -275,6 +278,53 @@ export function ProductEditorModal({
         .join('\n'),
     )
 
+  }
+
+  async function startCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+      })
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        await videoRef.current.play()
+        setShowCamera(true)
+      }
+    } catch (err) {
+      console.error('Camera access denied:', err)
+    }
+  }
+
+  function stopCamera() {
+    setShowCamera(false)
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream
+      stream.getTracks().forEach((track) => track.stop())
+      videoRef.current.srcObject = null
+    }
+  }
+
+  async function capturePhoto() {
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    if (!video || !canvas) return
+
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) return
+      const file = new File([blob], `photo-${Date.now()}.webp`, {
+        type: 'image/webp',
+        lastModified: Date.now(),
+      })
+      await appendFiles([file])
+      stopCamera()
+    }, 'image/webp', 0.9)
   }
 
   async function handleFilesSelected(
@@ -671,22 +721,86 @@ export function ProductEditorModal({
 
                   <button
                     type="button"
-                    className="photo-upload-dropzone"
-                    onClick={openFilePicker}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={handleDrop}
+                    className="secondary-button"
+                    onClick={startCamera}
                     disabled={submitting}
+                    style={{ marginBottom: '16px' }}
                   >
-                    <span className="photo-upload-icon">
-                      +
-                    </span>
-
-                    <strong>Add photos</strong>
-
-                    <span>
-                      Click to upload or drag images here
-                    </span>
+                    Take Photo
                   </button>
+
+                  {showCamera && (
+                    <div style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      width: '100vw',
+                      height: '100vh',
+                      background: 'rgb(0 0 0 / 90%)',
+                      zIndex: 1000,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}>
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        style={{
+                          maxWidth: '90vw',
+                          maxHeight: '60vh',
+                          borderRadius: '8px',
+                          objectFit: 'contain',
+                        }}
+                      />
+                      <canvas
+                        ref={canvasRef}
+                        style={{ display: 'none' }}
+                      />
+
+                      <div style={{
+                        display: 'flex',
+                        gap: '16px',
+                        marginTop: '16px',
+                      }}>
+                        <button
+                          type="button"
+                          className="primary-button"
+                          onClick={capturePhoto}
+                          disabled={submitting}
+                        >
+                          Capture
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={stopCamera}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                   <button
+                     type="button"
+                     className="photo-upload-dropzone"
+                     onClick={openFilePicker}
+                     onDragOver={(event) => event.preventDefault()}
+                     onDrop={handleDrop}
+                     disabled={submitting}
+                   >
+                     <span className="photo-upload-icon">
+                       +
+                     </span>
+
+                     <strong>Add photos</strong>
+
+                     <span>
+                       Click to upload or drag images here
+                     </span>
+                   </button>
 
                   <div className="photo-upload-grid">
                     {photos.length > 0 ? (

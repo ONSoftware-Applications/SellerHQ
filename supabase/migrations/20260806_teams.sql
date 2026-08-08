@@ -49,17 +49,17 @@ create index on public.business_invites (business_id, status);
 
 -- 4. RLS helper functions
 create or replace function public.is_business_member(business_uuid uuid)
-returns boolean as $$
+returns boolean language sql security definer set search_path = public, auth as $$
   select exists (
     select 1 from public.business_members
     where business_id = business_uuid
       and user_id = auth.uid()
       and status = 'active'
   );
-$$ stable security definer set search_path = public, auth;
+$$;
 
 create or replace function public.is_business_owner(business_uuid uuid)
-returns boolean as $$
+returns boolean language sql security definer set search_path = public, auth as $$
   select exists (
     select 1 from public.business_members
     where business_id = business_uuid
@@ -67,10 +67,10 @@ returns boolean as $$
       and role = 'owner'
       and status = 'active'
   );
-$$ stable security definer set search_path = public, auth;
+$$;
 
 create or replace function public.is_business_admin_or_owner(business_uuid uuid)
-returns boolean as $$
+returns boolean language sql security definer set search_path = public, auth as $$
   select exists (
     select 1 from public.business_members
     where business_id = business_uuid
@@ -78,11 +78,11 @@ returns boolean as $$
       and role in ('owner', 'admin')
       and status = 'active'
   );
-$$ stable security definer set search_path = public, auth;
+$$;
 
--- 5. Auto-create owner membership when business is created
+-- 5. Auto-create owner membership and default permissions when business is created
 create or replace function public.handle_new_business()
-returns trigger as $$
+returns trigger language plpgsql security definer as $func$
 declare
   owner_email text;
 begin
@@ -92,32 +92,34 @@ begin
   values (new.id, new.owner_id, owner_email, 'owner', 'active', now());
 
   -- Default permissions for admin role
-  insert into public.business_role_permissions (business_id, role, page, can_view, can_edit, can_delete) values
-  (new.id, 'admin', 'inventory', true, true, true),
-  (new.id, 'admin', 'sales', true, true, true),
-  (new.id, 'admin', 'expenses', true, true, true),
-  (new.id, 'admin', 'listings', true, true, true),
-  (new.id, 'admin', 'forecasts', true, true, false),
-  (new.id, 'admin', 'reports', true, true, false),
-  (new.id, 'admin', 'tax', true, true, false),
-  (new.id, 'admin', 'settings', true, true, false),
-  (new.id, 'admin', 'team', true, true, false);
+  insert into public.business_role_permissions (business_id, role, page, can_view, can_edit, can_delete)
+  values
+    (new.id, 'admin', 'inventory', true, true, true),
+    (new.id, 'admin', 'sales', true, true, true),
+    (new.id, 'admin', 'expenses', true, true, true),
+    (new.id, 'admin', 'listings', true, true, true),
+    (new.id, 'admin', 'forecasts', true, true, false),
+    (new.id, 'admin', 'reports', true, true, false),
+    (new.id, 'admin', 'tax', true, true, false),
+    (new.id, 'admin', 'settings', true, true, false),
+    (new.id, 'admin', 'team', true, true, false);
 
   -- Default permissions for member role
-  insert into public.business_role_permissions (business_id, role, page, can_view, can_edit, can_delete) values
-  (new.id, 'member', 'inventory', true, true, false),
-  (new.id, 'member', 'sales', true, true, false),
-  (new.id, 'member', 'expenses', true, true, false),
-  (new.id, 'member', 'listings', true, false, false),
-  (new.id, 'member', 'forecasts', true, false, false),
-  (new.id, 'member', 'reports', true, false, false),
-  (new.id, 'member', 'tax', false, false, false),
-  (new.id, 'member', 'settings', false, false, false),
-  (new.id, 'member', 'team', false, false, false);
+  insert into public.business_role_permissions (business_id, role, page, can_view, can_edit, can_delete)
+  values
+    (new.id, 'member', 'inventory', true, true, false),
+    (new.id, 'member', 'sales', true, true, false),
+    (new.id, 'member', 'expenses', true, true, false),
+    (new.id, 'member', 'listings', true, false, false),
+    (new.id, 'member', 'forecasts', true, false, false),
+    (new.id, 'member', 'reports', true, false, false),
+    (new.id, 'member', 'tax', false, false, false),
+    (new.id, 'member', 'settings', false, false, false),
+    (new.id, 'member', 'team', false, false, false);
 
   return new;
 end;
-$$ language plpgsql security definer;
+$func$;
 
 drop trigger if exists on_business_created on public.businesses;
 create trigger on_business_created
@@ -131,12 +133,12 @@ alter table public.business_invites enable row level security;
 
 create policy "Members can view their business members"
   on public.business_members for select
-  using (is_business_member(business_id));
+  using (public.is_business_member(business_id));
 
 create policy "Owners can manage members"
   on public.business_members for all
-  using (is_business_owner(business_id))
-  with check (is_business_owner(business_id));
+  using (public.is_business_owner(business_id))
+  with check (public.is_business_owner(business_id));
 
 create policy "Members can update own membership"
   on public.business_members for update
@@ -144,18 +146,18 @@ create policy "Members can update own membership"
 
 create policy "Owners can manage permissions"
   on public.business_role_permissions for all
-  using (is_business_owner(business_id))
-  with check (is_business_owner(business_id));
+  using (public.is_business_owner(business_id))
+  with check (public.is_business_owner(business_id));
 
 create policy "Members can view permissions"
   on public.business_role_permissions for select
-  using (is_business_member(business_id));
+  using (public.is_business_member(business_id));
 
 create policy "Owners can manage invites"
   on public.business_invites for all
-  using (is_business_owner(business_id))
-  with check (is_business_owner(business_id));
+  using (public.is_business_owner(business_id))
+  with check (public.is_business_owner(business_id));
 
 create policy "Members can view invites for their business"
   on public.business_invites for select
-  using (is_business_member(business_id));
+  using (public.is_business_member(business_id));
