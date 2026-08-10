@@ -22,6 +22,15 @@ import {
   groupByMonth,
   bestPerforming,
 } from '../finance'
+import {
+  TAX_CONFIG,
+  calculateIncomeTax,
+  calculateClass4Ni,
+  getTaxConfig,
+  inUkTaxYear,
+  ukTaxYearLabel,
+  ukTaxYearStartForDate,
+} from '../../config/tax'
 import type { Product } from '../../types/product'
 import type { Expense } from '../../types/expense'
 
@@ -352,23 +361,105 @@ describe('needsAttention', () => {
 describe('taxEstimate', () => {
   it('returns zero tax for low profit', () => {
     const result = taxEstimate(5000)
-    expect(result.taxableProfit).toBe(0)
+    expect(result.taxableProfit).toBe(5000)
     expect(result.incomeTax).toBe(0)
     expect(result.ni).toBe(0)
     expect(result.totalTax).toBe(0)
   })
 
-  it('calculates tax for higher profit', () => {
+  it('calculates income tax and Class 4 NI independently', () => {
     const result = taxEstimate(40000)
-    expect(result.taxableProfit).toBe(40000 - 12570)
-    expect(result.incomeTax).toBeGreaterThan(0)
-    expect(result.totalTax).toBeGreaterThan(0)
+    expect(result.taxableProfit).toBe(40000)
+    expect(result.incomeTax).toBeCloseTo(5486, 2)
+    expect(result.ni).toBeCloseTo(1645.8, 2)
+    expect(result.totalTax).toBeCloseTo(7131.8, 2)
   })
 
   it('never returns negative', () => {
     const result = taxEstimate(-1000)
     expect(result.taxableProfit).toBe(0)
     expect(result.totalTax).toBe(0)
+  })
+
+  it('does not double-count the personal allowance against Class 4 NI', () => {
+    const atThreshold = taxEstimate(TAX_CONFIG.personalAllowance)
+    expect(atThreshold.incomeTax).toBe(0)
+    expect(atThreshold.ni).toBe(0)
+
+    const justAbove = taxEstimate(TAX_CONFIG.personalAllowance + 1)
+    expect(justAbove.incomeTax).toBeCloseTo(0.2, 2)
+    expect(justAbove.ni).toBeCloseTo(0.06, 2)
+  })
+
+  it('applies the 2% Class 4 higher-profit rate above the upper limit', () => {
+    const atUpper = taxEstimate(50270)
+    expect(atUpper.ni).toBeCloseTo(37700 * 0.06, 2)
+
+    const justAbove = taxEstimate(50271)
+    expect(justAbove.ni).toBeCloseTo(37700 * 0.06 + 1 * 0.02, 2)
+  })
+
+  it('handles higher-rate and additional-rate boundaries', () => {
+    const atHigher = taxEstimate(100000)
+    expect(atHigher.incomeTax).toBeCloseTo(27432, 2)
+    expect(atHigher.ni).toBeCloseTo(3256.6, 2)
+
+    const atAdditional = taxEstimate(125140)
+    expect(atAdditional.incomeTax).toBeCloseTo(37488, 2)
+    expect(atAdditional.ni).toBeCloseTo(3759.4, 2)
+  })
+})
+
+describe('calculateIncomeTax', () => {
+  it('applies the personal allowance once against profit', () => {
+    expect(calculateIncomeTax(0)).toBe(0)
+    expect(calculateIncomeTax(12570)).toBe(0)
+    expect(calculateIncomeTax(12571)).toBeCloseTo(0.2, 2)
+    expect(calculateIncomeTax(50270)).toBeCloseTo(7540, 2)
+    expect(calculateIncomeTax(50271)).toBeCloseTo(7540.4, 2)
+    expect(calculateIncomeTax(125140)).toBeCloseTo(37488, 2)
+  })
+
+  it('uses the configured tax year', () => {
+    const config = getTaxConfig(2025)
+    expect(calculateIncomeTax(40000, config)).toBeCloseTo(5486, 2)
+  })
+})
+
+describe('calculateClass4Ni', () => {
+  it('uses the lower and upper profit limits independently of income tax', () => {
+    expect(calculateClass4Ni(0)).toBe(0)
+    expect(calculateClass4Ni(12570)).toBe(0)
+    expect(calculateClass4Ni(12571)).toBeCloseTo(0.06, 2)
+    expect(calculateClass4Ni(50270)).toBeCloseTo(2262, 2)
+    expect(calculateClass4Ni(50271)).toBeCloseTo(2262.02, 2)
+    expect(calculateClass4Ni(125140)).toBeCloseTo(3759.4, 2)
+  })
+})
+
+describe('UK tax year helpers', () => {
+  it('starts the tax year on 6 April', () => {
+    expect(ukTaxYearStartForDate(new Date('2026-04-05'))).toBe(2025)
+    expect(ukTaxYearStartForDate(new Date('2026-04-06'))).toBe(2026)
+    expect(ukTaxYearStartForDate(new Date('2027-04-05'))).toBe(2026)
+    expect(ukTaxYearStartForDate(new Date('2027-04-06'))).toBe(2027)
+  })
+
+  it('labels tax years consistently', () => {
+    expect(ukTaxYearLabel(2026)).toBe('2026/27')
+    expect(ukTaxYearLabel(2027)).toBe('2027/28')
+  })
+
+  it('checks dates against a tax year window', () => {
+    expect(inUkTaxYear(new Date('2026-08-01'), 2026)).toBe(true)
+    expect(inUkTaxYear(new Date('2026-04-05'), 2026)).toBe(false)
+    expect(inUkTaxYear(new Date('2026-04-06'), 2026)).toBe(true)
+    expect(inUkTaxYear(new Date('2027-04-05'), 2026)).toBe(true)
+    expect(inUkTaxYear(new Date('2027-04-06'), 2026)).toBe(false)
+  })
+
+  it('falls back to the current config for unknown years', () => {
+    expect(getTaxConfig(2030).label).toBe('2026/27')
   })
 })
 

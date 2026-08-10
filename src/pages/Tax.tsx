@@ -7,21 +7,24 @@ import { useExpenses } from '../hooks/useExpenses'
 import { useCurrency } from '../hooks/useCurrency'
 import { useToast } from '../hooks/useToast'
 import {
-  TAX_CONFIG,
   calculateIncomeTax,
   calculateClass4Ni,
+  getTaxConfig,
+  inUkTaxYear,
+  ukTaxYearLabel,
+  ukTaxYearStartForDate,
 } from '../config/tax'
 import type { Product } from '../types/product'
 
-const ukTaxYears = ['Current year', 'Next year (2026/27)', 'Next year (2027/28)']
 const taxCalculationMethods = ['Cash basis', 'Accruals']
 
-function calculateUkTaxLiability(products: Product[], method: 'cash' | 'accruals', businessExpenses: number) {
+function calculateUkTaxLiability(products: Product[], method: 'cash' | 'accruals', businessExpenses: number, yearStart: number) {
+  const config = getTaxConfig(yearStart)
+
   const soldProducts = products.filter(p => {
     if (p.status !== 'Sold' || p.salePrice === null) return false
-    if (method === 'cash') {
-      return !!p.saleDate
-    }
+    if (method === 'cash' && !p.saleDate) return false
+    if (p.saleDate && !inUkTaxYear(new Date(p.saleDate), yearStart)) return false
     return true
   })
 
@@ -33,17 +36,16 @@ function calculateUkTaxLiability(products: Product[], method: 'cash' | 'accruals
 
   taxableProfit = Math.max(0, taxableProfit - businessExpenses)
 
-  const taxableIncome = Math.max(0, taxableProfit - TAX_CONFIG.personalAllowance)
-  const incomeTax = calculateIncomeTax(taxableIncome)
-  const nationalInsurance = calculateClass4Ni(taxableIncome)
+  const incomeTax = calculateIncomeTax(taxableProfit, config)
+  const nationalInsurance = calculateClass4Ni(taxableProfit, config)
   const totalTax = incomeTax + nationalInsurance
 
   return {
+    config,
     taxableProfit,
     incomeTax,
     nationalInsurance,
-    totalTax,
-    taxableIncome
+    totalTax
   }
 }
 
@@ -58,27 +60,32 @@ function Tax() {
   const reservedAmount = settings.tax?.reservedAmount ?? 0
   const filingStatus = settings.tax?.filingStatus ?? 'not-filed'
 
-  const totalExpenses = useMemo(
-    () => expenses.reduce((sum, e) => sum + (e.amount || 0), 0),
-    [expenses],
-  )
+  const currentYearStart = ukTaxYearStartForDate(new Date())
+  const availableTaxYears = [currentYearStart - 1, currentYearStart, currentYearStart + 1]
 
-  const [selectedTaxYear, setSelectedTaxYear] = useState('Current year')
+  const [selectedTaxYear, setSelectedTaxYear] = useState(currentYearStart)
   const [calculationMethod, setCalculationMethod] = useState('cash')
   const [showDetails, setShowDetails] = useState(false)
 
+  const totalExpenses = useMemo(
+    () => expenses
+      .filter((e) => e.expenseDate && inUkTaxYear(new Date(e.expenseDate), selectedTaxYear))
+      .reduce((sum, e) => sum + (e.amount || 0), 0),
+    [expenses, selectedTaxYear],
+  )
+
   const taxResults = useMemo(() => {
-    return calculateUkTaxLiability(products, calculationMethod as 'cash' | 'accruals', totalExpenses)
-  }, [products, calculationMethod, totalExpenses])
+    return calculateUkTaxLiability(products, calculationMethod as 'cash' | 'accruals', totalExpenses, selectedTaxYear)
+  }, [products, calculationMethod, totalExpenses, selectedTaxYear])
 
   const yearlyRevenue = useMemo(() => {
     return products.reduce((sum, p) => {
-      if (p.status === 'Sold' && p.salePrice !== null) {
+      if (p.status === 'Sold' && p.salePrice !== null && p.saleDate && inUkTaxYear(new Date(p.saleDate), selectedTaxYear)) {
         return sum + p.salePrice
       }
       return sum
     }, 0)
-  }, [products])
+  }, [products, selectedTaxYear])
 
   const monthlyAverage = useMemo(() => {
     return yearlyRevenue / 12
@@ -131,6 +138,10 @@ function Tax() {
           <h1>Tax Calculator</h1>
           <p>Calculate your UK tax obligations and stay compliant.</p>
         </div>
+      </div>
+
+      <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '12px', padding: '14px 18px', marginBottom: '24px', fontSize: '13px', color: '#78350f' }}>
+        These figures are estimates for planning only and are not HMRC-verified advice. Check rates and thresholds for your own tax year and filing basis before submitting a return.
       </div>
 
       <div className="inventory-stats">
@@ -231,12 +242,16 @@ function Tax() {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Current tax year</span>
-              <strong>6 Apr – 5 Apr</strong>
+              <span>Selected tax year</span>
+              <strong>{ukTaxYearLabel(selectedTaxYear)}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Period</span>
+              <strong>6 Apr {selectedTaxYear} – 5 Apr {selectedTaxYear + 1}</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>Filing deadline</span>
-              <strong>31 Jan {new Date().getMonth() >= 3 ? new Date().getFullYear() + 1 : new Date().getFullYear()}</strong>
+              <strong>31 Jan {selectedTaxYear + 1}</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderTop: '1px solid var(--shq-border)' }}>
               <span>Filing status</span>
@@ -277,7 +292,7 @@ function Tax() {
             </label>
             <select
               value={selectedTaxYear}
-              onChange={(e) => setSelectedTaxYear(e.target.value)}
+              onChange={(e) => setSelectedTaxYear(Number(e.target.value))}
               style={{
                 width: '100%',
                 padding: '10px 12px',
@@ -287,8 +302,10 @@ function Tax() {
                 background: 'var(--shq-surface)'
               }}
             >
-              {ukTaxYears.map((year) => (
-                <option key={year} value={year}>{year}</option>
+              {availableTaxYears.map((year) => (
+                <option key={year} value={year}>
+                  {ukTaxYearLabel(year)}{year === currentYearStart ? ' (current)' : ''}
+                </option>
               ))}
             </select>
           </div>
@@ -497,7 +514,7 @@ function Tax() {
             </div>
             <div style={{ padding: '16px', background: 'var(--shq-surface)', borderRadius: '8px', border: '1px solid var(--shq-border)' }}>
               <div style={{ fontSize: '13px', color: 'var(--shq-ink-muted)', marginBottom: '8px' }}>Personal allowance used</div>
-              <div style={{ fontSize: '18px', fontWeight: '600', color: '#3b82f6' }}>{money(Math.min(taxResults.taxableIncome, 12570))}</div>
+              <div style={{ fontSize: '18px', fontWeight: '600', color: '#3b82f6' }}>{money(Math.min(taxResults.taxableProfit, taxResults.config.personalAllowance))}</div>
             </div>
           </div>
         </div>

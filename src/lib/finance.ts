@@ -4,6 +4,7 @@ import {
   TAX_CONFIG,
   calculateIncomeTax,
   calculateClass4Ni,
+  type TaxYearConfig,
 } from '../config/tax'
 
 export type Period = 'today' | 'week' | 'month' | 'year' | 'all'
@@ -223,18 +224,18 @@ export function needsAttention(
   return alerts
 }
 
-export function taxEstimate(netProfitAmount: number): {
+export function taxEstimate(
+  netProfitAmount: number,
+  config: TaxYearConfig = TAX_CONFIG,
+): {
   taxableProfit: number
   incomeTax: number
   ni: number
   totalTax: number
 } {
-  const taxableProfit = Math.max(
-    0,
-    netProfitAmount - TAX_CONFIG.personalAllowance,
-  )
-  const incomeTax = calculateIncomeTax(taxableProfit)
-  const ni = calculateClass4Ni(taxableProfit)
+  const taxableProfit = Math.max(0, netProfitAmount)
+  const incomeTax = calculateIncomeTax(taxableProfit, config)
+  const ni = calculateClass4Ni(taxableProfit, config)
   return {
     taxableProfit,
     incomeTax,
