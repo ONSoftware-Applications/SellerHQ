@@ -116,6 +116,18 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
         </NavLink>
         )}
 
+        {settings.features.receiptsEnabled && (
+          <NavLink
+            to="/receipts"
+            onClick={handleNavClick}
+            className={({ isActive }) =>
+              `nav-item ${isActive ? 'active' : ''}`
+            }
+          >
+            Receipts Archive
+          </NavLink>
+        )}
+
         {settings.features.forecastsEnabled && canUse('forecasts') && (
           <NavLink
             to="/forecasts"

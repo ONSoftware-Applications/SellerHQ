@@ -16,6 +16,7 @@ import { SubscriptionProvider } from './context/SubscriptionContext'
 import { TeamProvider } from './context/TeamContext'
 import { AutoRelist } from './components/AutoRelist'
 import { ExpenseProvider } from './context/ExpenseContext'
+import { ReceiptProvider } from './context/ReceiptContext'
 import { ToastProvider } from './context/ToastContext'
 import { ThemeController } from './components/ThemeController'
 import ToastViewport from './components/ToastViewport'
@@ -35,6 +36,7 @@ const Inventory = lazy(() => import('./pages/Inventory'))
 const Listings = lazy(() => import('./pages/Listings'))
 const Sales = lazy(() => import('./pages/Sales'))
 const Expenses = lazy(() => import('./pages/Expenses'))
+const Receipts = lazy(() => import('./pages/Receipts'))
 const Forecasts = lazy(() => import('./pages/Forecasts'))
 const Tax = lazy(() => import('./pages/Tax'))
 const Settings = lazy(() => import('./pages/Settings'))
@@ -73,9 +75,10 @@ function App() {
               <SubscriptionProvider>
                 <BusinessProvider>
                   <TeamProvider>
-                    <ProductProvider>
+                      <ProductProvider>
                       <ExpenseProvider>
-                        <ThemeController />
+                        <ReceiptProvider>
+                          <ThemeController />
                         <AutoRelist />
                         <BrowserRouter>
                   <ErrorBoundary>
@@ -138,6 +141,10 @@ function App() {
                             <Route
                               path="/expenses"
                               element={<Expenses />}
+                            />
+                            <Route
+                              path="/receipts"
+                              element={<Receipts />}
                             />
                             <Route element={<PlanGuard feature="forecasts" />}>
                               <Route
@@ -218,6 +225,7 @@ function App() {
                     </Suspense>
                   </ErrorBoundary>
                   </BrowserRouter>
+                </ReceiptProvider>
                 </ExpenseProvider>
               </ProductProvider>
             </TeamProvider>
