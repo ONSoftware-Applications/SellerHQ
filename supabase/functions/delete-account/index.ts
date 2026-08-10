@@ -131,6 +131,9 @@ Deno.serve(async (request: Request) => {
       await removeFolderContents(supabase, 'business-assets', id)
     }
 
+    // Receipts are stored under the user's own folder in the receipts bucket.
+    await removeFolderContents(supabase, 'receipts', userId)
+
     // Delete owned businesses. FKs cascade to products, expenses, members,
     // product events, relistings, invite codes and audit logs.
     if (businessIds.length > 0) {

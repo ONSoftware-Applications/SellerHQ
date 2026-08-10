@@ -192,6 +192,20 @@ function Settings() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', border: '1px solid var(--shq-border)', borderRadius: '8px' }}>
             <Toggle
+              checked={settings.features.receiptsEnabled}
+              onChange={async (value) => {
+                await updateFeature('receiptsEnabled', value)
+                saveSuccess(value ? 'Receipts Archive enabled' : 'Receipts Archive disabled')
+              }}
+              label="Receipts Archive module"
+            />
+            <p style={{ margin: '-8px 0 0 0', fontSize: '12px', color: 'var(--shq-ink-muted)' }}>
+              Show the Receipts Archive page for storing purchase receipts separately from expenses.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', border: '1px solid var(--shq-border)', borderRadius: '8px' }}>
+            <Toggle
               checked={settings.features.autoRelistEnabled}
               onChange={async (value) => {
                 await updateFeature('autoRelistEnabled', value)

@@ -11,6 +11,7 @@ export type UserSettings = {
     forecastsEnabled: boolean
     listingsEnabled: boolean
     expensesEnabled: boolean
+    receiptsEnabled: boolean
     autoRelistEnabled: boolean
     shippingFlowEnabled: boolean
   }
@@ -43,6 +44,7 @@ const defaultSettings: UserSettings = {
     forecastsEnabled: true,
     listingsEnabled: true,
     expensesEnabled: true,
+    receiptsEnabled: true,
     autoRelistEnabled: true,
     shippingFlowEnabled: true,
   },
