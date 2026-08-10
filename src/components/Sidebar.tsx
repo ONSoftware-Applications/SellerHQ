@@ -192,18 +192,6 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
           Profile
         </NavLink>
 
-        {canUse('customization') && (
-          <NavLink
-            to="/business"
-            onClick={handleNavClick}
-            className={({ isActive }) =>
-              `nav-item ${isActive ? 'active' : ''}`
-            }
-          >
-            Business
-          </NavLink>
-        )}
-
         {canUse('auditLog') && (
           <NavLink
             to="/audit-log"
@@ -215,33 +203,6 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
             Audit log
           </NavLink>
         )}
-
-        <NavLink
-          to="/support"
-          onClick={handleNavClick}
-          className={({ isActive }) =>
-            `nav-item ${isActive ? 'active' : ''}`
-          }
-        >
-          Support
-        </NavLink>
-
-        <div className="sidebar-legal">
-          <NavLink
-            to="/legal/privacy"
-            onClick={handleNavClick}
-            className="nav-item"
-          >
-            Privacy policy
-          </NavLink>
-          <NavLink
-            to="/legal/terms"
-            onClick={handleNavClick}
-            className="nav-item"
-          >
-            Terms &amp; conditions
-          </NavLink>
-        </div>
 
         <div className="account">
           <div className="avatar">{initials}</div>
