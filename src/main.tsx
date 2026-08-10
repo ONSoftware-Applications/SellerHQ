@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { captureError } from './lib/errorLog'
+import { initMonitoring } from './lib/monitoring'
+
+initMonitoring()
 
 window.addEventListener('error', (event) => {
   captureError(event.error ?? event.message, 'window.onerror')

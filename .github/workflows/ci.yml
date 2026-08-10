@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [Development, main]
   pull_request:
-    branches: [main]
+    branches: [Development, main]
 
 jobs:
   build:
@@ -20,8 +20,10 @@ jobs:
 
       - run: npm ci
 
-      - run: npx oxlint
+      - run: npm run lint
 
-      - run: npx vitest run
+      - run: npm run typecheck
+
+      - run: npm test
 
       - run: npm run build

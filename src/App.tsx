@@ -51,7 +51,12 @@ const Support = lazy(() => import('./pages/Support'))
 const AuditLog = lazy(() => import('./pages/AuditLog'))
 const BusinessCustomization = lazy(() => import('./pages/BusinessCustomization'))
 const Relay = lazy(() => import('./pages/Relay'))
-const DebugErrors = lazy(() => import('./pages/DebugErrors'))
+const debugEnabled =
+  import.meta.env.MODE === 'development' ||
+  import.meta.env.VITE_ENABLE_DEBUG === 'true'
+const DebugErrors = debugEnabled
+  ? lazy(() => import('./pages/DebugErrors'))
+  : null
 
 function PageLoader() {
   return <div className="inventory-loading" style={{ minHeight: '40vh' }}>
@@ -87,10 +92,12 @@ function App() {
                       />
 
                       <Route element={<Layout />}>
-                        <Route
-                          path="/debug/errors"
-                          element={<DebugErrors />}
-                        />
+                        {DebugErrors && (
+                          <Route
+                            path="/debug/errors"
+                            element={<DebugErrors />}
+                          />
+                        )}
                         <Route
                           path="/"
                           element={

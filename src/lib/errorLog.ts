@@ -1,3 +1,5 @@
+import { reportError } from './monitoring'
+
 const MAX_ERRORS = 10
 const STORAGE_KEY = 'sellerhq_error_log'
 
@@ -9,6 +11,8 @@ export type CapturedError = {
 }
 
 export function captureError(error: unknown, source?: string) {
+  reportError(error, source)
+
   try {
     const message =
       error instanceof Error
