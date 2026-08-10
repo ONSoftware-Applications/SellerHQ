@@ -232,34 +232,6 @@ function BusinessCustomization() {
           Applied as the primary accent across your account.
         </p>
       </div>
-
-      <div
-        style={{
-          background: 'var(--shq-surface)',
-          border: '1px solid var(--shq-border)',
-          borderRadius: 12,
-          padding: 24,
-        }}
-      >
-        <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600 }}>Team</h3>
-        <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--shq-ink-muted)' }}>
-          Invite up to 5 team members to collaborate on this business.
-        </p>
-        <div
-          style={{
-            padding: '16px 20px',
-            background: 'var(--shq-surface-subtle)',
-            border: '1px solid var(--shq-border)',
-            borderRadius: 10,
-            fontSize: 13,
-            color: 'var(--shq-ink-muted)',
-          }}
-        >
-          Team invitations and member management are coming soon. Business plan
-          holders will be able to invite team members with role-based access
-          from this hub.
-        </div>
-      </div>
     </div>
   )
 }
