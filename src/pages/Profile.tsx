@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useBusiness } from '../hooks/useBusiness'
 import { useProducts } from '../hooks/useProducts'
@@ -9,6 +11,7 @@ import { useToast } from '../hooks/useToast'
 import { getPlan } from '../lib/plans'
 import { downloadJson } from '../utils/format'
 import { todayIsoDate } from '../lib/csv'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 
 function Profile() {
   const navigate = useNavigate()
@@ -19,6 +22,9 @@ function Profile() {
   const { settings } = useSettings()
   const { plan, billing, status, canUse, productLimit } = useSubscription()
   const { showToast } = useToast()
+
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const planInfo = getPlan(plan)
 
@@ -62,6 +68,36 @@ function Profile() {
       },
     )
     showToast('Backup downloaded', 'success')
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true)
+    const { data, error } = await supabase.functions.invoke<
+      { deleted?: boolean } | { error: string }
+    >('delete-account')
+
+    if (error || !data || !('deleted' in data) || !data.deleted) {
+      let message = 'Your account could not be deleted. Please try again.'
+      try {
+        const response = (error as { context?: Response }).context
+        if (response) {
+          const body = (await response.json()) as { error?: string }
+          if (body.error) message = body.error
+        }
+      } catch {
+        // ignore parse failures
+      }
+      setDeleting(false)
+      setConfirmDelete(false)
+      showToast(message, 'error')
+      return
+    }
+
+    setDeleting(false)
+    setConfirmDelete(false)
+    await signOut()
+    navigate('/login', { replace: true })
+    showToast('Your account and data have been deleted.', 'success')
   }
 
   return (
@@ -191,6 +227,7 @@ function Profile() {
           <LinkRow label="Support" onClick={() => navigate('/support')} />
           <LinkRow label="Privacy policy" onClick={() => navigate('/legal/privacy')} />
           <LinkRow label="Terms & conditions" onClick={() => navigate('/legal/terms')} />
+          <LinkRow label="Cookie policy" onClick={() => navigate('/legal/cookies')} />
         </div>
       </div>
 
@@ -236,7 +273,30 @@ function Profile() {
         >
           Sign out
         </button>
+        <p style={{ margin: '16px 0 8px', fontSize: '13px', color: 'var(--shq-ink-muted)' }}>
+          Deleting your account permanently removes your businesses, products, expenses and stored
+          photos. Download a backup first if you want to keep your data.
+        </p>
+        <button
+          type="button"
+          onClick={() => setConfirmDelete(true)}
+          className="delete-button"
+          style={{ opacity: deleting ? 0.6 : 1, cursor: deleting ? 'not-allowed' : 'pointer' }}
+          disabled={deleting}
+        >
+          {deleting ? 'Deleting account…' : 'Delete account'}
+        </button>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete account?"
+        variant="danger"
+        confirmLabel="Delete account"
+        message="This permanently deletes your account, businesses, products, expenses and stored photos. This action cannot be undone."
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   )
 }

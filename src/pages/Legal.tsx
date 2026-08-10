@@ -21,7 +21,7 @@ const PRIVACY: Section[] = [
   },
   {
     heading: '5. Your rights',
-    body: 'You may request a copy, correction or deletion of your personal data at any time by contacting support. You can export or delete your data from your account settings.',
+    body: 'You may request a copy, correction or deletion of your personal data at any time by contacting support. You can export a backup from your account settings and delete your account and all associated data at any time from the Profile page.',
   },
   {
     heading: '6. Cookies & analytics',
@@ -80,6 +80,33 @@ const TERMS: Section[] = [
   },
 ]
 
+const COOKIES: Section[] = [
+  {
+    heading: '1. What are cookies?',
+    body: 'Cookies are small text files stored on your device when you visit a website. They help the site remember your preferences and keep you signed in.',
+  },
+  {
+    heading: '2. Essential cookies',
+    body: 'SellerHQ uses essential cookies and local storage to keep you signed in and keep the app functional. These cannot be disabled without breaking the service.',
+  },
+  {
+    heading: '3. Analytics',
+    body: 'We may use privacy-respecting analytics to understand how the app is used and improve it. No personal identifiers are shared with third parties.',
+  },
+  {
+    heading: '4. Managing cookies',
+    body: 'You can clear cookies and site data from your browser settings at any time. Removing essential cookies will sign you out of the app.',
+  },
+  {
+    heading: '5. Changes to this policy',
+    body: 'We may update this policy from time to time. Significant changes will be highlighted within the app.',
+  },
+  {
+    heading: '6. Contact',
+    body: 'Questions about this policy can be directed through the Support page.',
+  },
+]
+
 const CONTENT: Record<string, { title: string; intro: string; sections: Section[] }> = {
   privacy: {
     title: 'Privacy Policy',
@@ -90,6 +117,11 @@ const CONTENT: Record<string, { title: string; intro: string; sections: Section[
     title: 'Terms & Conditions',
     intro: 'Last updated: August 2026. These terms govern your use of SellerHQ.',
     sections: TERMS,
+  },
+  cookies: {
+    title: 'Cookie Policy',
+    intro: 'Last updated: August 2026. This policy explains how SellerHQ uses cookies and similar technologies.',
+    sections: COOKIES,
   },
 }
 
