@@ -52,33 +52,64 @@ export function SubscriptionProvider({
 
     setLoading(true)
 
-    // Background sync: asks Stripe to refresh the stored subscription. The
-    // webhook is the source of truth; the return value is not used to set the
-    // plan because a non-subscriber would be incorrectly downgraded.
-    void supabase.functions.invoke('sync-subscription', {
-      body: { businessId: currentBusiness?.id ?? null },
+    const businessId = currentBusiness?.id ?? null
+
+    // The webhook is the source of truth for the persisted row. Prefer a
+    // business-scoped row (the entitlement a team sees), then fall back to
+    // the user's own row so legacy subscriptions with a null business_id
+    // still resolve.
+    let row: {
+      plan?: string
+      billing?: string
+      status?: string
+    } | null = null
+
+    if (businessId) {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('business_id', businessId)
+        .maybeSingle()
+      if (!error && data) row = data
+    }
+
+    if (!row) {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (!error && data) row = data
+    }
+
+    if (row) {
+      setPlan((row.plan as PlanId) ?? 'basic')
+      setBilling((row.billing as BillingCycle) ?? 'monthly')
+      setStatus((row.status as string) ?? 'active')
+      setLoading(false)
+      return
+    }
+
+    // No persisted row yet (webhook not delivered, or legacy account). Ask
+    // Stripe directly so the user's real plan is shown instead of a free
+    // fallback. Errors here fall through to settings rather than downgrading.
+    const { data: synced, error: syncError } = await supabase.functions.invoke<
+      { plan?: string; billing?: string; status?: string } | { error: string }
+    >('sync-subscription', {
+      body: { businessId },
     })
 
-    // Entitlement is business-scoped: resolve the current business's
-    // subscription first, falling back to the user's own row.
-    let query = supabase.from('subscriptions').select('*')
-    if (currentBusiness) {
-      query = query.eq('business_id', currentBusiness.id)
-    } else {
-      query = query.eq('user_id', user.id)
+    if (!syncError && synced && 'plan' in synced && synced.plan) {
+      setPlan((synced.plan as PlanId) ?? 'basic')
+      setBilling((synced.billing as BillingCycle) ?? 'monthly')
+      setStatus((synced.status as string) ?? 'active')
+      setLoading(false)
+      return
     }
 
-    const { data, error } = await query.maybeSingle()
-
-    if (!error && data) {
-      setPlan((data.plan as PlanId) ?? 'basic')
-      setBilling((data.billing as BillingCycle) ?? 'monthly')
-      setStatus((data.status as string) ?? 'active')
-    } else {
-      setPlan(settings.subscription.plan)
-      setBilling(settings.subscription.billing)
-      setStatus('active')
-    }
+    setPlan(settings.subscription.plan)
+    setBilling(settings.subscription.billing)
+    setStatus('active')
 
     setLoading(false)
   }, [user, currentBusiness, settings.subscription.plan, settings.subscription.billing])
