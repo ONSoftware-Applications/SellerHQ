@@ -40,14 +40,6 @@ async function getUserFromRequest(request: Request) {
   return { user: data.user }
 }
 
-function canonicalAppUrl(): string {
-  const url = Deno.env.get('APP_URL')
-  if (!url) {
-    throw new Error('APP_URL is not configured')
-  }
-  return url.replace(/\/+$/, '')
-}
-
 Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -65,48 +57,11 @@ Deno.serve(async (request: Request) => {
     }
 
     const supabase = createAdminClient()
-
-    // Resolve the business's subscription (business-scoped entitlement), or
-    // fall back to the caller's own row. Only owners/admins may open the
-    // portal for a business.
-    const body = await request.json().catch(() => ({}))
-    const businessId =
-      typeof body?.businessId === 'string' && body.businessId.length > 0
-        ? body.businessId
-        : null
-
-    let subscription: { stripe_customer_id: string | null } | null = null
-
-    if (businessId) {
-      const { data: member } = await supabase
-        .from('business_members')
-        .select('role')
-        .eq('business_id', businessId)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .maybeSingle()
-
-      if (
-        member &&
-        (member.role === 'owner' || member.role === 'admin')
-      ) {
-        const { data } = await supabase
-          .from('subscriptions')
-          .select('stripe_customer_id')
-          .eq('business_id', businessId)
-          .maybeSingle()
-        subscription = data ?? null
-      }
-    }
-
-    if (!subscription) {
-      const { data } = await supabase
-        .from('subscriptions')
-        .select('stripe_customer_id')
-        .eq('user_id', user.id)
-        .maybeSingle()
-      subscription = data ?? null
-    }
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle()
 
     if (!subscription?.stripe_customer_id) {
       return jsonResponse(
@@ -115,7 +70,8 @@ Deno.serve(async (request: Request) => {
       )
     }
 
-    const origin = canonicalAppUrl()
+    const origin =
+      request.headers.get('Origin') ?? Deno.env.get('APP_URL') ?? ''
 
     const stripe = new Stripe(stripeKey)
     const session = await stripe.billingPortal.sessions.create({

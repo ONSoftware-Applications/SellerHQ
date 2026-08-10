@@ -16,38 +16,6 @@ function asString(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null
 }
 
-// Idempotency: record the Stripe event ID first. If it already exists, the
-// event was processed (or is a duplicate delivery) and should be skipped.
-async function isDuplicateEvent(
-  supabase: ReturnType<typeof createAdminClient>,
-  eventId: string,
-): Promise<boolean> {
-  const { data, error } = await supabase
-    .from('stripe_events')
-    .select('id')
-    .eq('id', eventId)
-    .maybeSingle()
-
-  if (error) {
-    throw new Error(`stripe_events select failed: ${error.message}`)
-  }
-
-  return data !== null
-}
-
-async function recordEvent(
-  supabase: ReturnType<typeof createAdminClient>,
-  eventId: string,
-  type: string,
-) {
-  const { error } = await supabase
-    .from('stripe_events')
-    .insert({ id: eventId, type })
-  if (error) {
-    throw new Error(`stripe_events insert failed: ${error.message}`)
-  }
-}
-
 async function upsertSubscription(
   supabase: ReturnType<typeof createAdminClient>,
   userId: string,
@@ -75,12 +43,10 @@ async function handleSubscription(
 
   const customerId = asString(subscription.customer) ?? undefined
   const billing = asString(subscription.metadata?.billing) ?? 'monthly'
-  const businessId = asString(subscription.metadata?.business_id)
 
   await upsertSubscription(supabase, userId, {
     plan,
     billing,
-    business_id: businessId ?? null,
     stripe_subscription_id: subscription.id,
     stripe_customer_id: customerId,
     status: subscription.status,
@@ -117,21 +83,12 @@ Deno.serve(async (request: Request) => {
   const supabase = createAdminClient()
 
   try {
-    // Idempotency guard: dedupe before doing any work.
-    if (await isDuplicateEvent(supabase, event.id)) {
-      return new Response(JSON.stringify({ received: true, duplicate: true }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-
     switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session
       const userId = asString(session.metadata?.user_id)
       const plan = asString(session.metadata?.plan)
       const billing = asString(session.metadata?.billing) ?? 'monthly'
-      const businessId = asString(session.metadata?.business_id)
       const subscriptionId = asString(session.subscription)
       const customerId = asString(session.customer)
 
@@ -139,7 +96,6 @@ Deno.serve(async (request: Request) => {
         await upsertSubscription(supabase, userId, {
           plan,
           billing,
-          business_id: businessId ?? null,
           stripe_subscription_id: subscriptionId,
           stripe_customer_id: customerId,
           status: 'active',
@@ -188,9 +144,6 @@ Deno.serve(async (request: Request) => {
     default:
       break
     }
-
-    // Only record the event as processed once the switch succeeded.
-    await recordEvent(supabase, event.id, event.type)
   } catch (err) {
     console.error('Webhook handling error:', err)
     const message =
