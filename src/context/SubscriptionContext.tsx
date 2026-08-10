@@ -8,7 +8,6 @@ import {
 
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { useBusiness } from '../hooks/useBusiness'
 import { useSettings } from '../hooks/useSettings'
 import {
   SubscriptionContext,
@@ -29,7 +28,6 @@ export function SubscriptionProvider({
   children: ReactNode
 }) {
   const { user } = useAuth()
-  const { currentBusiness } = useBusiness()
   const { settings } = useSettings()
 
   const [plan, setPlan] = useState<PlanId>(
@@ -52,52 +50,9 @@ export function SubscriptionProvider({
 
     setLoading(true)
 
-    const businessId = currentBusiness?.id ?? null
-
-    // The webhook is the source of truth for the persisted row. Prefer a
-    // business-scoped row (the entitlement a team sees), then fall back to
-    // the user's own row so legacy subscriptions with a null business_id
-    // still resolve.
-    let row: {
-      plan?: string
-      billing?: string
-      status?: string
-    } | null = null
-
-    if (businessId) {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('business_id', businessId)
-        .maybeSingle()
-      if (!error && data) row = data
-    }
-
-    if (!row) {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle()
-      if (!error && data) row = data
-    }
-
-    if (row) {
-      setPlan((row.plan as PlanId) ?? 'basic')
-      setBilling((row.billing as BillingCycle) ?? 'monthly')
-      setStatus((row.status as string) ?? 'active')
-      setLoading(false)
-      return
-    }
-
-    // No persisted row yet (webhook not delivered, or legacy account). Ask
-    // Stripe directly so the user's real plan is shown instead of a free
-    // fallback. Errors here fall through to settings rather than downgrading.
     const { data: synced, error: syncError } = await supabase.functions.invoke<
       { plan?: string; billing?: string; status?: string } | { error: string }
-    >('sync-subscription', {
-      body: { businessId },
-    })
+    >('sync-subscription')
 
     if (!syncError && synced && 'plan' in synced && synced.plan) {
       setPlan((synced.plan as PlanId) ?? 'basic')
@@ -107,12 +62,24 @@ export function SubscriptionProvider({
       return
     }
 
-    setPlan(settings.subscription.plan)
-    setBilling(settings.subscription.billing)
-    setStatus('active')
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (!error && data) {
+      setPlan((data.plan as PlanId) ?? 'basic')
+      setBilling((data.billing as BillingCycle) ?? 'monthly')
+      setStatus((data.status as string) ?? 'active')
+    } else {
+      setPlan(settings.subscription.plan)
+      setBilling(settings.subscription.billing)
+      setStatus('active')
+    }
 
     setLoading(false)
-  }, [user, currentBusiness, settings.subscription.plan, settings.subscription.billing])
+  }, [user, settings.subscription.plan, settings.subscription.billing])
 
   useEffect(() => {
     void refresh()
