@@ -8,6 +8,7 @@ import {
 
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useBusiness } from '../hooks/useBusiness'
 import { useSettings } from '../hooks/useSettings'
 import {
   SubscriptionContext,
@@ -28,6 +29,7 @@ export function SubscriptionProvider({
   children: ReactNode
 }) {
   const { user } = useAuth()
+  const { currentBusiness } = useBusiness()
   const { settings } = useSettings()
 
   const [plan, setPlan] = useState<PlanId>(
@@ -50,23 +52,23 @@ export function SubscriptionProvider({
 
     setLoading(true)
 
-    const { data: synced, error: syncError } = await supabase.functions.invoke<
-      { plan?: string; billing?: string; status?: string } | { error: string }
-    >('sync-subscription')
+    // Background sync: asks Stripe to refresh the stored subscription. The
+    // webhook is the source of truth; the return value is not used to set the
+    // plan because a non-subscriber would be incorrectly downgraded.
+    void supabase.functions.invoke('sync-subscription', {
+      body: { businessId: currentBusiness?.id ?? null },
+    })
 
-    if (!syncError && synced && 'plan' in synced && synced.plan) {
-      setPlan((synced.plan as PlanId) ?? 'basic')
-      setBilling((synced.billing as BillingCycle) ?? 'monthly')
-      setStatus((synced.status as string) ?? 'active')
-      setLoading(false)
-      return
+    // Entitlement is business-scoped: resolve the current business's
+    // subscription first, falling back to the user's own row.
+    let query = supabase.from('subscriptions').select('*')
+    if (currentBusiness) {
+      query = query.eq('business_id', currentBusiness.id)
+    } else {
+      query = query.eq('user_id', user.id)
     }
 
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    const { data, error } = await query.maybeSingle()
 
     if (!error && data) {
       setPlan((data.plan as PlanId) ?? 'basic')
@@ -79,7 +81,7 @@ export function SubscriptionProvider({
     }
 
     setLoading(false)
-  }, [user, settings.subscription.plan, settings.subscription.billing])
+  }, [user, currentBusiness, settings.subscription.plan, settings.subscription.billing])
 
   useEffect(() => {
     void refresh()

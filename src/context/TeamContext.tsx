@@ -186,26 +186,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     async (role: BusinessRole) => {
       if (!currentBusiness) return
 
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-      let code = ''
-      const bytes = crypto.getRandomValues(new Uint8Array(8))
-      for (let i = 0; i < 8; i++) {
-        code += chars[bytes[i] % chars.length]
-      }
-
-      const expiresAt = new Date()
-      expiresAt.setDate(expiresAt.getDate() + 30)
-
-      const { error } = await supabase.from('business_invite_codes').upsert(
-        {
-          business_id: currentBusiness.id,
-          role,
-          code,
-          expires_at: expiresAt.toISOString(),
-          created_by: (await supabase.auth.getUser()).data.user?.id,
-        },
-        { onConflict: 'business_id, role' },
-      )
+      const { error } = await supabase.rpc('generate_invite_code', {
+        p_business_id: currentBusiness.id,
+        p_role: role,
+      })
 
       if (error) {
         console.error('Failed to generate invite code:', error)
@@ -218,10 +202,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   )
   const removeMember = useCallback(
     async (memberId: string) => {
-      const { error } = await supabase
-        .from('business_members')
-        .update({ status: 'removed' })
-        .eq('id', memberId)
+      const { error } = await supabase.rpc('remove_member', {
+        p_member_id: memberId,
+      })
 
       if (error) {
         console.error('Failed to remove member:', error)
@@ -235,10 +218,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const changeRole = useCallback(
     async (memberId: string, role: BusinessRole) => {
-      const { error } = await supabase
-        .from('business_members')
-        .update({ role })
-        .eq('id', memberId)
+      const { error } = await supabase.rpc('change_member_role', {
+        p_member_id: memberId,
+        p_role: role,
+      })
 
       if (error) {
         console.error('Failed to change role:', error)
