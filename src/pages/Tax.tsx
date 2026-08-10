@@ -6,6 +6,7 @@ import { useSettings } from '../hooks/useSettings'
 import { useExpenses } from '../hooks/useExpenses'
 import { useCurrency } from '../hooks/useCurrency'
 import { useToast } from '../hooks/useToast'
+import { productSaleDate } from '../lib/finance'
 import {
   calculateIncomeTax,
   calculateClass4Ni,
@@ -19,12 +20,16 @@ import type { Product } from '../types/product'
 const taxCalculationMethods = ['Cash basis', 'Accruals']
 
 function calculateUkTaxLiability(products: Product[], method: 'cash' | 'accruals', businessExpenses: number, yearStart: number) {
+  if (method !== 'cash' && method !== 'accruals') {
+    throw new Error('Unknown calculation method')
+  }
+
   const config = getTaxConfig(yearStart)
 
   const soldProducts = products.filter(p => {
     if (p.status !== 'Sold' || p.salePrice === null) return false
-    if (method === 'cash' && !p.saleDate) return false
-    if (p.saleDate && !inUkTaxYear(new Date(p.saleDate), yearStart)) return false
+    const saleDate = productSaleDate(p)
+    if (!saleDate || !inUkTaxYear(new Date(saleDate), yearStart)) return false
     return true
   })
 
@@ -80,16 +85,15 @@ function Tax() {
 
   const yearlyRevenue = useMemo(() => {
     return products.reduce((sum, p) => {
-      if (p.status === 'Sold' && p.salePrice !== null && p.saleDate && inUkTaxYear(new Date(p.saleDate), selectedTaxYear)) {
-        return sum + p.salePrice
+      if (p.status === 'Sold' && p.salePrice !== null) {
+        const saleDate = productSaleDate(p)
+        if (saleDate && inUkTaxYear(new Date(saleDate), selectedTaxYear)) {
+          return sum + p.salePrice
+        }
       }
       return sum
     }, 0)
   }, [products, selectedTaxYear])
-
-  const monthlyAverage = useMemo(() => {
-    return yearlyRevenue / 12
-  }, [yearlyRevenue])
 
   const recentSales = useMemo(() => {
     const sixMonthsAgo = new Date()
@@ -146,10 +150,10 @@ function Tax() {
 
       <div className="inventory-stats">
         <div className="inventory-stat inventory-stat-listed">
-          <span>Annual revenue</span>
+          <span>Revenue</span>
           <strong>{money(yearlyRevenue)}</strong>
           <span className="stat-label">
-            Monthly average: {money(monthlyAverage)}
+            {ukTaxYearLabel(selectedTaxYear)} tax year
           </span>
         </div>
 

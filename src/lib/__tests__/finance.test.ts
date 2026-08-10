@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   periodRange,
   soldInPeriod,
+  productSaleDate,
   revenue,
   costOfGoods,
   totalFees,
@@ -154,6 +155,22 @@ describe('costOfGoods', () => {
       makeProduct({ id: '2', purchasePrice: 20, additionalCosts: 0, status: 'Sold' }),
     ]
     expect(costOfGoods(products)).toBe(35)
+  })
+})
+
+describe('productSaleDate', () => {
+  it('uses the sale date when present', () => {
+    const product = makeProduct({ saleDate: '2026-08-01', updatedAt: '2026-08-02', createdAt: '2026-08-03' })
+    expect(productSaleDate(product)).toBe('2026-08-01')
+  })
+
+  it('falls back to updatedAt then createdAt', () => {
+    expect(productSaleDate(makeProduct({ saleDate: null, updatedAt: '2026-08-02', createdAt: '2026-08-03' }))).toBe('2026-08-02')
+    expect(productSaleDate(makeProduct({ saleDate: null, updatedAt: '', createdAt: '2026-08-03' }))).toBe('2026-08-03')
+  })
+
+  it('returns null when no date is available', () => {
+    expect(productSaleDate(makeProduct({ saleDate: null, updatedAt: '', createdAt: '' }))).toBeNull()
   })
 })
 
@@ -460,6 +477,16 @@ describe('UK tax year helpers', () => {
 
   it('falls back to the current config for unknown years', () => {
     expect(getTaxConfig(2030).label).toBe('2026/27')
+  })
+
+  it('places sold products without a saleDate in a tax year via updatedAt', () => {
+    const product = makeProduct({
+      status: 'Sold',
+      saleDate: null,
+      updatedAt: '2026-08-10T12:00:00Z',
+    })
+    expect(inUkTaxYear(new Date(productSaleDate(product)!), 2026)).toBe(true)
+    expect(inUkTaxYear(new Date(productSaleDate(product)!), 2025)).toBe(false)
   })
 })
 
