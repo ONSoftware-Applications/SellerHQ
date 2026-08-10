@@ -15,12 +15,14 @@ import { useSettings } from '../hooks/useSettings'
 import { useToast } from '../hooks/useToast'
 import { useCurrency } from '../hooks/useCurrency'
 import { useSubscription } from '../hooks/useSubscription'
+import { useBusiness } from '../hooks/useBusiness'
 
 function Subscriptions() {
   const { settings } = useSettings()
   const { showToast } = useToast()
   const { money } = useCurrency()
   const { plan: currentPlan, refresh } = useSubscription()
+  const { currentBusiness } = useBusiness()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [cycle, setCycle] = useState<BillingCycle>(
@@ -44,16 +46,8 @@ function Subscriptions() {
   }, [searchParams, setSearchParams, refresh, showToast])
 
   async function openCheckout(plan: Plan) {
-    const priceId =
-      cycle === 'annual'
-        ? plan.stripePriceAnnualId
-        : plan.stripePriceMonthlyId
-
-    if (!priceId) {
-      showToast(
-        `Stripe price not configured for ${plan.name} yet.`,
-        'error',
-      )
+    if (!currentBusiness) {
+      showToast('Select a business before upgrading.', 'error')
       return
     }
 
@@ -62,7 +56,7 @@ function Subscriptions() {
     const { data, error } = await supabase.functions.invoke<
       { url: string } | { error: string }
     >('create-checkout', {
-      body: { plan: plan.id, priceId, billing: cycle },
+      body: { plan: plan.id, billing: cycle, businessId: currentBusiness.id },
     })
 
     if (error) {
@@ -92,9 +86,16 @@ function Subscriptions() {
   }
 
   async function openBillingPortal() {
+    if (!currentBusiness) {
+      showToast('Select a business first.', 'info')
+      return
+    }
+
     const { data, error } = await supabase.functions.invoke<
       { url: string } | { error: string }
-    >('billing-portal')
+    >('billing-portal', {
+      body: { businessId: currentBusiness.id },
+    })
 
     if (error || !data || !('url' in data) || !data.url) {
       showToast(

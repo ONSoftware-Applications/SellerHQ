@@ -59,6 +59,12 @@ Deno.serve(async (request: Request) => {
       return jsonResponse({ error: 'Account has no email address' }, 400)
     }
 
+    const body = await request.json().catch(() => ({}))
+    const businessId =
+      typeof body?.businessId === 'string' && body.businessId.length > 0
+        ? body.businessId
+        : null
+
     const stripe = new Stripe(stripeKey)
 
     const customers = await stripe.customers.list({
@@ -99,11 +105,32 @@ Deno.serve(async (request: Request) => {
       (subscription.metadata?.billing as string | undefined) ?? 'monthly'
 
     const supabase = createAdminClient()
+
+    // If a business was supplied, verify the caller belongs to it so we don't
+    // attach someone else's entitlement to a row they can't access.
+    if (businessId) {
+      const { data: member, error: memberError } = await supabase
+        .from('business_members')
+        .select('user_id')
+        .eq('business_id', businessId)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (memberError || !member) {
+        return jsonResponse(
+          { error: 'You are not a member of this business' },
+          403,
+        )
+      }
+    }
+
     const { error } = await supabase
       .from('subscriptions')
       .upsert(
         {
           user_id: user.id,
+          business_id: businessId,
           plan,
           billing,
           stripe_customer_id: customer.id,

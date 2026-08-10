@@ -50,7 +50,6 @@ const Legal = lazy(() => import('./pages/Legal'))
 const Support = lazy(() => import('./pages/Support'))
 const AuditLog = lazy(() => import('./pages/AuditLog'))
 const BusinessCustomization = lazy(() => import('./pages/BusinessCustomization'))
-const AcceptInvite = lazy(() => import('./pages/AcceptInvite'))
 const Relay = lazy(() => import('./pages/Relay'))
 const DebugErrors = lazy(() => import('./pages/DebugErrors'))
 
@@ -66,8 +65,8 @@ function App() {
       <ToastViewport />
       <AuthProvider>
             <SettingsProvider>
-              <SubscriptionProvider>
-                <BusinessProvider>
+              <BusinessProvider>
+                <SubscriptionProvider>
                   <TeamProvider>
                     <ProductProvider>
                       <ExpenseProvider>
@@ -85,10 +84,6 @@ function App() {
                       <Route
                         path="/register"
                         element={<Register />}
-                      />
-                      <Route
-                        path="/invite/:token"
-                        element={<AcceptInvite />}
                       />
 
                       <Route element={<Layout />}>
@@ -219,8 +214,8 @@ function App() {
                 </ExpenseProvider>
               </ProductProvider>
             </TeamProvider>
-          </BusinessProvider>
           </SubscriptionProvider>
+        </BusinessProvider>
         </SettingsProvider>
       </AuthProvider>
     </ToastProvider>
