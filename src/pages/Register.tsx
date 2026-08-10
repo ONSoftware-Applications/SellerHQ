@@ -183,6 +183,22 @@ function Register() {
             Sign in
           </Link>
         </div>
+
+        <div
+          style={{
+            marginTop: 24,
+            paddingTop: 16,
+            borderTop: '1px solid var(--shq-border)',
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 16,
+            fontSize: 12.5,
+          }}
+        >
+          <Link to="/legal/privacy" style={{ color: 'var(--shq-ink-muted)' }}>Privacy</Link>
+          <Link to="/legal/terms" style={{ color: 'var(--shq-ink-muted)' }}>Terms</Link>
+          <Link to="/legal/cookies" style={{ color: 'var(--shq-ink-muted)' }}>Cookies</Link>
+        </div>
       </div>
     </div>
   )
