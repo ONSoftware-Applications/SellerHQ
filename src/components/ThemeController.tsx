@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useSettings } from '../hooks/useSettings'
 import { useBusiness } from '../hooks/useBusiness'
+import { appDisplayName } from '../lib/branding'
 import {
   applyBranding,
   applyCompact,
@@ -11,6 +12,11 @@ import {
 export function ThemeController() {
   const { settings, loading } = useSettings()
   const { currentBusiness } = useBusiness()
+
+  useEffect(() => {
+    if (loading) return
+    document.title = appDisplayName(currentBusiness)
+  }, [currentBusiness, loading])
 
   useEffect(() => {
     if (loading) return

@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useBusiness } from '../hooks/useBusiness'
 import { useSubscription } from '../hooks/useSubscription'
 import { useToast } from '../hooks/useToast'
+import { appDisplayName } from '../lib/branding'
 
 function isInstallable() {
   return !window.matchMedia('(display-mode: standalone)').matches &&
@@ -103,6 +104,8 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
   const [codeInput, setCodeInput] = useState('')
   const [joining, setJoining] = useState(false)
 
+  const appName = appDisplayName(currentBusiness)
+
   const productMatch = location.pathname.match(
     /^\/products\/([^/]+)$/,
   )
@@ -111,10 +114,15 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
         title: 'Product details',
         subtitle: 'View and update this inventory item.',
       }
-    : pageTitles[location.pathname] ?? {
-        title: 'SellerHQ',
-         subtitle: 'Manage your reselling business.',
-       }
+    : location.pathname === '/install'
+      ? {
+          title: 'Install App',
+          subtitle: `Get ${appName} on your device.`,
+        }
+      : pageTitles[location.pathname] ?? {
+          title: appName,
+          subtitle: 'Manage your reselling business.',
+        }
 
   async function handleJoinCode() {
     if (!codeInput.trim() || joining) return
@@ -187,19 +195,19 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
           <p>{pageMeta.subtitle}</p>
         </div>
 
-        {isInstallable() && (
-          <button
-            type="button"
-            onClick={() => navigate('/install')}
-            className="install-btn"
-          >
-            <span className="install-icon">⬇</span>
-            <span>
-              <strong>Install app</strong>
-              <span>Get SellerHQ on your device</span>
-            </span>
-          </button>
-        )}
+          {isInstallable() && (
+            <button
+              type="button"
+              onClick={() => navigate('/install')}
+              className="install-btn"
+            >
+              <span className="install-icon">⬇</span>
+              <span>
+                <strong>Install app</strong>
+                <span>Get {appName} on your device</span>
+              </span>
+            </button>
+          )}
       </div>
 
       {currentBusiness && (

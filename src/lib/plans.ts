@@ -190,7 +190,6 @@ export const PLANS: Plan[] = [
     ],
     planned: [
       'Marketplace API integrations',
-      'API & webhooks',
       'White-label branding',
     ],
   },
