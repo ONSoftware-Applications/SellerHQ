@@ -71,10 +71,10 @@ function App() {
     <ToastProvider>
       <ToastViewport />
       <AuthProvider>
-            <SettingsProvider>
-              <SubscriptionProvider>
+<SettingsProvider>
                 <BusinessProvider>
-                  <TeamProvider>
+                  <SubscriptionProvider>
+                    <TeamProvider>
                       <ProductProvider>
                       <ExpenseProvider>
                         <ReceiptProvider>
@@ -229,8 +229,8 @@ function App() {
                 </ExpenseProvider>
               </ProductProvider>
             </TeamProvider>
-          </BusinessProvider>
-        </SubscriptionProvider>
+          </SubscriptionProvider>
+        </BusinessProvider>
         </SettingsProvider>
       </AuthProvider>
     </ToastProvider>
