@@ -8,5 +8,7 @@ export type Business = {
   created_at: string
   logo_url?: string | null
   accent_color?: string | null
+  white_label?: boolean
+  app_name?: string | null
   memberRole?: BusinessRole
 }

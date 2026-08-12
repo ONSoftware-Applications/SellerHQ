@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useBusiness } from '../hooks/useBusiness'
+import { appDisplayName } from '../lib/branding'
 
 type Platform = 'ios' | 'android' | 'mac' | 'windows' | 'other'
 
@@ -13,9 +15,12 @@ function detectPlatform(ua: string): Platform {
 
 function Install() {
   const navigate = useNavigate()
+  const { currentBusiness } = useBusiness()
   const [platform, setPlatform] = useState<Platform>('other')
   const [canInstall, setCanInstall] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null)
+
+  const appName = appDisplayName(currentBusiness)
 
   useEffect(() => {
     setPlatform(detectPlatform(navigator.userAgent))
@@ -110,10 +115,10 @@ function Install() {
       </button>
 
       <h1 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '700' }}>
-        Install SellerHQ
+        Install {appName}
       </h1>
       <p style={{ margin: '0 0 32px 0', fontSize: '14px', color: 'var(--shq-ink-muted)', lineHeight: '1.6' }}>
-        Add SellerHQ to your device for quick access — works just like the website but lives on your home screen or taskbar.
+        Add {appName} to your device for quick access — works just like the website but lives on your home screen or taskbar.
       </p>
 
       {isStandalone && (
@@ -128,7 +133,7 @@ function Install() {
             color: 'var(--shq-success-text)',
           }}
         >
-          SellerHQ is already installed on this device.
+          {appName} is already installed on this device.
         </div>
       )}
 
@@ -165,7 +170,7 @@ function Install() {
           </button>
         ) : (
           <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--shq-ink-muted)', lineHeight: '1.6' }}>
-            Use your browser's install option to add SellerHQ:
+            Use your browser's install option to add {appName}:
           </p>
         )}
 

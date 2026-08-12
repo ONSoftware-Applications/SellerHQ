@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useBusiness } from '../hooks/useBusiness'
 import { useSettings } from '../hooks/useSettings'
 import { useSubscription } from '../hooks/useSubscription'
+import { appDisplayName, isWhiteLabel } from '../lib/branding'
 
 function isMobile() {
   return /iphone|ipad|ipod|android/i.test(navigator.userAgent)
@@ -47,7 +48,35 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
 
   return (
     <aside className={`sidebar ${mobileNavOpen ? 'sidebar-mobile-open' : ''}`}>
-      {currentBusiness?.logo_url ? (
+      {currentBusiness && isWhiteLabel(currentBusiness) ? (
+        <div className="sidebar-brand">
+          {currentBusiness.logo_url ? (
+            <img
+              src={currentBusiness.logo_url}
+              alt={`${currentBusiness.name} logo`}
+              className="brand-mark-logo"
+              style={{ width: 34, height: 34, objectFit: 'contain' }}
+            />
+          ) : (
+            <div
+              className="brand-mark-icon"
+              aria-hidden="true"
+              style={{
+                width: 34,
+                height: 34,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 16,
+                fontWeight: 700,
+              }}
+            >
+              {currentBusiness.name.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <span className="brand-mark-wordmark">{appDisplayName(currentBusiness)}</span>
+        </div>
+      ) : currentBusiness?.logo_url ? (
         <div className="sidebar-brand">
           <img
             src={currentBusiness.logo_url}

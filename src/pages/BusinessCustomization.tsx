@@ -7,6 +7,7 @@ import { useSubscription } from '../hooks/useSubscription'
 import { useToast } from '../hooks/useToast'
 import { compressImage } from '../lib/compressImage'
 import { logAudit } from '../lib/audit'
+import Toggle from '../components/Toggle'
 
 const ACCENT_OPTIONS = [
   '#fca311',
@@ -27,6 +28,12 @@ function BusinessCustomization() {
   const [uploading, setUploading] = useState(false)
   const [accent, setAccent] = useState(
     currentBusiness?.accent_color ?? ACCENT_OPTIONS[0],
+  )
+  const [whiteLabel, setWhiteLabel] = useState(
+    currentBusiness?.white_label ?? false,
+  )
+  const [appName, setAppName] = useState(
+    currentBusiness?.app_name ?? '',
   )
 
   if (!currentBusiness) {
@@ -86,6 +93,24 @@ function BusinessCustomization() {
     setAccent(value)
     await saveBusiness({ accent_color: value })
     showToast('Accent colour updated', 'success')
+  }
+
+  async function handleWhiteLabelChange(value: boolean) {
+    setWhiteLabel(value)
+    await saveBusiness({ white_label: value })
+    showToast(
+      value
+        ? 'White-label branding enabled'
+        : 'White-label branding disabled',
+      'success',
+    )
+  }
+
+  async function handleAppNameSave() {
+    const trimmed = appName.trim()
+    await saveBusiness({ app_name: trimmed ? trimmed : null })
+    if (trimmed) setAppName(trimmed)
+    showToast('App name updated', 'success')
   }
 
   return (
@@ -231,6 +256,70 @@ function BusinessCustomization() {
         <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--shq-ink-muted)' }}>
           Applied as the primary accent across your account.
         </p>
+      </div>
+
+      <div
+        style={{
+          background: 'var(--shq-surface)',
+          border: '1px solid var(--shq-border)',
+          borderRadius: 12,
+          padding: 24,
+        }}
+      >
+        <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600 }}>
+          White-label branding
+        </h3>
+        <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--shq-ink-muted)' }}>
+          Replace SellerHQ branding with your business's own name and logo
+          across the app (sidebar, top bar and browser tab).
+        </p>
+        <Toggle
+          checked={whiteLabel}
+          onChange={handleWhiteLabelChange}
+          label="White-label branding"
+        />
+        {whiteLabel && (
+          <div style={{ marginTop: 16 }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--shq-ink-muted)',
+              }}
+            >
+              App name
+            </label>
+            <input
+              type="text"
+              value={appName}
+              placeholder={currentBusiness.name}
+              onChange={(e) => setAppName(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: '1px solid var(--shq-border)',
+                borderRadius: 8,
+                fontSize: 14,
+                background: 'var(--shq-surface)',
+                color: 'var(--shq-ink)',
+              }}
+            />
+            <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--shq-ink-muted)' }}>
+              Shown instead of "SellerHQ". Uses your business logo where one is
+              set.
+            </p>
+            <button
+              type="button"
+              className="secondary-button"
+              style={{ marginTop: 12 }}
+              onClick={handleAppNameSave}
+            >
+              Save app name
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
