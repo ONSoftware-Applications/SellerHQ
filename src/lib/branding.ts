@@ -1,7 +1,9 @@
 import type { Business } from '../types/business'
 import { escapeHtml } from './sanitize'
+import sellerhqLogo from '../assets/sellerhq-logo.png'
 
 export const PRODUCT_NAME = 'SellerHQ'
+export const SELLERHQ_LOGO = sellerhqLogo
 
 export function isWhiteLabel(business: Business | null | undefined): boolean {
   return Boolean(business?.white_label)
@@ -65,4 +67,13 @@ export function printBrandingMarkup(
          <span class="print-brand-name">${name}</span>
        </div>`
     : `<div class="print-brand"><span class="print-brand-name">${name}</span></div>`
+}
+
+export function qrLogoUrl(
+  business: Business | null | undefined,
+): string {
+  if (labelBrandingEnabled(business) && business?.logo_url) {
+    return business.logo_url
+  }
+  return SELLERHQ_LOGO
 }
