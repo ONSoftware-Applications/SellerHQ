@@ -26,6 +26,7 @@ import {
 } from '../lib/productDraft'
 import { generateQrDataUrl, getProductQrValue } from '../lib/qr'
 import { escapeHtml } from '../lib/sanitize'
+import { printBrandingMarkup, PRINT_BRAND_CSS } from '../lib/branding'
 import {
   parseInventoryImportCsv,
   todayIsoDate,
@@ -777,7 +778,8 @@ if (
     for (let i = 0; i < allCards.length; i += 8) {
       sheets.push(`<div class="sheet">${allCards.slice(i, i + 8).join('')}</div>`)
     }
-    const sheetsMarkup = sheets.join('')
+const sheetsMarkup = sheets.join('')
+    const brandMarkup = printBrandingMarkup(currentBusiness)
 
     popup.document.write(`
       <!doctype html>
@@ -830,6 +832,7 @@ if (
               font-size: 12px;
               line-height: 1.4;
             }
+            ${PRINT_BRAND_CSS}
             @media print {
               body {
                 background: white;
@@ -847,6 +850,7 @@ if (
           </style>
         </head>
         <body>
+          ${brandMarkup}
           ${sheetsMarkup}
           <script>
             window.onload = () => {

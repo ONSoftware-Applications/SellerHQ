@@ -10,5 +10,6 @@ export type Business = {
   accent_color?: string | null
   white_label?: boolean
   app_name?: string | null
+  label_branding?: boolean
   memberRole?: BusinessRole
 }

@@ -35,6 +35,9 @@ function BusinessCustomization() {
   const [appName, setAppName] = useState(
     currentBusiness?.app_name ?? '',
   )
+  const [labelBranding, setLabelBranding] = useState(
+    currentBusiness?.label_branding ?? false,
+  )
 
   if (!currentBusiness) {
     return (
@@ -111,6 +114,17 @@ function BusinessCustomization() {
     await saveBusiness({ app_name: trimmed ? trimmed : null })
     if (trimmed) setAppName(trimmed)
     showToast('App name updated', 'success')
+  }
+
+  async function handleLabelBrandingChange(value: boolean) {
+    setLabelBranding(value)
+    await saveBusiness({ label_branding: value })
+    showToast(
+      value
+        ? 'Branding will appear on printed labels and QR codes'
+        : 'Branding removed from printed labels and QR codes',
+      'success',
+    )
   }
 
   return (
@@ -318,6 +332,31 @@ function BusinessCustomization() {
             >
               Save app name
             </button>
+
+            <div
+              style={{
+                marginTop: 20,
+                padding: '16px',
+                border: '1px solid var(--shq-border)',
+                borderRadius: 8,
+              }}
+            >
+              <Toggle
+                checked={labelBranding}
+                onChange={handleLabelBrandingChange}
+                label="Branding on printed labels & QR codes"
+              />
+              <p
+                style={{
+                  margin: '10px 0 0',
+                  fontSize: 12,
+                  color: 'var(--shq-ink-muted)',
+                }}
+              >
+                Include your business logo and name on printed product labels,
+                QR code sheets and barcode prints.
+              </p>
+            </div>
           </div>
         )}
       </div>
