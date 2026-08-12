@@ -8,6 +8,7 @@ import {
 
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useBusiness } from '../hooks/useBusiness'
 import { useSettings } from '../hooks/useSettings'
 import {
   SubscriptionContext,
@@ -28,6 +29,7 @@ export function SubscriptionProvider({
   children: ReactNode
 }) {
   const { user } = useAuth()
+  const { currentBusiness } = useBusiness()
   const { settings } = useSettings()
 
   const [plan, setPlan] = useState<PlanId>(
@@ -52,7 +54,9 @@ export function SubscriptionProvider({
 
     const { data: synced, error: syncError } = await supabase.functions.invoke<
       { plan?: string; billing?: string; status?: string } | { error: string }
-    >('sync-subscription')
+    >('sync-subscription', {
+      body: { businessId: currentBusiness?.id },
+    })
 
     if (!syncError && synced && 'plan' in synced && synced.plan) {
       setPlan((synced.plan as PlanId) ?? 'basic')
@@ -79,7 +83,7 @@ export function SubscriptionProvider({
     }
 
     setLoading(false)
-  }, [user, settings.subscription.plan, settings.subscription.billing])
+  }, [user, currentBusiness, settings.subscription.plan, settings.subscription.billing])
 
   useEffect(() => {
     void refresh()

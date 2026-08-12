@@ -12,12 +12,14 @@ import {
 } from '../lib/plans'
 import { supabase } from '../lib/supabase'
 import { useSettings } from '../hooks/useSettings'
+import { useBusiness } from '../hooks/useBusiness'
 import { useToast } from '../hooks/useToast'
 import { useCurrency } from '../hooks/useCurrency'
 import { useSubscription } from '../hooks/useSubscription'
 
 function Subscriptions() {
   const { settings } = useSettings()
+  const { currentBusiness } = useBusiness()
   const { showToast } = useToast()
   const { money } = useCurrency()
   const { plan: currentPlan, refresh } = useSubscription()
@@ -62,7 +64,12 @@ function Subscriptions() {
     const { data, error } = await supabase.functions.invoke<
       { url: string } | { error: string }
     >('create-checkout', {
-      body: { plan: plan.id, priceId, billing: cycle },
+      body: {
+        plan: plan.id,
+        priceId,
+        billing: cycle,
+        businessId: currentBusiness?.id,
+      },
     })
 
     if (error) {
@@ -94,7 +101,9 @@ function Subscriptions() {
   async function openBillingPortal() {
     const { data, error } = await supabase.functions.invoke<
       { url: string } | { error: string }
-    >('billing-portal')
+    >('billing-portal', {
+      body: { businessId: currentBusiness?.id },
+    })
 
     if (error || !data || !('url' in data) || !data.url) {
       showToast(
