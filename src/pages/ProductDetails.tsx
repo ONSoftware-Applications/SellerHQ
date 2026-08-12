@@ -7,7 +7,7 @@ import { useCurrency } from '../hooks/useCurrency'
 import { useToast } from '../hooks/useToast'
 import { useSettings } from '../hooks/useSettings'
 import { escapeHtml } from '../lib/sanitize'
-import { printBrandingMarkup, PRINT_BRAND_CSS } from '../lib/branding'
+import { printBrandingMarkup, PRINT_BRAND_CSS, qrLogoUrl } from '../lib/branding'
 import type {
   Marketplace,
   Product,
@@ -310,7 +310,7 @@ const product = productId
     let qrUrl: string
 
     try {
-      qrUrl = await generateQrDataUrl(qrValue, 240)
+      qrUrl = await generateQrDataUrl(qrValue, 240, qrLogoUrl(currentBusiness))
     } catch (error) {
       console.error(error)
       showToast('The QR code could not be generated.', 'error')
@@ -499,7 +499,7 @@ if (!popup) {
     let qrUrl: string
 
     try {
-      qrUrl = await generateQrDataUrl(qrValue, 280)
+      qrUrl = await generateQrDataUrl(qrValue, 280, qrLogoUrl(currentBusiness))
     } catch (error) {
       console.error(error)
       showToast('The label QR code could not be generated.', 'error')

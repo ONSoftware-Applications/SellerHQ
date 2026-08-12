@@ -26,7 +26,7 @@ import {
 } from '../lib/productDraft'
 import { generateQrDataUrl, getProductQrValue } from '../lib/qr'
 import { escapeHtml } from '../lib/sanitize'
-import { printBrandingMarkup, PRINT_BRAND_CSS } from '../lib/branding'
+import { printBrandingMarkup, PRINT_BRAND_CSS, qrLogoUrl } from '../lib/branding'
 import {
   parseInventoryImportCsv,
   todayIsoDate,
@@ -750,7 +750,7 @@ if (
       return
     }
 
-    const qrUrls = await Promise.all(
+const qrUrls = await Promise.all(
       selectedProducts.map((product) =>
         generateQrDataUrl(
           getProductQrValue({
@@ -758,6 +758,7 @@ if (
             fallbackValue: `${product.code} | ${product.name}`,
           }),
           220,
+          qrLogoUrl(currentBusiness),
         ),
       ),
     )
