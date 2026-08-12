@@ -2,10 +2,12 @@ import { useState, type FormEvent, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { useProducts } from '../hooks/useProducts'
+import { useBusiness } from '../hooks/useBusiness'
 import { useCurrency } from '../hooks/useCurrency'
 import { useToast } from '../hooks/useToast'
 import { useSettings } from '../hooks/useSettings'
 import { escapeHtml } from '../lib/sanitize'
+import { printBrandingMarkup, PRINT_BRAND_CSS } from '../lib/branding'
 import type {
   Marketplace,
   Product,
@@ -47,6 +49,7 @@ const {
     deleteProduct,
     fetchEvents,
   } = useProducts()
+  const { currentBusiness } = useBusiness()
   const { money } = useCurrency()
   const { showToast } = useToast()
   const { settings } = useSettings()
@@ -320,13 +323,15 @@ const product = productId
       'width=420,height=560',
     )
 
-    if (!popup) {
+if (!popup) {
       showToast(
         'Please allow pop-ups to print the QR code.',
         'error',
       )
       return
     }
+
+    const brandMarkup = printBrandingMarkup(currentBusiness)
 
     popup.document.write(`
       <!doctype html>
@@ -370,6 +375,7 @@ const product = productId
               font-weight: 700;
               margin-top: 12px;
             }
+            ${PRINT_BRAND_CSS}
             @media print {
               body {
                 background: white;
@@ -384,6 +390,7 @@ const product = productId
         </head>
         <body>
           <div class="sheet">
+            ${brandMarkup}
             <h1>${escapeHtml(currentProduct.name)}</h1>
             <img src="${qrUrl}" alt="QR code for ${escapeHtml(currentProduct.code)}" />
             <p class="code">${escapeHtml(currentProduct.code)}</p>
@@ -437,6 +444,8 @@ const product = productId
     const serializer = new XMLSerializer()
     const svgString = serializer.serializeToString(svg)
 
+    const brandMarkup = printBrandingMarkup(currentBusiness)
+
     popup.document.write(`
       <!doctype html>
       <html>
@@ -465,10 +474,12 @@ const product = productId
             p { margin: 0 0 16px; font-size: 12px; color: #717780; }
             svg { max-width: 100%; height: auto; }
             .code { font-size: 14px; font-weight: 600; color: #17191c; margin-top: 12px; }
+            ${PRINT_BRAND_CSS}
           </style>
         </head>
         <body>
           <div class="sheet">
+            ${brandMarkup}
             <h1>${escapeHtml(currentProduct.name)}</h1>
             <p>${escapeHtml(currentProduct.code)}</p>
             ${svgString}
@@ -501,13 +512,15 @@ const product = productId
       'width=600,height=820',
     )
 
-    if (!popup) {
+if (!popup) {
       showToast(
         'Please allow pop-ups to print the product label.',
         'error',
       )
       return
     }
+
+    const brandMarkup = printBrandingMarkup(currentBusiness)
 
     popup.document.write(`
       <!doctype html>
@@ -573,6 +586,7 @@ const product = productId
               font-size: 12px;
               line-height: 1.5;
             }
+            ${PRINT_BRAND_CSS}
             @media print {
               body {
                 background: white;
@@ -588,6 +602,7 @@ const product = productId
         </head>
         <body>
           <div class="label-sheet">
+            ${brandMarkup}
             <div class="top">
               <img src="${qrUrl}" alt="QR code for ${escapeHtml(currentProduct.code)}" />
               <div>
