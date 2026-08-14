@@ -101,6 +101,18 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
           Dashboard
         </NavLink>
 
+        {canUse('tillMode') && settings.features.tillModeEnabled && (
+          <NavLink
+            to="/till"
+            onClick={handleNavClick}
+            className={({ isActive }) =>
+              `nav-item ${isActive ? 'active' : ''}`
+            }
+          >
+            Till
+          </NavLink>
+        )}
+
         <NavLink
           to="/inventory"
           onClick={handleNavClick}

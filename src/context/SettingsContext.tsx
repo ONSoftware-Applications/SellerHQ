@@ -6,15 +6,16 @@ import { SettingsContext } from '../hooks/useSettings'
 import type { BillingCycle, PlanId } from '../lib/plans'
 
 export type UserSettings = {
-  features: {
-    multiCurrency: boolean
-    forecastsEnabled: boolean
-    listingsEnabled: boolean
-    expensesEnabled: boolean
-    receiptsEnabled: boolean
-    autoRelistEnabled: boolean
-    shippingFlowEnabled: boolean
-  }
+          features: {
+            multiCurrency: boolean
+            forecastsEnabled: boolean
+            listingsEnabled: boolean
+            expensesEnabled: boolean
+            receiptsEnabled: boolean
+            autoRelistEnabled: boolean
+            shippingFlowEnabled: boolean
+            tillModeEnabled: boolean
+          }
   subscription: {
     plan: PlanId
     billing: BillingCycle
@@ -36,6 +37,10 @@ export type UserSettings = {
     reservedAmount: number
     filingStatus: 'not-filed' | 'filed'
   }
+  till: {
+    taxRate: number
+    receiptFooter: string
+  }
 }
 
 const defaultSettings: UserSettings = {
@@ -47,6 +52,7 @@ const defaultSettings: UserSettings = {
     receiptsEnabled: true,
     autoRelistEnabled: true,
     shippingFlowEnabled: true,
+    tillModeEnabled: true,
   },
   subscription: {
     plan: 'basic',
@@ -68,6 +74,10 @@ const defaultSettings: UserSettings = {
   tax: {
     reservedAmount: 0,
     filingStatus: 'not-filed',
+  },
+  till: {
+    taxRate: 0,
+    receiptFooter: '',
   },
 }
 
@@ -115,6 +125,7 @@ export function SettingsProvider({
             ...stored.appearance,
           },
           tax: { ...defaultSettings.tax, ...stored.tax },
+          till: { ...defaultSettings.till, ...stored.till },
         })
       } else {
         setSettings(defaultSettings)

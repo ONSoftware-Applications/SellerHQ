@@ -21,6 +21,7 @@ export type PlanFeature =
   | 'auditLog'
   | 'customization'
   | 'qrRelay'
+  | 'tillMode'
 
 export const PLAN_LIMITS: Record<
   PlanId,
@@ -55,6 +56,7 @@ const BUSINESS_FEATURES: PlanFeature[] = [
   'auditLog',
   'customization',
   'qrRelay',
+  'tillMode',
 ]
 
 export const PLAN_FEATURES: Record<PlanId, PlanFeature[]> = {
@@ -186,6 +188,7 @@ export const PLANS: Plan[] = [
       'Full audit log',
       'Accounting export',
       'QR relay: send phone scans to a laptop',
+      'Till Mode: full point-of-sale with sessions, receipts & cash drawer',
       'Priority support',
     ],
     planned: [
