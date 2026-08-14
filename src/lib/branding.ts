@@ -12,8 +12,12 @@ export function isWhiteLabel(business: Business | null | undefined): boolean {
 export function appDisplayName(
   business: Business | null | undefined,
 ): string {
-  if (isWhiteLabel(business) && business?.app_name?.trim()) {
-    return business.app_name.trim()
+  if (isWhiteLabel(business)) {
+    return (
+      business?.app_name?.trim() ||
+      business?.name?.trim() ||
+      PRODUCT_NAME
+    )
   }
   return PRODUCT_NAME
 }
@@ -76,4 +80,125 @@ export function qrLogoUrl(
     return business.logo_url
   }
   return SELLERHQ_LOGO
+}
+
+const DEFAULT_THEME_COLOR = '#14213d'
+const DEFAULT_ICON = '/icon-192.png'
+const DEFAULT_MANIFEST = '/manifest.json'
+
+let activeManifestUrl: string | null = null
+
+function ensureMeta(name: string): HTMLMetaElement {
+  let meta = document.head.querySelector<HTMLMetaElement>(
+    `meta[name="${name}"]`,
+  )
+  if (!meta) {
+    meta = document.createElement('meta')
+    meta.setAttribute('name', name)
+    document.head.appendChild(meta)
+  }
+  return meta
+}
+
+function ensureLink(rel: string): HTMLLinkElement {
+  let link = document.head.querySelector<HTMLLinkElement>(
+    `link[rel="${rel}"]`,
+  )
+  if (!link) {
+    link = document.createElement('link')
+    link.setAttribute('rel', rel)
+    document.head.appendChild(link)
+  }
+  return link
+}
+
+function setFavicon(url: string) {
+  const icon = ensureLink('icon')
+  icon.setAttribute('href', url)
+  icon.removeAttribute('type')
+
+  const apple = ensureLink('apple-touch-icon')
+  apple.setAttribute('href', url)
+}
+
+function buildManifest(business: Business): Record<string, unknown> {
+  const name = appDisplayName(business)
+  const themeColor = business.accent_color ?? DEFAULT_THEME_COLOR
+
+  const icons = business.logo_url
+    ? [
+        { src: business.logo_url, sizes: '192x192', purpose: 'any maskable' },
+        { src: business.logo_url, sizes: '512x512', purpose: 'any maskable' },
+      ]
+    : [
+        {
+          src: '/icon-192.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'any maskable',
+        },
+        {
+          src: '/icon-512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any maskable',
+        },
+      ]
+
+  return {
+    name,
+    short_name: name,
+    description: 'Manage your reselling business',
+    start_url: '/dashboard',
+    display: 'standalone',
+    background_color: '#ffffff',
+    theme_color: themeColor,
+    orientation: 'any',
+    icons,
+  }
+}
+
+/**
+ * Applies white-label branding (title, favicon, theme colour and PWA
+ * manifest) for the given business, or restores SellerHQ defaults when the
+ * business is not white-labelled.
+ */
+export function applyWhiteLabel(
+  business: Business | null | undefined,
+) {
+  if (typeof document === 'undefined') return
+
+  const whiteLabel = isWhiteLabel(business)
+
+  document.title = appDisplayName(business)
+
+  ensureMeta('theme-color').setAttribute(
+    'content',
+    whiteLabel ? (business?.accent_color ?? DEFAULT_THEME_COLOR) : DEFAULT_THEME_COLOR,
+  )
+
+  setFavicon(
+    whiteLabel ? (business?.logo_url ?? DEFAULT_ICON) : DEFAULT_ICON,
+  )
+
+  let manifestHref = DEFAULT_MANIFEST
+
+  if (whiteLabel && business) {
+    try {
+      if (activeManifestUrl) URL.revokeObjectURL(activeManifestUrl)
+      activeManifestUrl = URL.createObjectURL(
+        new Blob([JSON.stringify(buildManifest(business))], {
+          type: 'application/manifest+json',
+        }),
+      )
+      manifestHref = activeManifestUrl
+    } catch {
+      manifestHref = DEFAULT_MANIFEST
+    }
+  } else if (activeManifestUrl) {
+    URL.revokeObjectURL(activeManifestUrl)
+    activeManifestUrl = null
+  }
+
+  ensureLink('manifest').setAttribute('href', manifestHref)
 }
