@@ -189,11 +189,11 @@ export const PLANS: Plan[] = [
       'Accounting export',
       'QR relay: send phone scans to a laptop',
       'Till Mode: full point-of-sale with sessions, receipts & cash drawer',
+      'White-label branding (your name, logo & colour)',
       'Priority support',
     ],
     planned: [
       'Marketplace API integrations',
-      'White-label branding',
     ],
   },
 ]

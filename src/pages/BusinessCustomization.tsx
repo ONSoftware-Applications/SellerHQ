@@ -92,6 +92,11 @@ function BusinessCustomization() {
     await refreshBusinesses()
   }
 
+  async function handleRemoveLogo() {
+    await saveBusiness({ logo_url: null })
+    showToast('Logo removed', 'success')
+  }
+
   async function handleAccentChange(value: string) {
     setAccent(value)
     await saveBusiness({ accent_color: value })
@@ -232,6 +237,17 @@ function BusinessCustomization() {
             >
               {uploading ? 'Uploading...' : currentBusiness.logo_url ? 'Change logo' : 'Upload logo'}
             </button>
+            {currentBusiness.logo_url && (
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={handleRemoveLogo}
+                disabled={uploading}
+                style={{ marginLeft: 8 }}
+              >
+                Remove logo
+              </button>
+            )}
             <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--shq-ink-muted)' }}>
               Used as your business branding throughout the app.
             </p>
@@ -249,7 +265,7 @@ function BusinessCustomization() {
         }}
       >
         <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600 }}>Accent colour</h3>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           {ACCENT_OPTIONS.map((color) => (
             <button
               key={color}
@@ -266,6 +282,34 @@ function BusinessCustomization() {
               }}
             />
           ))}
+          <label
+            style={{
+              position: 'relative',
+              width: 40,
+              height: 40,
+              borderRadius: 10,
+              overflow: 'hidden',
+              cursor: 'pointer',
+              border: '2px solid var(--shq-border)',
+              background: accent,
+            }}
+            title="Choose a custom colour"
+          >
+            <input
+              type="color"
+              value={accent}
+              onChange={(e) => handleAccentChange(e.target.value)}
+              style={{
+                position: 'absolute',
+                inset: -6,
+                width: 52,
+                height: 52,
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+              }}
+            />
+          </label>
         </div>
         <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--shq-ink-muted)' }}>
           Applied as the primary accent across your account.

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useSettings } from '../hooks/useSettings'
 import { useBusiness } from '../hooks/useBusiness'
-import { appDisplayName } from '../lib/branding'
+import { applyWhiteLabel } from '../lib/branding'
 import {
   applyBranding,
   applyCompact,
@@ -15,7 +15,7 @@ export function ThemeController() {
 
   useEffect(() => {
     if (loading) return
-    document.title = appDisplayName(currentBusiness)
+    applyWhiteLabel(currentBusiness)
   }, [currentBusiness, loading])
 
   useEffect(() => {

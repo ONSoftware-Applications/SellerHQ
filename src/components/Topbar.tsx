@@ -119,10 +119,15 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
           title: 'Install App',
           subtitle: `Get ${appName} on your device.`,
         }
-      : pageTitles[location.pathname] ?? {
-          title: appName,
-          subtitle: 'Manage your reselling business.',
-        }
+      : location.pathname === '/create-business'
+        ? {
+            title: 'New business',
+            subtitle: `Set up another business in ${appName}.`,
+          }
+        : pageTitles[location.pathname] ?? {
+            title: appName,
+            subtitle: 'Manage your reselling business.',
+          }
 
   async function handleJoinCode() {
     if (!codeInput.trim() || joining) return
