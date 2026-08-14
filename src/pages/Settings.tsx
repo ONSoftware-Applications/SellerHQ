@@ -186,6 +186,22 @@ function Settings() {
               Record sales as "Awaiting Shipping", move to "In Shipping" when shipped, then confirm shipping to mark the product as sold. Disable to mark sales as sold immediately.
             </p>
           </div>
+
+          {canUse('tillMode') && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', border: '1px solid var(--shq-border)', borderRadius: '8px' }}>
+              <Toggle
+                checked={settings.features.tillModeEnabled}
+                onChange={async (value) => {
+                  await updateFeature('tillModeEnabled', value)
+                  saveSuccess(value ? 'Till Mode enabled' : 'Till Mode disabled')
+                }}
+                label="Till Mode (point of sale)"
+              />
+              <p style={{ margin: '-8px 0 0 0', fontSize: '12px', color: 'var(--shq-ink-muted)' }}>
+                Turn the app into a full till with sessions, cash drawer, receipts and held orders. Scans from a phone appear in the basket.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -249,6 +265,68 @@ function Settings() {
           </div>
         </div>
       </div>
+
+      {canUse('tillMode') && (
+        <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
+          <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: '600', color: 'var(--shq-ink)' }}>
+            Point of Sale
+          </h3>
+          <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: 'var(--shq-ink-muted)' }}>
+            Configure how Till Mode prices and prints receipts.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--shq-ink)' }}>
+                Sales tax rate (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={settings.till.taxRate}
+                onChange={async (e) => {
+                  const value = Number(e.target.value) || 0
+                  await updateSettings({ till: { ...settings.till, taxRate: value } })
+                  saveSuccess('Sales tax rate updated')
+                }}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid var(--shq-border)',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  background: 'var(--shq-surface)',
+                  color: 'var(--shq-ink)',
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--shq-ink)' }}>
+                Receipt footer
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Thank you for your purchase"
+                value={settings.till.receiptFooter}
+                onChange={async (e) => {
+                  await updateSettings({ till: { ...settings.till, receiptFooter: e.target.value } })
+                }}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid var(--shq-border)',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  background: 'var(--shq-surface)',
+                  color: 'var(--shq-ink)',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Appearance */}
       <div style={{ background: 'var(--shq-surface)', border: '1px solid var(--shq-border)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>

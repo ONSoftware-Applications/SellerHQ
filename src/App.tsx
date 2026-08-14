@@ -17,6 +17,7 @@ import { TeamProvider } from './context/TeamContext'
 import { AutoRelist } from './components/AutoRelist'
 import { ExpenseProvider } from './context/ExpenseContext'
 import { ReceiptProvider } from './context/ReceiptContext'
+import { TillProvider } from './context/TillContext'
 import { ToastProvider } from './context/ToastContext'
 import { ThemeController } from './components/ThemeController'
 import ToastViewport from './components/ToastViewport'
@@ -53,6 +54,7 @@ const Support = lazy(() => import('./pages/Support'))
 const AuditLog = lazy(() => import('./pages/AuditLog'))
 const BusinessCustomization = lazy(() => import('./pages/BusinessCustomization'))
 const Relay = lazy(() => import('./pages/Relay'))
+const Till = lazy(() => import('./pages/Till'))
 const debugEnabled =
   import.meta.env.MODE === 'development' ||
   import.meta.env.VITE_ENABLE_DEBUG === 'true'
@@ -78,6 +80,7 @@ function App() {
                       <ProductProvider>
                       <ExpenseProvider>
                         <ReceiptProvider>
+                          <TillProvider>
                           <ThemeController />
                         <AutoRelist />
                         <BrowserRouter>
@@ -93,6 +96,17 @@ function App() {
                         path="/register"
                         element={<Register />}
                       />
+
+                      <Route element={<ProtectedRoute />}>
+                        <Route element={<RequireBusiness />}>
+                          <Route element={<PlanGuard feature="tillMode" />}>
+                            <Route
+                              path="/till"
+                              element={<Till />}
+                            />
+                          </Route>
+                        </Route>
+                      </Route>
 
                       <Route element={<Layout />}>
                         {DebugErrors && (
@@ -225,6 +239,7 @@ function App() {
                     </Suspense>
                   </ErrorBoundary>
                   </BrowserRouter>
+                </TillProvider>
                 </ReceiptProvider>
                 </ExpenseProvider>
               </ProductProvider>

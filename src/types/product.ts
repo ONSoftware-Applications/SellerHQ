@@ -17,6 +17,7 @@ export type Marketplace =
   | 'Vinted'
   | 'Etsy'
   | 'Depop'
+  | 'In Store'
 
 export type ProductCondition =
   | 'New'
