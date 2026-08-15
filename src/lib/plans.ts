@@ -192,9 +192,7 @@ export const PLANS: Plan[] = [
       'White-label branding (your name, logo & colour)',
       'Priority support',
     ],
-    planned: [
-      'Marketplace API integrations',
-    ],
+    planned: [],
   },
 ]
 
