@@ -2,6 +2,7 @@ import { createContext, useContext } from 'react'
 import type {
   TillCheckout,
   TillHold,
+  TillPurchaseCheckout,
   TillSession,
   TillTransaction,
 } from '../types/till'
@@ -15,6 +16,9 @@ export type TillContextType = {
   closeSession: (countedCash: number) => Promise<void>
   completeTransaction: (
     checkout: TillCheckout,
+  ) => Promise<TillTransaction>
+  completePurchase: (
+    checkout: TillPurchaseCheckout,
   ) => Promise<TillTransaction>
   voidTransaction: (id: string, reason: string) => Promise<void>
   holdOrder: (hold: {

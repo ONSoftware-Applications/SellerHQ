@@ -1,8 +1,12 @@
+import type { ProductCondition } from './product'
+
 export type TillPaymentMethod = 'cash' | 'card' | 'other'
 
 export type TillSessionStatus = 'open' | 'closed'
 
 export type TillTransactionStatus = 'completed' | 'voided'
+
+export type TillTransactionDirection = 'sale' | 'purchase'
 
 export type TillSession = {
   id: string
@@ -51,6 +55,8 @@ export type TillTransaction = {
   businessId: string
   sessionId: string
   cashierId: string
+  direction: TillTransactionDirection
+  clientName: string | null
   subtotal: number
   discount: number
   tax: number
@@ -69,6 +75,8 @@ export type TillTransactionRow = {
   business_id: string
   session_id: string
   cashier_id: string
+  direction: string | null
+  client_name: string | null
   subtotal: number | string | null
   discount: number | string | null
   tax: number | string | null
@@ -114,4 +122,21 @@ export type TillCheckout = {
   tax: number
   paymentMethod: TillPaymentMethod
   amountTendered: number
+}
+
+export type TillPurchaseItem = {
+  name: string
+  brand: string
+  category: string
+  size: string
+  colour: string
+  condition: ProductCondition
+  purchasePrice: number
+  quantity: number
+}
+
+export type TillPurchaseCheckout = {
+  items: TillPurchaseItem[]
+  paymentMethod: TillPaymentMethod
+  clientName: string
 }

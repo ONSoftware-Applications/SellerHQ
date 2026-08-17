@@ -12,16 +12,19 @@ import { useBusiness } from '../hooks/useBusiness'
 import { useProducts } from '../hooks/useProducts'
 import { useSettings } from '../hooks/useSettings'
 import { logAudit } from '../lib/audit'
+import { createBlankProductDraft } from '../lib/productDraft'
 import { TillContext } from '../hooks/useTill'
-import type { Product } from '../types/product'
+import type { Product, ProductDraft } from '../types/product'
 import type {
   TillCheckout,
   TillHold,
   TillHoldItem,
   TillPaymentMethod,
+  TillPurchaseCheckout,
   TillSession,
   TillSessionRow,
   TillTransaction,
+  TillTransactionDirection,
   TillTransactionItem,
   TillTransactionItemRow,
   TillTransactionRow,
@@ -67,6 +70,8 @@ function mapTransaction(
     businessId: row.business_id,
     sessionId: row.session_id,
     cashierId: row.cashier_id,
+    direction: (row.direction === 'purchase' ? 'purchase' : 'sale') as TillTransactionDirection,
+    clientName: row.client_name,
     subtotal: num(row.subtotal),
     discount: num(row.discount),
     tax: num(row.tax),
@@ -118,7 +123,8 @@ function mapHold(row: {
 export function TillProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const { currentBusiness } = useBusiness()
-  const { products, updateProduct, logEvent } = useProducts()
+  const { products, updateProduct, addProduct, deleteProduct, logEvent } =
+    useProducts()
   const { settings } = useSettings()
 
   const [session, setSession] = useState<TillSession | null>(null)
@@ -250,7 +256,18 @@ export function TillProvider({ children }: { children: ReactNode }) {
         session.startingFloat +
         transactions
           .filter(
-            (t) => t.status === 'completed' && t.paymentMethod === 'cash',
+            (t) =>
+              t.status === 'completed' &&
+              t.direction === 'sale' &&
+              t.paymentMethod === 'cash',
+          )
+          .reduce((sum, t) => sum + t.total, 0) -
+        transactions
+          .filter(
+            (t) =>
+              t.status === 'completed' &&
+              t.direction === 'purchase' &&
+              t.paymentMethod === 'cash',
           )
           .reduce((sum, t) => sum + t.total, 0)
 
@@ -311,6 +328,7 @@ export function TillProvider({ children }: { children: ReactNode }) {
           business_id: businessId,
           session_id: session.id,
           cashier_id: user.id,
+          direction: 'sale',
           subtotal,
           discount: checkout.discount,
           tax: checkout.tax,
@@ -400,6 +418,8 @@ export function TillProvider({ children }: { children: ReactNode }) {
         businessId,
         sessionId: session.id,
         cashierId: user.id,
+        direction: 'sale',
+        clientName: null,
         subtotal,
         discount: checkout.discount,
         tax: checkout.tax,
@@ -419,6 +439,135 @@ export function TillProvider({ children }: { children: ReactNode }) {
     [businessId, user, session, products, updateProduct, logEvent, settings],
   )
 
+  const completePurchase = useCallback(
+    async (checkout: TillPurchaseCheckout): Promise<TillTransaction> => {
+      if (!businessId || !user || !session) {
+        throw new Error('No open till session')
+      }
+
+      const total =
+        Math.round(
+          checkout.items.reduce(
+            (sum, item) => sum + item.purchasePrice * item.quantity,
+            0,
+          ) * 100,
+        ) / 100
+
+      const createdProductIds: (string | null)[] = []
+      try {
+        for (const item of checkout.items) {
+          const draft: ProductDraft = {
+            ...createBlankProductDraft(),
+            name: item.name,
+            brand: item.brand,
+            category: item.category,
+            size: item.size,
+            colour: item.colour,
+            condition: item.condition,
+            purchasePrice: item.purchasePrice,
+            purchaseDate: new Date().toISOString().split('T')[0],
+            purchaseSource: checkout.clientName,
+            quantity: item.quantity,
+            status: 'Unlisted',
+          }
+          await addProduct(draft)
+          createdProductIds.push(draft.id)
+        }
+      } catch (err) {
+        for (const id of createdProductIds) {
+          if (!id) continue
+          try {
+            await deleteProduct(id)
+          } catch {
+            // best-effort rollback
+          }
+        }
+        throw err
+      }
+
+      const { data: transactionRow, error: transactionError } = await supabase
+        .from('till_transactions')
+        .insert({
+          business_id: businessId,
+          session_id: session.id,
+          cashier_id: user.id,
+          direction: 'purchase',
+          client_name: checkout.clientName || null,
+          subtotal: total,
+          discount: 0,
+          tax: 0,
+          total,
+          payment_method: checkout.paymentMethod,
+          amount_tendered: 0,
+          change_due: 0,
+          status: 'completed',
+        })
+        .select()
+        .single()
+
+      if (transactionError || !transactionRow) {
+        console.error('Failed to record till purchase:', transactionError)
+        throw transactionError ?? new Error('Failed to record purchase')
+      }
+
+      const transactionId = transactionRow.id as string
+
+      const { data: itemRows, error: itemsError } = await supabase
+        .from('till_transaction_items')
+        .insert(
+          checkout.items.map((item, index) => ({
+            transaction_id: transactionId,
+            product_id: createdProductIds[index],
+            name: item.name,
+            unit_price: item.purchasePrice,
+            quantity: item.quantity,
+            line_total: Math.round(item.purchasePrice * item.quantity * 100) / 100,
+          })),
+        )
+        .select()
+
+      if (itemsError) {
+        console.error('Failed to record till purchase items:', itemsError)
+      }
+
+      void logAudit(
+        'till.purchase',
+        {
+          transactionId,
+          total,
+          payment: checkout.paymentMethod,
+          client: checkout.clientName,
+          items: checkout.items.length,
+        },
+        businessId,
+      )
+
+      const transaction: TillTransaction = {
+        id: transactionId,
+        businessId,
+        sessionId: session.id,
+        cashierId: user.id,
+        direction: 'purchase',
+        clientName: checkout.clientName,
+        subtotal: total,
+        discount: 0,
+        tax: 0,
+        total,
+        paymentMethod: checkout.paymentMethod,
+        amountTendered: 0,
+        changeDue: 0,
+        status: 'completed',
+        voidReason: null,
+        createdAt: transactionRow.created_at as string,
+        items: (itemRows ?? []).map(mapTransactionItem),
+      }
+
+      setTransactions((prev) => [transaction, ...prev])
+      return transaction
+    },
+    [businessId, user, session, addProduct, deleteProduct],
+  )
+
   const voidTransaction = useCallback(
     async (id: string, reason: string) => {
       if (!businessId) return
@@ -436,38 +585,47 @@ export function TillProvider({ children }: { children: ReactNode }) {
         throw error
       }
 
-      for (const item of transaction.items) {
-        if (!item.productId) continue
-        const product = products.find((p) => p.id === item.productId)
-        if (!product) continue
+      if (transaction.direction === 'purchase') {
+        for (const item of transaction.items) {
+          if (!item.productId) continue
+          await deleteProduct(item.productId)
+        }
+      } else {
+        for (const item of transaction.items) {
+          if (!item.productId) continue
+          const product = products.find((p) => p.id === item.productId)
+          if (!product) continue
 
-        const newQuantity = product.quantity + item.quantity
-        const wasSold = ['Sold', 'Awaiting Shipping', 'In Shipping'].includes(
-          product.status,
-        ) && product.quantity === 0
+          const newQuantity = product.quantity + item.quantity
+          const wasSold = ['Sold', 'Awaiting Shipping', 'In Shipping'].includes(
+            product.status,
+          ) && product.quantity === 0
 
-        await updateProduct({
-          ...product,
-          quantity: newQuantity,
-          ...(wasSold
-            ? {
-                status: 'Unlisted' as Product['status'],
-                salePrice: null,
-                saleDate: null,
-                saleMarketplace: null,
-                profit: 0,
-                fees: 0,
-                shippingCost: 0,
-                platformFees: 0,
-                otherFees: 0,
-              }
-            : {}),
-          updatedAt: new Date().toISOString(),
-        })
+          await updateProduct({
+            ...product,
+            quantity: newQuantity,
+            ...(wasSold
+              ? {
+                  status: 'Unlisted' as Product['status'],
+                  salePrice: null,
+                  saleDate: null,
+                  saleMarketplace: null,
+                  profit: 0,
+                  fees: 0,
+                  shippingCost: 0,
+                  platformFees: 0,
+                  otherFees: 0,
+                }
+              : {}),
+            updatedAt: new Date().toISOString(),
+          })
+        }
       }
 
       void logAudit(
-        'till.sale.voided',
+        transaction.direction === 'purchase'
+          ? 'till.purchase.voided'
+          : 'till.sale.voided',
         { transactionId: id, reason },
         businessId,
       )
@@ -480,7 +638,7 @@ export function TillProvider({ children }: { children: ReactNode }) {
         ),
       )
     },
-    [businessId, transactions, products, updateProduct],
+    [businessId, transactions, products, updateProduct, deleteProduct],
   )
 
   const holdOrder = useCallback(
@@ -551,6 +709,7 @@ export function TillProvider({ children }: { children: ReactNode }) {
       openSession,
       closeSession,
       completeTransaction,
+      completePurchase,
       voidTransaction,
       holdOrder,
       deleteHold,
@@ -564,6 +723,7 @@ export function TillProvider({ children }: { children: ReactNode }) {
       openSession,
       closeSession,
       completeTransaction,
+      completePurchase,
       voidTransaction,
       holdOrder,
       deleteHold,

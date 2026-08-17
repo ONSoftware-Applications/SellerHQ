@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { useBusiness } from '../hooks/useBusiness'
@@ -11,14 +17,33 @@ import { useQrRelay } from '../hooks/useQrRelay'
 import { useTill } from '../hooks/useTill'
 import { appDisplayName } from '../lib/branding'
 import { ConfirmDialog } from '../components/ConfirmDialog'
-import type { Product } from '../types/product'
+import type { Product, ProductCondition } from '../types/product'
 import type {
   TillBasketItem,
   TillPaymentMethod,
+  TillPurchaseItem,
   TillTransaction,
 } from '../types/till'
 
 const SOLD_STATUSES = ['Sold', 'In Shipping', 'Returned', 'Archived']
+
+const CONDITION_OPTIONS: ProductCondition[] = [
+  'New',
+  'New with tags',
+  'Very good',
+  'Good',
+  'Satisfactory',
+  'For parts / not working',
+]
+
+const BUY_FIELD_STYLE: CSSProperties = {
+  padding: '10px 12px',
+  border: '1px solid var(--shq-border)',
+  borderRadius: 8,
+  fontSize: 14,
+  background: 'var(--shq-bg)',
+  color: 'var(--shq-ink)',
+}
 
 function canSell(product: Product): boolean {
   return !SOLD_STATUSES.includes(product.status) && product.quantity > 0
@@ -63,12 +88,14 @@ function Till() {
     openSession,
     closeSession,
     completeTransaction,
+    completePurchase,
     voidTransaction,
     holdOrder,
     deleteHold,
   } = useTill()
 
   const [now, setNow] = useState(() => new Date())
+  const [mode, setMode] = useState<'sale' | 'purchase'>('sale')
   const [search, setSearch] = useState('')
   const [basket, setBasket] = useState<TillBasketItem[]>([])
   const [discountInput, setDiscountInput] = useState('')
@@ -91,6 +118,16 @@ function Till() {
   const [voiding, setVoiding] = useState(false)
   const [customName, setCustomName] = useState('')
   const [customPrice, setCustomPrice] = useState('')
+  const [buyBasket, setBuyBasket] = useState<TillPurchaseItem[]>([])
+  const [clientName, setClientName] = useState('')
+  const [buyName, setBuyName] = useState('')
+  const [buyBrand, setBuyBrand] = useState('')
+  const [buyCategory, setBuyCategory] = useState('')
+  const [buySize, setBuySize] = useState('')
+  const [buyColour, setBuyColour] = useState('')
+  const [buyCondition, setBuyCondition] = useState<ProductCondition>('Good')
+  const [buyPrice, setBuyPrice] = useState('')
+  const [buyQty, setBuyQty] = useState('1')
 
   const businessId = currentBusiness?.id
   const taxRate = settings.till.taxRate || 0
@@ -102,6 +139,7 @@ function Till() {
 
   const scanHandlerRef = useRef<(payload: string) => void>(() => {})
   scanHandlerRef.current = (payload: string) => {
+    if (mode !== 'sale') return
     const product = resolveScannedProduct(payload, products)
     if (product) {
       addToBasket(product)
@@ -191,6 +229,68 @@ function Till() {
     setCustomPrice('')
   }
 
+  function addBuyItem() {
+    const name = buyName.trim()
+    const price = Number(buyPrice)
+    const quantity = Math.floor(Number(buyQty))
+    if (!name) {
+      showToast('Enter a name for the item', 'error')
+      return
+    }
+    if (!Number.isFinite(price) || price < 0) {
+      showToast('Enter a valid purchase price', 'error')
+      return
+    }
+    if (!Number.isFinite(quantity) || quantity < 1) {
+      showToast('Enter a valid quantity', 'error')
+      return
+    }
+    setBuyBasket((prev) => [
+      ...prev,
+      {
+        name,
+        brand: buyBrand.trim(),
+        category: buyCategory.trim(),
+        size: buySize.trim(),
+        colour: buyColour.trim(),
+        condition: buyCondition,
+        purchasePrice: price,
+        quantity,
+      },
+    ])
+    setBuyName('')
+    setBuyBrand('')
+    setBuyCategory('')
+    setBuySize('')
+    setBuyColour('')
+    setBuyPrice('')
+    setBuyQty('1')
+  }
+
+  function updateBuyPrice(index: number, value: string) {
+    const price = Number(value)
+    if (!Number.isFinite(price) || price < 0) return
+    setBuyBasket((prev) =>
+      prev.map((item, i) =>
+        i === index ? { ...item, purchasePrice: price } : item,
+      ),
+    )
+  }
+
+  function updateBuyQuantity(index: number, delta: number) {
+    setBuyBasket((prev) =>
+      prev.map((item, i) => {
+        if (i !== index) return item
+        const next = Math.max(1, item.quantity + delta)
+        return { ...item, quantity: next }
+      }),
+    )
+  }
+
+  function removeBuyLine(index: number) {
+    setBuyBasket((prev) => prev.filter((_, i) => i !== index))
+  }
+
   function updateQuantity(index: number, delta: number) {
     setBasket((prev) =>
       prev.map((item, i) => {
@@ -229,6 +329,15 @@ function Till() {
     return { subtotal, discountAmount, tax, total }
   }, [basket, discountInput, discountType, taxRate])
 
+  const buyTotal = useMemo(
+    () =>
+      buyBasket.reduce(
+        (sum, item) => sum + item.purchasePrice * item.quantity,
+        0,
+      ),
+    [buyBasket],
+  )
+
   const tendered = Number(tenderedInput) || 0
   const changeDue = Math.max(0, tendered - totals.total)
 
@@ -253,7 +362,20 @@ function Till() {
       const expected =
         (session?.startingFloat ?? 0) +
         transactions
-          .filter((t) => t.status === 'completed' && t.paymentMethod === 'cash')
+          .filter(
+            (t) =>
+              t.status === 'completed' &&
+              t.direction === 'sale' &&
+              t.paymentMethod === 'cash',
+          )
+          .reduce((sum, t) => sum + t.total, 0) -
+        transactions
+          .filter(
+            (t) =>
+              t.status === 'completed' &&
+              t.direction === 'purchase' &&
+              t.paymentMethod === 'cash',
+          )
           .reduce((sum, t) => sum + t.total, 0)
       await closeSession(counted)
       const variance = counted - expected
@@ -292,6 +414,34 @@ function Till() {
       setPaymentOpen(false)
     } catch {
       showToast('Could not complete the sale', 'error')
+    } finally {
+      setPaying(false)
+    }
+  }
+
+  async function handlePay() {
+    if (buyBasket.length === 0) {
+      showToast('Add items to the purchase first', 'error')
+      return
+    }
+    setPaying(true)
+    try {
+      const transaction = await completePurchase({
+        items: buyBasket,
+        paymentMethod,
+        clientName: clientName.trim(),
+      })
+      setLastReceipt(transaction)
+      setBuyBasket([])
+      setClientName('')
+      setPaymentOpen(false)
+    } catch (err) {
+      showToast(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Could not complete the purchase',
+        'error',
+      )
     } finally {
       setPaying(false)
     }
@@ -349,6 +499,7 @@ function Till() {
   function openReceiptWindow(transaction: TillTransaction) {
     const win = window.open('', '_blank', 'width=400,height=640')
     if (!win) return
+    const isPurchase = transaction.direction === 'purchase'
     const line = (label: string, value: string) =>
       `<div style="display:flex;justify-content:space-between;margin:2px 0;font-size:13px"><span>${label}</span><span>${value}</span></div>`
     const rows = transaction.items
@@ -360,28 +511,35 @@ function Till() {
         </div>`,
       )
       .join('')
+    const header = isPurchase
+      ? `<p class="muted">Purchase receipt<br>Bought from ${escapeHtml(transaction.clientName ?? 'client')}<br>${new Date(transaction.createdAt).toLocaleString('en-GB')}</p>`
+      : `<p class="muted">${new Date(transaction.createdAt).toLocaleString('en-GB')}</p>`
+    const summary = isPurchase
+      ? `${line('Subtotal', money(transaction.subtotal))}
+      ${line('Total paid (' + transaction.paymentMethod + ')', money(transaction.total))}`
+      : `${line('Subtotal', money(transaction.subtotal))}
+      ${transaction.discount > 0 ? line('Discount', '-' + money(transaction.discount)) : ''}
+      ${transaction.tax > 0 ? line('Tax', money(transaction.tax)) : ''}
+      ${line('Total', money(transaction.total))}
+      ${line('Paid (' + transaction.paymentMethod + ')', money(transaction.amountTendered))}
+      ${transaction.changeDue > 0 ? line('Change', money(transaction.changeDue)) : ''}`
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>Receipt</title>
       <style>
         body{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;padding:24px;color:#17191c;max-width:340px;margin:0 auto}
         h1{font-size:18px;margin:0 0 4px;text-align:center}
-        .muted{color:#6b7280;font-size:12px;text-align:center;margin:0 0 16px}
+        .muted{color:#6b7280;font-size:12px;text-align:center;margin:0 0 16px;white-space:pre-wrap}
         .divider{border-top:1px dashed #c9cdd3;margin:12px 0}
         .total{font-size:16px;font-weight:700}
         .footer{text-align:center;color:#6b7280;font-size:12px;margin-top:20px;white-space:pre-wrap}
       </style></head><body>
       <h1>${escapeHtml(currentBusiness?.name ?? '')}</h1>
-      <p class="muted">${new Date(transaction.createdAt).toLocaleString('en-GB')}</p>
+      ${header}
       <div class="divider"></div>
       ${rows}
       <div class="divider"></div>
-      ${line('Subtotal', money(transaction.subtotal))}
-      ${transaction.discount > 0 ? line('Discount', '-' + money(transaction.discount)) : ''}
-      ${transaction.tax > 0 ? line('Tax', money(transaction.tax)) : ''}
-      ${line('Total', money(transaction.total))}
-      ${line('Paid (' + transaction.paymentMethod + ')', money(transaction.amountTendered))}
-      ${transaction.changeDue > 0 ? line('Change', money(transaction.changeDue)) : ''}
+      ${summary}
       <div class="divider"></div>
-      <div class="total">${line('Total', money(transaction.total))}</div>
+      <div class="total">${line(isPurchase ? 'Total paid' : 'Total', money(transaction.total))}</div>
       ${settings.till.receiptFooter ? `<div class="footer">${escapeHtml(settings.till.receiptFooter)}</div>` : ''}
       <script>window.onload=function(){window.print()}</script>
       </body></html>`
@@ -570,6 +728,28 @@ function Till() {
         <div style={{ flex: 1, display: 'flex', gap: 20, padding: 20, minHeight: 0 }}>
           {/* Left: item entry */}
           <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                className={mode === 'sale' ? 'primary-button' : 'secondary-button'}
+                style={{ flex: 1 }}
+                onClick={() => setMode('sale')}
+              >
+                Sell to customer
+              </button>
+              <button
+                type="button"
+                className={
+                  mode === 'purchase' ? 'primary-button' : 'secondary-button'
+                }
+                style={{ flex: 1 }}
+                onClick={() => setMode('purchase')}
+              >
+                Buy from client
+              </button>
+            </div>
+
+            {mode === 'sale' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ position: 'relative' }}>
               <input
@@ -689,7 +869,106 @@ function Till() {
                 </button>
               </div>
             </div>
+            ) : (
+              <div
+                style={{
+                  background: 'var(--shq-surface)',
+                  border: '1px solid var(--shq-border)',
+                  borderRadius: 12,
+                  padding: 14,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 600 }}>
+                  New item — added to inventory as unlisted
+                </div>
+                <input
+                  type="text"
+                  placeholder="Item name *"
+                  value={buyName}
+                  onChange={(e) => setBuyName(e.target.value)}
+                  style={BUY_FIELD_STYLE}
+                />
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                    gap: 10,
+                  }}
+                >
+                  <input
+                    type="text"
+                    placeholder="Brand"
+                    value={buyBrand}
+                    onChange={(e) => setBuyBrand(e.target.value)}
+                    style={BUY_FIELD_STYLE}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Category"
+                    value={buyCategory}
+                    onChange={(e) => setBuyCategory(e.target.value)}
+                    style={BUY_FIELD_STYLE}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Size"
+                    value={buySize}
+                    onChange={(e) => setBuySize(e.target.value)}
+                    style={BUY_FIELD_STYLE}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Colour"
+                    value={buyColour}
+                    onChange={(e) => setBuyColour(e.target.value)}
+                    style={BUY_FIELD_STYLE}
+                  />
+                  <select
+                    value={buyCondition}
+                    onChange={(e) =>
+                      setBuyCondition(e.target.value as ProductCondition)
+                    }
+                    style={BUY_FIELD_STYLE}
+                  >
+                    {CONDITION_OPTIONS.map((condition) => (
+                      <option key={condition} value={condition}>
+                        {condition}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Purchase price *"
+                    value={buyPrice}
+                    onChange={(e) => setBuyPrice(e.target.value)}
+                    style={BUY_FIELD_STYLE}
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="Quantity"
+                    value={buyQty}
+                    onChange={(e) => setBuyQty(e.target.value)}
+                    style={BUY_FIELD_STYLE}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={addBuyItem}
+                >
+                  Add to purchase
+                </button>
+              </div>
+            )}
 
+            {mode === 'sale' ? (
             <div
               style={{
                 flex: 1,
@@ -787,6 +1066,119 @@ function Till() {
                 </div>
               )}
             </div>
+            ) : (
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  background: 'var(--shq-surface)',
+                  border: '1px solid var(--shq-border)',
+                  borderRadius: 12,
+                  padding: 12,
+                }}
+              >
+                {buyBasket.length === 0 ? (
+                  <div
+                    style={{
+                      padding: '48px 16px',
+                      textAlign: 'center',
+                      color: 'var(--shq-ink-muted)',
+                      fontSize: 14,
+                    }}
+                  >
+                    No items yet. Enter the client's items above.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {buyBasket.map((item, index) => (
+                      <div
+                        key={`${item.name}-${index}`}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '10px 12px',
+                          border: '1px solid var(--shq-border)',
+                          borderRadius: 10,
+                          background: 'var(--shq-bg)',
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: 14 }}>
+                            {item.name}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--shq-ink-muted)' }}>
+                            {[
+                              item.brand,
+                              item.category,
+                              item.size,
+                              item.colour,
+                              item.condition,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ') || 'No details'}
+                          </div>
+                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.purchasePrice}
+                          onChange={(e) => updateBuyPrice(index, e.target.value)}
+                          style={{
+                            width: 90,
+                            padding: '6px 8px',
+                            border: '1px solid var(--shq-border)',
+                            borderRadius: 6,
+                            fontSize: 13,
+                            background: 'var(--shq-surface)',
+                            color: 'var(--shq-ink)',
+                          }}
+                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            style={{ padding: '2px 10px', fontSize: 16 }}
+                            onClick={() => updateBuyQuantity(index, -1)}
+                          >
+                            −
+                          </button>
+                          <span style={{ minWidth: 24, textAlign: 'center', fontWeight: 600 }}>
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            style={{ padding: '2px 10px', fontSize: 16 }}
+                            onClick={() => updateBuyQuantity(index, 1)}
+                          >
+                            +
+                          </button>
+                        </div>
+                        <div style={{ width: 80, textAlign: 'right', fontWeight: 700 }}>
+                          {money(item.purchasePrice * item.quantity)}
+                        </div>
+                        <button
+                          type="button"
+                          className="row-action-link"
+                          onClick={() => removeBuyLine(index)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setBuyBasket([])}
+                    >
+                      Clear purchase
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right: totals + payment */}
@@ -799,6 +1191,8 @@ function Till() {
               gap: 16,
             }}
           >
+            {mode === 'sale' ? (
+              <>
             <div
               style={{
                 background: 'var(--shq-surface)',
@@ -957,6 +1351,72 @@ function Till() {
                 </div>
               </div>
             )}
+              </>
+            ) : (
+              <div
+                style={{
+                  background: 'var(--shq-surface)',
+                  border: '1px solid var(--shq-border)',
+                  borderRadius: 12,
+                  padding: 20,
+                }}
+              >
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    marginBottom: 6,
+                  }}
+                >
+                  Client name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Who are you buying from?"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  style={{ ...BUY_FIELD_STYLE, width: '100%', marginBottom: 16 }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                  <span>Items</span>
+                  <strong>{buyBasket.reduce((sum, i) => sum + i.quantity, 0)}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginTop: 8 }}>
+                  <span>Subtotal</span>
+                  <strong>{money(buyTotal)}</strong>
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--shq-ink-muted)', marginTop: 8 }}>
+                  Items are added to inventory as unlisted when paid.
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: 22,
+                    fontWeight: 700,
+                    marginTop: 16,
+                    paddingTop: 16,
+                    borderTop: '1px solid var(--shq-border)',
+                  }}
+                >
+                  <span>Total</span>
+                  <span>{money(buyTotal)}</span>
+                </div>
+                <button
+                  type="button"
+                  className="primary-button"
+                  style={{ width: '100%', marginTop: 20, padding: '14px', fontSize: 16, fontWeight: 700 }}
+                  onClick={() => {
+                    setPaymentMethod('cash')
+                    setPaymentOpen(true)
+                  }}
+                  disabled={buyBasket.length === 0}
+                >
+                  Pay {money(buyTotal)}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -965,9 +1425,13 @@ function Till() {
       {paymentOpen && (
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal" style={{ maxWidth: 420, padding: 24 }}>
-            <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700 }}>Payment</h2>
+            <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700 }}>
+              {mode === 'purchase' ? 'Pay client' : 'Payment'}
+            </h2>
             <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--shq-ink-muted)' }}>
-              Total {money(totals.total)}
+              {mode === 'purchase'
+                ? `Total to pay ${money(buyTotal)}`
+                : `Total ${money(totals.total)}`}
             </p>
 
             <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -979,7 +1443,9 @@ function Till() {
                   style={{ flex: 1, textTransform: 'capitalize' }}
                   onClick={() => {
                     setPaymentMethod(method)
-                    if (method === 'cash') setTenderedInput(totals.total.toFixed(2))
+                    if (method === 'cash' && mode === 'sale') {
+                      setTenderedInput(totals.total.toFixed(2))
+                    }
                   }}
                 >
                   {method}
@@ -987,7 +1453,7 @@ function Till() {
               ))}
             </div>
 
-            {paymentMethod === 'cash' && (
+            {paymentMethod === 'cash' && mode === 'sale' && (
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600 }}>
                   Amount tendered
@@ -1027,10 +1493,17 @@ function Till() {
               <button
                 type="button"
                 className="primary-button"
-                onClick={handleCharge}
-                disabled={paying || (paymentMethod === 'cash' && tendered < totals.total)}
+                onClick={mode === 'purchase' ? handlePay : handleCharge}
+                disabled={
+                  paying ||
+                  (mode === 'sale' && paymentMethod === 'cash' && tendered < totals.total)
+                }
               >
-                {paying ? 'Processing…' : `Confirm ${money(totals.total)}`}
+                {paying
+                  ? 'Processing…'
+                  : mode === 'purchase'
+                    ? `Pay ${money(buyTotal)}`
+                    : `Confirm ${money(totals.total)}`}
               </button>
             </div>
           </div>
@@ -1042,14 +1515,25 @@ function Till() {
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal" style={{ maxWidth: 380, padding: 24, textAlign: 'center' }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
-            <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700 }}>Sale complete</h2>
+            <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 700 }}>
+              {lastReceipt.direction === 'purchase'
+                ? 'Purchase complete'
+                : 'Sale complete'}
+            </h2>
             <p style={{ margin: '0 0 16px', fontSize: 26, fontWeight: 700 }}>
               {money(lastReceipt.total)}
             </p>
-            {lastReceipt.changeDue > 0 && (
+            {lastReceipt.direction === 'purchase' ? (
               <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--shq-ink-muted)' }}>
-                Change {money(lastReceipt.changeDue)}
+                Paid to {lastReceipt.clientName ?? 'client'} · items added to
+                inventory as unlisted
               </p>
+            ) : (
+              lastReceipt.changeDue > 0 && (
+                <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--shq-ink-muted)' }}>
+                  Change {money(lastReceipt.changeDue)}
+                </p>
+              )
             )}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
               <button
@@ -1057,7 +1541,7 @@ function Till() {
                 className="secondary-button"
                 onClick={() => setLastReceipt(null)}
               >
-                New sale
+                {lastReceipt.direction === 'purchase' ? 'New purchase' : 'New sale'}
               </button>
               <button
                 type="button"
@@ -1109,13 +1593,18 @@ function Till() {
                   >
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 14 }}>
-                        {money(t.total)}{' '}
+                        {t.direction === 'purchase'
+                          ? `Paid ${money(t.total)}`
+                          : money(t.total)}{' '}
                         <span style={{ textTransform: 'capitalize', fontWeight: 400, fontSize: 12, color: 'var(--shq-ink-muted)' }}>
                           · {t.paymentMethod}
+                          {t.direction === 'purchase' &&
+                            ` · From ${t.clientName ?? 'client'}`}
                         </span>
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--shq-ink-muted)' }}>
                         {new Date(t.createdAt).toLocaleTimeString('en-GB')} · {t.items.length} item{t.items.length === 1 ? '' : 's'}
+                        {t.direction === 'purchase' && ' · Buy-in'}
                         {t.status === 'voided' && ` · Voided: ${t.voidReason ?? ''}`}
                       </div>
                     </div>
@@ -1161,7 +1650,20 @@ function Till() {
               const expected =
                 session.startingFloat +
                 transactions
-                  .filter((t) => t.status === 'completed' && t.paymentMethod === 'cash')
+                  .filter(
+                    (t) =>
+                      t.status === 'completed' &&
+                      t.direction === 'sale' &&
+                      t.paymentMethod === 'cash',
+                  )
+                  .reduce((sum, t) => sum + t.total, 0) -
+                transactions
+                  .filter(
+                    (t) =>
+                      t.status === 'completed' &&
+                      t.direction === 'purchase' &&
+                      t.paymentMethod === 'cash',
+                  )
                   .reduce((sum, t) => sum + t.total, 0)
               const counted = Number(countedInput) || 0
               const variance = counted - expected
@@ -1239,10 +1741,19 @@ function Till() {
         message={
           voidTarget ? (
             <div>
-              <p style={{ margin: '0 0 12px' }}>
-                Voiding <strong>{money(voidTarget.total)}</strong> will restock the
-                sold inventory and mark the transaction as voided. This cannot be undone.
-              </p>
+              {voidTarget.direction === 'purchase' ? (
+                <p style={{ margin: '0 0 12px' }}>
+                  Voiding this <strong>{money(voidTarget.total)}</strong> purchase
+                  from <strong>{voidTarget.clientName ?? 'client'}</strong> will
+                  remove the items added to inventory and mark the transaction as
+                  voided. This cannot be undone.
+                </p>
+              ) : (
+                <p style={{ margin: '0 0 12px' }}>
+                  Voiding <strong>{money(voidTarget.total)}</strong> will restock the
+                  sold inventory and mark the transaction as voided. This cannot be undone.
+                </p>
+              )}
               <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
                 Reason
               </label>
