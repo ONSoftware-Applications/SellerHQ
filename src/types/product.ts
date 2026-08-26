@@ -13,6 +13,7 @@ export type ProductStatus =
   | 'Draft'
 
 export type Marketplace =
+  | 'Website'
   | 'eBay'
   | 'Vinted'
   | 'Etsy'
