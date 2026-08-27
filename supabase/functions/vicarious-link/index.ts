@@ -165,6 +165,29 @@ function vicariousConditionToSellerHq(value: unknown) {
   return table[raw] ?? clean(value)
 }
 
+function projectedProfit(row: Record<string, unknown>, listingPrice: unknown) {
+  const listing = toNumber(listingPrice) ?? Number(row.listing_price ?? 0)
+  const purchase = Number(row.purchase_price ?? 0)
+  const additional = Number(row.additional_costs ?? 0)
+  return Math.round((listing - purchase - additional) * 100) / 100
+}
+
+function withoutVicariousSaleFields(fields: Record<string, unknown>) {
+  const next = { ...fields }
+  delete next.vicariousOrderId
+  delete next.vicariousOrderStatus
+  delete next.vicariousPaymentProvider
+  delete next.vicariousPaymentIntentId
+  delete next.vicariousSaleSyncedAt
+  return next
+}
+
+function isRelistFromVicarious(body: Record<string, unknown>, source: Record<string, unknown>) {
+  const reason = clean(body.reason).toLowerCase()
+  const status = clean(source.status).toUpperCase()
+  return reason.includes('relist') || status === 'AVAILABLE' || status === 'LISTED'
+}
+
 function databaseToSellerHqProduct(row: Record<string, unknown>) {
   const customFields = (row.custom_fields as Record<string, unknown> | null) ?? {}
   return {
@@ -389,7 +412,11 @@ async function handleProductUpdateFromVicarious(
         .filter(Boolean)
     : undefined
 
+  const relisted = isRelistFromVicarious(body, source)
   const existingCustomFields = (product.custom_fields as Record<string, unknown> | null) ?? {}
+  const baseCustomFields = relisted ? withoutVicariousSaleFields(existingCustomFields) : existingCustomFields
+  const listingPrice = toNumber(source.price) ?? product.listing_price
+
   const updates: Record<string, unknown> = {
     name: clean(source.name) || product.name,
     description: clean(source.description) || product.description,
@@ -399,7 +426,7 @@ async function handleProductUpdateFromVicarious(
     colour: clean(source.colour) || product.colour,
     condition: clean(source.condition) ? vicariousConditionToSellerHq(source.condition) : product.condition,
     storage_location: clean(source.location) || product.storage_location,
-    listing_price: toNumber(source.price) ?? product.listing_price,
+    listing_price: listingPrice,
     purchase_price: toNumber(source.cost) ?? product.purchase_price,
     purchase_date: clean(source.purchaseDate) || product.purchase_date,
     purchase_source: clean(source.acquisitionSource) || product.purchase_source,
@@ -407,16 +434,34 @@ async function handleProductUpdateFromVicarious(
     marketplaces: marketplace ?? product.marketplaces,
     images: images ?? product.images,
     custom_fields: {
-      ...existingCustomFields,
-      material: clean(source.material) || existingCustomFields.material || '',
-      conditionNotes: clean(source.conditionNotes) || existingCustomFields.conditionNotes || '',
-      defects: Array.isArray(source.defects) ? source.defects : existingCustomFields.defects,
-      tags: Array.isArray(source.tags) ? source.tags : existingCustomFields.tags,
-      vicariousSku: clean(source.sku) || existingCustomFields.vicariousSku,
-      vicariousSlug: clean(source.slug) || existingCustomFields.vicariousSlug,
+      ...baseCustomFields,
+      material: clean(source.material) || baseCustomFields.material || '',
+      conditionNotes: clean(source.conditionNotes) || baseCustomFields.conditionNotes || '',
+      defects: Array.isArray(source.defects) ? source.defects : baseCustomFields.defects,
+      tags: Array.isArray(source.tags) ? source.tags : baseCustomFields.tags,
+      vicariousSku: clean(source.sku) || baseCustomFields.vicariousSku,
+      vicariousSlug: clean(source.slug) || baseCustomFields.vicariousSlug,
       vicariousLastSyncReason: clean(body.reason),
       vicariousLastSyncedAt: new Date().toISOString(),
     },
+  }
+
+  if (relisted) {
+    updates.status = 'listed'
+    updates.sale_price = null
+    updates.sale_date = null
+    updates.shipping_date = null
+    updates.sale_marketplace = null
+    updates.shipping_cost = 0
+    updates.platform_fees = 0
+    updates.other_fees = 0
+    updates.fees = 0
+    updates.profit = projectedProfit(product, listingPrice)
+    updates.refunded = false
+    updates.refund_amount = 0
+    updates.refund_date = null
+    updates.refund_note = ''
+    updates.listing_date = dateOnly(source.updatedAt)
   }
 
   const { data, error } = await admin
@@ -431,8 +476,10 @@ async function handleProductUpdateFromVicarious(
   await logProductEvent(
     admin,
     data as Record<string, unknown>,
-    'vicarious_updated_sellerhq',
-    `Updated from Vicarious Clothing${clean(body.reason) ? ` (${clean(body.reason)})` : ''}`,
+    relisted ? 'vicarious_relisted_sellerhq' : 'vicarious_updated_sellerhq',
+    relisted
+      ? `Relisted from Vicarious Clothing; sale fields cleared`
+      : `Updated from Vicarious Clothing${clean(body.reason) ? ` (${clean(body.reason)})` : ''}`,
     { vicariousProduct: source },
   )
 
@@ -497,6 +544,8 @@ async function handleRecordSale(body: Record<string, unknown>, admin: ReturnType
         vicariousOrderStatus: clean(order.status),
         vicariousPaymentProvider: clean(order.paymentProvider),
         vicariousPaymentIntentId: clean(order.paymentIntentId),
+        vicariousCarrier: clean(order.carrier),
+        vicariousTracking: clean(order.tracking),
         vicariousSaleSyncedAt: new Date().toISOString(),
       },
     }
