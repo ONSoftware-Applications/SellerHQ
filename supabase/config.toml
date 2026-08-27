@@ -1,0 +1,2 @@
+[functions.vicarious-link]
+verify_jwt = false
