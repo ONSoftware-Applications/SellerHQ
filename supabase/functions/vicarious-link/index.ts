@@ -47,6 +47,12 @@ function toNumber(value: unknown) {
   return Number.isFinite(amount) ? Math.round(amount * 100) / 100 : null
 }
 
+function dateOnly(value: unknown) {
+  const text = clean(value)
+  if (!text) return new Date().toISOString().split('T')[0]
+  return text.includes('T') ? text.split('T')[0] : text
+}
+
 function databaseStatusToProductStatus(status: string): string {
   switch (status) {
     case 'listed':
@@ -110,6 +116,20 @@ function productStatusToDatabaseStatus(status: string): string {
     case 'Unlisted':
     default:
       return 'unlisted'
+  }
+}
+
+function sellerHqStatusFromVicariousOrder(status: unknown): string {
+  switch (clean(status).toUpperCase()) {
+    case 'DISPATCHED':
+      return 'in_shipping'
+    case 'DELIVERED':
+      return 'sold'
+    case 'PAID':
+    case 'PICKING':
+    case 'READY_TO_DISPATCH':
+    default:
+      return 'awaiting_shipping'
   }
 }
 
@@ -422,6 +442,7 @@ async function handleProductUpdateFromVicarious(
 async function handleRecordSale(body: Record<string, unknown>, admin: ReturnType<typeof createAdminClient>) {
   const order = (body.order ?? {}) as Record<string, unknown>
   const items = Array.isArray(order.items) ? order.items : []
+  const sellerHqStatus = sellerHqStatusFromVicariousOrder(order.status)
   const updated: Array<Record<string, unknown>> = []
 
   for (const item of items) {
@@ -451,22 +472,42 @@ async function handleRecordSale(body: Record<string, unknown>, admin: ReturnType
     if (!product) continue
 
     const price = toNumber((item as Record<string, unknown>).price) ?? toNumber(order.total) ?? 0
+    const shippingCost = 0
+    const platformFees = 0
+    const otherFees = 0
+    const fees = shippingCost + platformFees + otherFees
+    const purchasePrice = Number(product.purchase_price ?? 0)
+    const additionalCosts = Number(product.additional_costs ?? 0)
+    const profit = Math.round((price - purchasePrice - additionalCosts - fees) * 100) / 100
     const existingCustomFields = (product.custom_fields as Record<string, unknown> | null) ?? {}
+
+    const updates: Record<string, unknown> = {
+      status: sellerHqStatus,
+      sale_price: price,
+      sale_date: dateOnly(order.createdAt),
+      sale_marketplace: 'Website',
+      shipping_cost: shippingCost,
+      platform_fees: platformFees,
+      other_fees: otherFees,
+      fees,
+      profit,
+      custom_fields: {
+        ...existingCustomFields,
+        vicariousOrderId: clean(order.id),
+        vicariousOrderStatus: clean(order.status),
+        vicariousPaymentProvider: clean(order.paymentProvider),
+        vicariousPaymentIntentId: clean(order.paymentIntentId),
+        vicariousSaleSyncedAt: new Date().toISOString(),
+      },
+    }
+
+    if (sellerHqStatus === 'in_shipping' || sellerHqStatus === 'sold') {
+      updates.shipping_date = clean(product.shipping_date) || dateOnly(order.updatedAt)
+    }
+
     const { data, error } = await admin
       .from('products')
-      .update({
-        status: 'awaiting_shipping',
-        sale_price: price,
-        sale_date: clean(order.createdAt) || new Date().toISOString().split('T')[0],
-        sale_marketplace: 'Website',
-        custom_fields: {
-          ...existingCustomFields,
-          vicariousOrderId: clean(order.id),
-          vicariousPaymentProvider: clean(order.paymentProvider),
-          vicariousPaymentIntentId: clean(order.paymentIntentId),
-          vicariousSaleSyncedAt: new Date().toISOString(),
-        },
-      })
+      .update(updates)
       .eq('id', product.id)
       .select('*')
       .single()
@@ -476,8 +517,12 @@ async function handleRecordSale(body: Record<string, unknown>, admin: ReturnType
     await logProductEvent(
       admin,
       data as Record<string, unknown>,
-      'vicarious_sale_recorded',
-      `Website sale recorded from Vicarious order ${clean(order.id)}`,
+      sellerHqStatus === 'awaiting_shipping'
+        ? 'vicarious_sale_recorded'
+        : 'vicarious_fulfilment_updated',
+      sellerHqStatus === 'awaiting_shipping'
+        ? `Website sale recorded from Vicarious order ${clean(order.id)}`
+        : `Vicarious order ${clean(order.id)} updated stock flow to ${databaseStatusToProductStatus(sellerHqStatus)}`,
       { order, item },
     )
     updated.push(databaseToSellerHqProduct(data as Record<string, unknown>))
