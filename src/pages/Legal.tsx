@@ -1,137 +1,57 @@
 import { useNavigate, useParams } from 'react-router-dom'
 
-type Section = { heading: string; body: string }
+const LEGAL_BASE = 'https://onsoftware.uk/legal'
 
-const PRIVACY: Section[] = [
+const DOCUMENTS = [
   {
-    heading: '1. Data we collect',
-    body: 'We collect the information you provide when you create an account and use SellerHQ, including your name, email address, business details, product inventory, expenses, sales records and billing preferences.',
+    slug: 'privacy',
+    title: 'Privacy Notice',
+    description: 'How ONSoftware and SellerHQ handle personal and business data.',
   },
   {
-    heading: '2. How we use your data',
-    body: 'Your data is used to provide and improve SellerHQ, process payments through Stripe, support your business reporting, and send service-related communications. We do not sell your personal data.',
+    slug: 'sellerhq-terms',
+    title: 'SellerHQ Service Terms',
+    description: 'Accounts, product use, plans, data, availability and responsibilities.',
   },
   {
-    heading: '3. Payment processing',
-    body: 'Payments are processed securely by Stripe. We never store your full card details on our servers. Stripe handles your payment information under its own privacy policy.',
+    slug: 'subscriptions-refunds',
+    title: 'Subscription, Cancellation & Refund Policy',
+    description: 'Paid-plan renewal, cancellation and refund requests.',
   },
   {
-    heading: '4. Data storage & security',
-    body: 'Your data is stored securely on our hosting provider (Supabase) with encryption in transit. Access is restricted to authenticated accounts, and we take reasonable measures to protect your information.',
+    slug: 'tax-disclaimer',
+    title: 'Tax & Financial Tools Disclaimer',
+    description: 'The limits of tax estimates, forecasts, pricing tools and other calculations.',
   },
   {
-    heading: '5. Your rights',
-    body: 'You may request a copy, correction or deletion of your personal data at any time by contacting support. You can export a backup from your account settings and delete your account and all associated data at any time from the Profile page.',
+    slug: 'cookies',
+    title: 'Cookie & Local Storage Policy',
+    description: 'Essential browser storage, authentication and related technologies.',
   },
   {
-    heading: '6. Cookies & analytics',
-    body: 'We use essential cookies to keep you signed in. We may use privacy-respecting analytics to understand how the app is used and improve it.',
+    slug: 'acceptable-use',
+    title: 'Acceptable Use Policy',
+    description: 'Rules designed to protect SellerHQ users, data and infrastructure.',
   },
   {
-    heading: '7. Changes to this policy',
-    body: 'We may update this policy from time to time. Significant changes will be highlighted within the app.',
-  },
-  {
-    heading: '8. Contact',
-    body: 'If you have any questions about this policy, please contact us through the Support page.',
+    slug: 'security',
+    title: 'Security & Responsible Disclosure',
+    description: 'Security approach and how to report a possible vulnerability privately.',
   },
 ]
 
-const TERMS: Section[] = [
-  {
-    heading: '1. Acceptance of terms',
-    body: 'By creating an account and using SellerHQ you agree to these Terms and Conditions. If you do not agree, please do not use the service.',
-  },
-  {
-    heading: '2. Your account',
-    body: 'You are responsible for keeping your login credentials secure and for all activity under your account. You must provide accurate information when registering.',
-  },
-  {
-    heading: '3. Subscriptions & billing',
-    body: 'Paid plans are billed monthly or annually in advance via Stripe. You can upgrade, downgrade or cancel at any time. Cancellations take effect at the end of the current billing period. Prices are displayed before checkout.',
-  },
-  {
-    heading: '4. Free plan limits',
-    body: 'The free plan includes a limited number of products and businesses and a subset of features. Limits are displayed in the app and on the subscriptions page.',
-  },
-  {
-    heading: '5. Acceptable use',
-    body: 'You agree not to misuse the service, attempt to access other accounts, interfere with the service, or use it for unlawful activity.',
-  },
-  {
-    heading: '6. Availability',
-    body: 'While we aim for high availability, we do not guarantee uninterrupted access. The service is provided "as is" without warranties of any kind.',
-  },
-  {
-    heading: '7. Limitation of liability',
-    body: 'SellerHQ is a tool to help you manage your business. We are not liable for financial losses, missed tax deadlines, or decisions made based on the data or calculations in the app.',
-  },
-  {
-    heading: '8. Changes to the service',
-    body: 'We may change, suspend or discontinue features at any time. We will endeavour to provide reasonable notice for significant changes.',
-  },
-  {
-    heading: '9. Termination',
-    body: 'We may suspend or terminate access to the service for violations of these terms. You may stop using and delete your account at any time.',
-  },
-  {
-    heading: '10. Contact',
-    body: 'Questions about these Terms can be directed through the Support page.',
-  },
-]
-
-const COOKIES: Section[] = [
-  {
-    heading: '1. What are cookies?',
-    body: 'Cookies are small text files stored on your device when you visit a website. They help the site remember your preferences and keep you signed in.',
-  },
-  {
-    heading: '2. Essential cookies',
-    body: 'SellerHQ uses essential cookies and local storage to keep you signed in and keep the app functional. These cannot be disabled without breaking the service.',
-  },
-  {
-    heading: '3. Analytics',
-    body: 'We may use privacy-respecting analytics to understand how the app is used and improve it. No personal identifiers are shared with third parties.',
-  },
-  {
-    heading: '4. Managing cookies',
-    body: 'You can clear cookies and site data from your browser settings at any time. Removing essential cookies will sign you out of the app.',
-  },
-  {
-    heading: '5. Changes to this policy',
-    body: 'We may update this policy from time to time. Significant changes will be highlighted within the app.',
-  },
-  {
-    heading: '6. Contact',
-    body: 'Questions about this policy can be directed through the Support page.',
-  },
-]
-
-const CONTENT: Record<string, { title: string; intro: string; sections: Section[] }> = {
-  privacy: {
-    title: 'Privacy Policy',
-    intro: 'Last updated: August 2026. This policy explains how SellerHQ collects, uses and protects your information.',
-    sections: PRIVACY,
-  },
-  terms: {
-    title: 'Terms & Conditions',
-    intro: 'Last updated: August 2026. These terms govern your use of SellerHQ.',
-    sections: TERMS,
-  },
-  cookies: {
-    title: 'Cookie Policy',
-    intro: 'Last updated: August 2026. This policy explains how SellerHQ uses cookies and similar technologies.',
-    sections: COOKIES,
-  },
+const LEGACY_MAP: Record<string, string> = {
+  terms: 'sellerhq-terms',
 }
 
 function Legal() {
   const navigate = useNavigate()
   const { page } = useParams()
-  const content = CONTENT[page ?? ''] ?? CONTENT.privacy
+  const requested = LEGACY_MAP[page ?? ''] ?? page
+  const selected = DOCUMENTS.find((item) => item.slug === requested)
 
   return (
-    <div className="inventory-page" style={{ maxWidth: 760 }}>
+    <div className="inventory-page" style={{ maxWidth: 820 }}>
       <button
         type="button"
         className="text-button"
@@ -142,38 +62,72 @@ function Legal() {
       </button>
 
       <h1 style={{ margin: '0 0 8px', fontSize: 26, fontWeight: 700 }}>
-        {content.title}
+        Legal & privacy
       </h1>
-      <p style={{ margin: '0 0 32px', fontSize: 13, color: 'var(--shq-ink-muted)' }}>
-        {content.intro}
+      <p style={{ margin: '0 0 28px', fontSize: 13.5, lineHeight: 1.6, color: 'var(--shq-ink-muted)' }}>
+        ONSoftware maintains the canonical public legal documents for SellerHQ at onsoftware.uk. This keeps the terms available before sign-in and avoids different copies drifting out of sync.
       </p>
+
+      {selected && (
+        <div
+          style={{
+            marginBottom: 24,
+            padding: 20,
+            border: '1px solid var(--shq-border)',
+            borderRadius: 12,
+            background: 'var(--shq-surface)',
+          }}
+        >
+          <div style={{ fontSize: 15, fontWeight: 650, marginBottom: 6 }}>{selected.title}</div>
+          <p style={{ margin: '0 0 14px', fontSize: 13.5, lineHeight: 1.55, color: 'var(--shq-ink-muted)' }}>
+            {selected.description}
+          </p>
+          <a
+            className="primary-button"
+            href={`${LEGAL_BASE}/${selected.slug}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{ display: 'inline-flex', textDecoration: 'none' }}
+          >
+            Read current document ↗
+          </a>
+        </div>
+      )}
 
       <div
         style={{
-          background: 'var(--shq-surface)',
-          border: '1px solid var(--shq-border)',
-          borderRadius: 12,
-          padding: '28px 28px 12px',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
+          gap: 12,
         }}
       >
-        {content.sections.map((section) => (
-          <div key={section.heading} style={{ marginBottom: 24 }}>
-            <h2 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 600 }}>
-              {section.heading}
-            </h2>
-            <p
-              style={{
-                margin: 0,
-                fontSize: 13.5,
-                lineHeight: 1.65,
-                color: 'var(--shq-ink)',
-              }}
-            >
-              {section.body}
-            </p>
-          </div>
+        {DOCUMENTS.map((document) => (
+          <a
+            key={document.slug}
+            href={`${LEGAL_BASE}/${document.slug}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              display: 'block',
+              padding: 18,
+              border: '1px solid var(--shq-border)',
+              borderRadius: 12,
+              background: 'var(--shq-surface)',
+              color: 'var(--shq-ink)',
+              textDecoration: 'none',
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 650, marginBottom: 6 }}>{document.title}</div>
+            <div style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--shq-ink-muted)' }}>
+              {document.description}
+            </div>
+          </a>
         ))}
       </div>
+
+      <p style={{ marginTop: 24, fontSize: 12.5, lineHeight: 1.6, color: 'var(--shq-ink-muted)' }}>
+        Legal and privacy enquiries: <a href="mailto:legal@onsoftware.uk">legal@onsoftware.uk</a> · Product and account enquiries: <a href="mailto:products@onsoftware.uk">products@onsoftware.uk</a>
+      </p>
     </div>
   )
 }

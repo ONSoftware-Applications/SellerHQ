@@ -4,33 +4,27 @@ import { Link, useNavigate } from 'react-router-dom'
 import BrandMark from '../components/BrandMark'
 import { useAuth } from '../hooks/useAuth'
 
+const LEGAL_BASE = 'https://onsoftware.uk/legal'
+
 function Register() {
   const navigate = useNavigate()
-
   const { signUp } = useAuth()
 
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] =
-    useState('')
-
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(
-    event: React.FormEvent,
-  ) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-
     setError('')
     setMessage('')
 
     if (password.length < 8) {
-      setError(
-        'Your password must be at least 8 characters.',
-      )
+      setError('Your password must be at least 8 characters.')
       return
     }
 
@@ -54,9 +48,7 @@ function Register() {
       return
     }
 
-    setMessage(
-      'Account created. Check your email to verify your account.',
-    )
+    setMessage('Account created. Check your email to verify your account.')
   }
 
   if (message) {
@@ -65,9 +57,7 @@ function Register() {
         <div className="auth-card">
           <div className="auth-header">
             <BrandMark className="auth-brand" />
-
             <h1>Check your email</h1>
-
             <p>{message}</p>
           </div>
 
@@ -87,25 +77,17 @@ function Register() {
       <div className="auth-card">
         <div className="auth-header">
           <BrandMark className="auth-brand" />
-
           <h1>Create your account</h1>
-
-          <p>
-            Start managing your reselling business with
-            SellerHQ.
-          </p>
+          <p>Start managing your reselling business with SellerHQ.</p>
         </div>
 
         <form onSubmit={handleSubmit}>
           <label>
             Full name
-
             <input
               type="text"
               value={fullName}
-              onChange={(event) =>
-                setFullName(event.target.value)
-              }
+              onChange={(event) => setFullName(event.target.value)}
               placeholder="Your name"
               autoComplete="name"
               required
@@ -114,13 +96,10 @@ function Register() {
 
           <label>
             Email address
-
             <input
               type="email"
               value={email}
-              onChange={(event) =>
-                setEmail(event.target.value)
-              }
+              onChange={(event) => setEmail(event.target.value)}
               placeholder="you@example.com"
               autoComplete="email"
               required
@@ -129,13 +108,10 @@ function Register() {
 
           <label>
             Password
-
             <input
               type="password"
               value={password}
-              onChange={(event) =>
-                setPassword(event.target.value)
-              }
+              onChange={(event) => setPassword(event.target.value)}
               placeholder="At least 8 characters"
               autoComplete="new-password"
               minLength={8}
@@ -145,13 +121,10 @@ function Register() {
 
           <label>
             Confirm password
-
             <input
               type="password"
               value={confirmPassword}
-              onChange={(event) =>
-                setConfirmPassword(event.target.value)
-              }
+              onChange={(event) => setConfirmPassword(event.target.value)}
               placeholder="Enter your password again"
               autoComplete="new-password"
               minLength={8}
@@ -159,29 +132,48 @@ function Register() {
             />
           </label>
 
-          {error && (
-            <div className="auth-error">
-              {error}
-            </div>
-          )}
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 10,
+              marginTop: 6,
+              fontSize: 12.5,
+              lineHeight: 1.5,
+              color: 'var(--shq-ink-muted)',
+            }}
+          >
+            <input
+              type="checkbox"
+              required
+              style={{ width: 16, height: 16, marginTop: 2, flex: '0 0 auto' }}
+            />
+            <span>
+              I agree to the{' '}
+              <a href={`${LEGAL_BASE}/sellerhq-terms`} target="_blank" rel="noreferrer">
+                SellerHQ Service Terms
+              </a>{' '}
+              and confirm that I have read the{' '}
+              <a href={`${LEGAL_BASE}/privacy`} target="_blank" rel="noreferrer">
+                Privacy Notice
+              </a>.
+            </span>
+          </label>
+
+          {error && <div className="auth-error">{error}</div>}
 
           <button
             type="submit"
             className="primary-button auth-submit"
             disabled={loading}
           >
-            {loading
-              ? 'Creating account...'
-              : 'Create account'}
+            {loading ? 'Creating account...' : 'Create account'}
           </button>
         </form>
 
         <div className="auth-footer">
           <span>Already have an account?</span>
-
-          <Link to="/login">
-            Sign in
-          </Link>
+          <Link to="/login">Sign in</Link>
         </div>
 
         <div
@@ -191,13 +183,14 @@ function Register() {
             borderTop: '1px solid var(--shq-border)',
             display: 'flex',
             justifyContent: 'center',
+            flexWrap: 'wrap',
             gap: 16,
             fontSize: 12.5,
           }}
         >
-          <Link to="/legal/privacy" style={{ color: 'var(--shq-ink-muted)' }}>Privacy</Link>
-          <Link to="/legal/terms" style={{ color: 'var(--shq-ink-muted)' }}>Terms</Link>
-          <Link to="/legal/cookies" style={{ color: 'var(--shq-ink-muted)' }}>Cookies</Link>
+          <a href={`${LEGAL_BASE}/privacy`} style={{ color: 'var(--shq-ink-muted)' }}>Privacy</a>
+          <a href={`${LEGAL_BASE}/sellerhq-terms`} style={{ color: 'var(--shq-ink-muted)' }}>Terms</a>
+          <a href={`${LEGAL_BASE}/cookies`} style={{ color: 'var(--shq-ink-muted)' }}>Cookies</a>
         </div>
       </div>
     </div>
