@@ -10,6 +10,7 @@ import './App.css'
 import './styles/ui-v2.css'
 import './styles/ui-v2-extras.css'
 import './styles/workspace-v2.css'
+import './styles/topbar-v2.css'
 
 import { AuthProvider } from './context/AuthContext'
 import { BusinessProvider } from './context/BusinessContext'
