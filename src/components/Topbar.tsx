@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
+import Icon from './Icon'
 import { useBusiness } from '../hooks/useBusiness'
 import { useSubscription } from '../hooks/useSubscription'
 import { useToast } from '../hooks/useToast'
@@ -11,75 +12,32 @@ function isInstallable() {
     !(window.navigator as unknown as { standalone?: boolean }).standalone
 }
 
-function isMobile() {
+function isMobileDevice() {
   return /iphone|ipad|ipod|android/i.test(navigator.userAgent)
 }
 
-const pageTitles: Record<string, { title: string; subtitle: string }> = {
-  '/dashboard': {
-    title: 'Dashboard',
-    subtitle: 'Overview of your reselling business.',
-  },
-  '/inventory': {
-    title: 'Inventory',
-    subtitle: 'Manage products, stock, and storage.',
-  },
-  '/listings': {
-    title: 'Listings',
-    subtitle: 'Manage your marketplace listings.',
-  },
-  '/sales': {
-    title: 'Sales',
-    subtitle: 'Manage sales and bundles.',
-  },
-  '/expenses': {
-    title: 'Expenses',
-    subtitle: 'Track your business expenses.',
-  },
-  '/forecasts': {
-    title: 'Forecasts',
-    subtitle: 'Sales, revenue, profit and cash-flow forecasts.',
-  },
-  '/tax': {
-    title: 'Tax',
-    subtitle: 'UK tax estimates and tax-year history.',
-  },
-  '/settings': {
-    title: 'Settings',
-    subtitle: 'Account and business preferences.',
-  },
-  '/profile': {
-    title: 'Profile',
-    subtitle: 'Your account details.',
-  },
-  '/install': {
-    title: 'Install App',
-    subtitle: 'Get SellerHQ on your device.',
-  },
-  '/scan': {
-    title: 'Scan QR',
-    subtitle: 'Scan a product label QR code.',
-  },
-  '/relay': {
-    title: 'QR Relay',
-    subtitle: 'Receive scans from your phone in real time.',
-  },
-  '/subscriptions': {
-    title: 'Subscriptions',
-    subtitle: 'Manage your plan and billing.',
-  },
-  '/reports': {
-    title: 'Reports',
-    subtitle: 'Business performance and financial reports.',
-  },
-  '/team': {
-    title: 'Team',
-    subtitle: 'Manage team members and permissions.',
-  },
-  '/create-business': {
-    title: 'New business',
-    subtitle: 'Set up another business in SellerHQ.',
-  },
+const pageTitles: Record<string, string> = {
+  '/dashboard': 'Overview',
+  '/inventory': 'Inventory',
+  '/listings': 'Listings',
+  '/sales': 'Sales',
+  '/expenses': 'Expenses',
+  '/receipts': 'Receipts',
+  '/forecasts': 'Forecasts',
+  '/tax': 'Tax',
+  '/settings': 'Settings',
+  '/profile': 'Profile',
+  '/install': 'Install SellerHQ',
+  '/scan': 'Scan QR',
+  '/relay': 'QR relay',
+  '/pricing': 'Pricing tool',
+  '/subscriptions': 'Subscription',
+  '/reports': 'Reports',
+  '/team': 'Team',
+  '/create-business': 'New business',
+  '/support': 'Help & support',
+  '/audit-log': 'Audit log',
+  '/business': 'Business customisation',
 }
 
 type TopbarProps = {
@@ -89,7 +47,6 @@ type TopbarProps = {
 function Topbar({ onToggleMobileNav }: TopbarProps) {
   const navigate = useNavigate()
   const location = useLocation()
-
   const {
     businesses,
     currentBusiness,
@@ -105,32 +62,14 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
   const [joining, setJoining] = useState(false)
 
   const appName = appDisplayName(currentBusiness)
-
-  const productMatch = location.pathname.match(
-    /^\/products\/([^/]+)$/,
-  )
-  const pageMeta = productMatch
-    ? {
-        title: 'Product details',
-        subtitle: 'View and update this inventory item.',
-      }
-    : location.pathname === '/install'
-      ? {
-          title: 'Install App',
-          subtitle: `Get ${appName} on your device.`,
-        }
-      : location.pathname === '/create-business'
-        ? {
-            title: 'New business',
-            subtitle: `Set up another business in ${appName}.`,
-          }
-        : pageTitles[location.pathname] ?? {
-            title: appName,
-            subtitle: 'Manage your reselling business.',
-          }
+  const productMatch = location.pathname.match(/^\/products\/([^/]+)$/)
+  const title = productMatch
+    ? 'Product details'
+    : pageTitles[location.pathname] ?? appName
 
   async function handleJoinCode() {
     if (!codeInput.trim() || joining) return
+
     setJoining(true)
     try {
       const result = await joinWithCode(codeInput)
@@ -141,44 +80,12 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
       } else {
         showToast(result.error ?? 'Could not join the business.', 'error')
       }
-    } catch (err) {
-      console.error(err)
+    } catch (error) {
+      console.error(error)
       showToast('Could not join the business.', 'error')
     } finally {
       setJoining(false)
     }
-  }
-
-  if (loading) {
-    return (
-      <header className="topbar">
-        <div className="topbar-left">
-          <button
-            type="button"
-            className="hamburger"
-            onClick={onToggleMobileNav}
-            aria-label="Open menu"
-          >
-            <span className="hamburger-line" />
-            <span className="hamburger-line" />
-            <span className="hamburger-line" />
-          </button>
-
-          <div className="topbar-heading">
-            <h1>{pageMeta.title}</h1>
-            <p>{pageMeta.subtitle}</p>
-          </div>
-        </div>
-
-        <div className="business-selector business-selector-loading">
-          <div className="business-icon">…</div>
-          <div>
-            <strong>Loading…</strong>
-            <span>Business account</span>
-          </div>
-        </div>
-      </header>
-    )
   }
 
   return (
@@ -186,180 +93,185 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
       <div className="topbar-left">
         <button
           type="button"
-          className="hamburger"
+          className="hamburger topbar-icon-btn"
           onClick={onToggleMobileNav}
           aria-label="Open menu"
         >
-          <span className="hamburger-line" />
-          <span className="hamburger-line" />
-          <span className="hamburger-line" />
+          <Icon name="menu" size={19} />
         </button>
 
         <div className="topbar-heading">
-          <h1>{pageMeta.title}</h1>
-          <p>{pageMeta.subtitle}</p>
+          <h1>{title}</h1>
         </div>
-
-          {isInstallable() && (
-            <button
-              type="button"
-              onClick={() => navigate('/install')}
-              className="install-btn"
-            >
-              <span className="install-icon">⬇</span>
-              <span>
-                <strong>Install app</strong>
-                <span>Get {appName} on your device</span>
-              </span>
-            </button>
-          )}
       </div>
 
-      {currentBusiness && (
-        <div className="business-selector-wrapper">
-          {isMobile() && canUse('qrScanner') && (
-            <button
-              type="button"
-              onClick={() => navigate('/scan')}
-              className="topbar-icon-btn"
-              aria-label="Scan QR code"
-              title="Scan QR code"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                <circle cx="12" cy="13" r="4" />
-              </svg>
-            </button>
-          )}
-
+      <div className="topbar-actions">
+        {isInstallable() && (
           <button
-            className="business-selector"
             type="button"
-            onClick={() => setOpen(!open)}
-            aria-expanded={open}
-            aria-haspopup="listbox"
+            className="topbar-icon-btn"
+            onClick={() => navigate('/install')}
+            aria-label={`Install ${appName}`}
+            title={`Install ${appName}`}
           >
-            <div className="business-icon">
-              {currentBusiness.logo_url ? (
-                <img
-                  src={currentBusiness.logo_url}
-                  alt=""
-                  style={{ width: 24, height: 24, objectFit: 'contain' }}
-                />
-              ) : (
-                currentBusiness.name.charAt(0).toUpperCase()
-              )}
-            </div>
-
-            <div>
-              <strong>{currentBusiness.name}</strong>
-              <span>{currentBusiness.business_type}</span>
-            </div>
-
-            <span className="chevron">{open ? '⌃' : '⌄'}</span>
+            <Icon name="download" size={17} />
           </button>
+        )}
 
-          {open && (
-            <div className="business-menu" role="listbox">
-              <div className="business-menu-heading">
-                Your businesses
+        {isMobileDevice() && canUse('qrScanner') && (
+          <button
+            type="button"
+            onClick={() => navigate('/scan')}
+            className="topbar-icon-btn"
+            aria-label="Scan QR code"
+            title="Scan QR code"
+          >
+            <Icon name="scan" size={18} />
+          </button>
+        )}
+
+        <div className="business-selector-wrapper">
+          {loading ? (
+            <div className="business-selector business-selector-loading">
+              <div className="business-icon">…</div>
+              <div>
+                <strong>Loading…</strong>
+                <span>Business</span>
               </div>
+            </div>
+          ) : currentBusiness ? (
+            <>
+              <button
+                className="business-selector"
+                type="button"
+                onClick={() => setOpen((value) => !value)}
+                aria-expanded={open}
+                aria-haspopup="listbox"
+              >
+                <div className="business-icon">
+                  {currentBusiness.logo_url ? (
+                    <img
+                      src={currentBusiness.logo_url}
+                      alt=""
+                      style={{ width: 22, height: 22, objectFit: 'contain' }}
+                    />
+                  ) : (
+                    currentBusiness.name.charAt(0).toUpperCase()
+                  )}
+                </div>
 
-              {businesses.map((business) => (
-                <button
-                  key={business.id}
-                  type="button"
-                  className={`business-menu-item ${
-                    business.id === currentBusiness.id
-                      ? 'selected'
-                      : ''
-                  }`}
-                  onClick={() => {
-                    switchBusiness(business.id)
-                    setOpen(false)
-                  }}
-                >
-                  <div className="business-menu-icon">
-                    {business.name.charAt(0).toUpperCase()}
+                <div>
+                  <strong>{currentBusiness.name}</strong>
+                  <span>{currentBusiness.business_type}</span>
+                </div>
+
+                <span className="chevron">
+                  <Icon name="chevron-down" size={14} />
+                </span>
+              </button>
+
+              {open && (
+                <div className="business-menu" role="listbox">
+                  <div className="business-menu-heading">Your businesses</div>
+
+                  {businesses.map((business) => (
+                    <button
+                      key={business.id}
+                      type="button"
+                      className={`business-menu-item ${
+                        business.id === currentBusiness.id ? 'selected' : ''
+                      }`}
+                      onClick={() => {
+                        switchBusiness(business.id)
+                        setOpen(false)
+                      }}
+                    >
+                      <div className="business-menu-icon">
+                        {business.logo_url ? (
+                          <img
+                            src={business.logo_url}
+                            alt=""
+                            style={{ width: 20, height: 20, objectFit: 'contain' }}
+                          />
+                        ) : (
+                          business.name.charAt(0).toUpperCase()
+                        )}
+                      </div>
+
+                      <div>
+                        <strong>{business.name}</strong>
+                        <span>{business.business_type}</span>
+                      </div>
+
+                      {business.id === currentBusiness.id && (
+                        <Icon name="check" size={15} />
+                      )}
+                    </button>
+                  ))}
+
+                  <div className="business-menu-divider" />
+
+                  <button
+                    type="button"
+                    className="business-menu-add"
+                    onClick={() => {
+                      setOpen(false)
+                      navigate('/create-business')
+                    }}
+                  >
+                    <Icon name="plus" size={15} />
+                    Add another business
+                  </button>
+
+                  <button
+                    type="button"
+                    className="business-menu-add"
+                    onClick={() => {
+                      setOpen(false)
+                      navigate('/business')
+                    }}
+                  >
+                    <Icon name="settings" size={15} />
+                    Business settings
+                  </button>
+
+                  <div className="business-menu-divider" />
+
+                  <div className="business-menu-join">
+                    <label className="business-menu-join-label" htmlFor="business-join-code">
+                      Join with a code
+                    </label>
+                    <div className="business-menu-join-row">
+                      <input
+                        id="business-join-code"
+                        type="text"
+                        placeholder="Invite code"
+                        value={codeInput}
+                        onChange={(event) => setCodeInput(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault()
+                            void handleJoinCode()
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleJoinCode()}
+                        disabled={joining || !codeInput.trim()}
+                      >
+                        {joining ? 'Joining…' : 'Join'}
+                      </button>
+                    </div>
                   </div>
-
-                  <div>
-                    <strong>{business.name}</strong>
-                    <span>{business.business_type}</span>
-                  </div>
-                </button>
-              ))}
-
-              <div className="business-menu-divider" />
-
-               <button
-                 type="button"
-                 className="business-menu-add"
-                 onClick={() => {
-                   setOpen(false)
-                   navigate('/create-business')
-                 }}
-               >
-                 <span>+</span>
-                 Add another business
-               </button>
-
-               <div className="business-menu-divider" />
-
-               <div>
-                 <p style={{
-                   margin: '8px 12px 4px',
-                   fontSize: '11px',
-                   fontWeight: 600,
-                   color: 'var(--shq-ink-muted)',
-                   textTransform: 'uppercase',
-                   letterSpacing: '0.04em',
-                 }}>
-                   Join a business with a code
-                 </p>
-                 <input
-                   type="text"
-                   placeholder="Enter invite code"
-                   value={codeInput}
-                   onChange={(e) => setCodeInput(e.target.value)}
-                   onKeyDown={(e) => {
-                     if (e.key === 'Enter') {
-                       e.preventDefault()
-                       void handleJoinCode()
-                     }
-                   }}
-                   style={{
-                     margin: '0 12px 8px',
-                     width: 'calc(100% - 24px)',
-                     padding: '8px 10px',
-                     borderRadius: '6px',
-                     border: '1px solid var(--shq-border)',
-                     fontSize: '13px',
-                     background: 'var(--shq-surface)',
-                     color: 'var(--shq-ink)',
-                   }}
-                 />
-                 <button
-                   type="button"
-                   className="primary-button"
-                   onClick={() => void handleJoinCode()}
-                   disabled={joining || !codeInput.trim()}
-                   style={{
-                     margin: '0 12px 8px',
-                     width: 'calc(100% - 24px)',
-                     padding: '8px 10px',
-                     fontSize: '13px',
-                   }}
-                 >
-                   {joining ? 'Joining…' : 'Join business'}
-                 </button>
-               </div>
-             </div>
-           )}
-         </div>
-       )}
-     </header>
-   )
+                </div>
+              )}
+            </>
+          ) : null}
+        </div>
+      </div>
+    </header>
+  )
 }
 
 export default Topbar
