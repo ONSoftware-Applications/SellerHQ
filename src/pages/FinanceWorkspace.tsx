@@ -17,7 +17,7 @@ import {
 } from '../lib/finance'
 import Expenses from './Expenses'
 import Receipts from './Receipts'
-import Tax from './Tax'
+import TaxPlannerV2 from './TaxPlannerV2'
 
 type FinanceView = 'overview' | 'expenses' | 'receipts' | 'tax'
 
@@ -150,7 +150,7 @@ function FinanceWorkspace() {
         <div className="workspace-v2-embedded workspace-v2-embedded-finance">
           {view === 'expenses' && settings.features.expensesEnabled && <Expenses />}
           {view === 'receipts' && settings.features.receiptsEnabled && <Receipts />}
-          {view === 'tax' && <Tax />}
+          {view === 'tax' && <TaxPlannerV2 />}
         </div>
       )}
     </WorkspaceShell>
