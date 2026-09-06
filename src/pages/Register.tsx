@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-import BrandMark from '../components/BrandMark'
+import AuthShell from '../components/AuthShell'
 import { useAuth } from '../hooks/useAuth'
 
 const LEGAL_BASE = 'https://onsoftware.uk/legal'
@@ -34,13 +34,7 @@ function Register() {
     }
 
     setLoading(true)
-
-    const { error } = await signUp(
-      email.trim(),
-      password,
-      fullName.trim(),
-    )
-
+    const { error } = await signUp(email.trim(), password, fullName.trim())
     setLoading(false)
 
     if (error) {
@@ -53,147 +47,114 @@ function Register() {
 
   if (message) {
     return (
-      <div className="auth-page">
-        <div className="auth-card">
-          <div className="auth-header">
-            <BrandMark className="auth-brand" />
-            <h1>Check your email</h1>
-            <p>{message}</p>
-          </div>
-
-          <button
-            className="primary-button auth-submit"
-            onClick={() => navigate('/login')}
-          >
-            Go to sign in
-          </button>
-        </div>
-      </div>
+      <AuthShell
+        eyebrow="Account created"
+        title="Check your email"
+        subtitle={message}
+      >
+        <button
+          className="auth-v2-submit"
+          onClick={() => navigate('/login')}
+        >
+          Go to sign in
+        </button>
+      </AuthShell>
     )
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-header">
-          <BrandMark className="auth-brand" />
-          <h1>Create your account</h1>
-          <p>Start managing your reselling business with SellerHQ.</p>
-        </div>
+    <AuthShell
+      eyebrow="Get started"
+      title="Create your account"
+      subtitle="Set up SellerHQ and start organising your resale business."
+    >
+      <form onSubmit={handleSubmit}>
+        <label>
+          Full name
+          <input
+            type="text"
+            value={fullName}
+            onChange={(event) => setFullName(event.target.value)}
+            placeholder="Your name"
+            autoComplete="name"
+            required
+          />
+        </label>
 
-        <form onSubmit={handleSubmit}>
-          <label>
-            Full name
-            <input
-              type="text"
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-              placeholder="Your name"
-              autoComplete="name"
-              required
-            />
-          </label>
+        <label>
+          Email address
+          <input
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@example.com"
+            autoComplete="email"
+            required
+          />
+        </label>
 
-          <label>
-            Email address
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-              required
-            />
-          </label>
+        <label>
+          Password
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="At least 8 characters"
+            autoComplete="new-password"
+            minLength={8}
+            required
+          />
+        </label>
 
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="At least 8 characters"
-              autoComplete="new-password"
-              minLength={8}
-              required
-            />
-          </label>
+        <label>
+          Confirm password
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            placeholder="Enter your password again"
+            autoComplete="new-password"
+            minLength={8}
+            required
+          />
+        </label>
 
-          <label>
-            Confirm password
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              placeholder="Enter your password again"
-              autoComplete="new-password"
-              minLength={8}
-              required
-            />
-          </label>
+        <label className="auth-v2-check">
+          <input type="checkbox" required />
+          <span>
+            I agree to the{' '}
+            <a href={`${LEGAL_BASE}/sellerhq-terms`} target="_blank" rel="noreferrer">
+              SellerHQ Service Terms
+            </a>{' '}
+            and confirm that I have read the{' '}
+            <a href={`${LEGAL_BASE}/privacy`} target="_blank" rel="noreferrer">
+              Privacy Notice
+            </a>.
+          </span>
+        </label>
 
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 10,
-              marginTop: 6,
-              fontSize: 12.5,
-              lineHeight: 1.5,
-              color: 'var(--shq-ink-muted)',
-            }}
-          >
-            <input
-              type="checkbox"
-              required
-              style={{ width: 16, height: 16, marginTop: 2, flex: '0 0 auto' }}
-            />
-            <span>
-              I agree to the{' '}
-              <a href={`${LEGAL_BASE}/sellerhq-terms`} target="_blank" rel="noreferrer">
-                SellerHQ Service Terms
-              </a>{' '}
-              and confirm that I have read the{' '}
-              <a href={`${LEGAL_BASE}/privacy`} target="_blank" rel="noreferrer">
-                Privacy Notice
-              </a>.
-            </span>
-          </label>
+        {error && <div className="auth-v2-error">{error}</div>}
 
-          {error && <div className="auth-error">{error}</div>}
-
-          <button
-            type="submit"
-            className="primary-button auth-submit"
-            disabled={loading}
-          >
-            {loading ? 'Creating account...' : 'Create account'}
-          </button>
-        </form>
-
-        <div className="auth-footer">
-          <span>Already have an account?</span>
-          <Link to="/login">Sign in</Link>
-        </div>
-
-        <div
-          style={{
-            marginTop: 24,
-            paddingTop: 16,
-            borderTop: '1px solid var(--shq-border)',
-            display: 'flex',
-            justifyContent: 'center',
-            flexWrap: 'wrap',
-            gap: 16,
-            fontSize: 12.5,
-          }}
+        <button
+          type="submit"
+          className="auth-v2-submit"
+          disabled={loading}
         >
-          <a href={`${LEGAL_BASE}/privacy`} style={{ color: 'var(--shq-ink-muted)' }}>Privacy</a>
-          <a href={`${LEGAL_BASE}/sellerhq-terms`} style={{ color: 'var(--shq-ink-muted)' }}>Terms</a>
-          <a href={`${LEGAL_BASE}/cookies`} style={{ color: 'var(--shq-ink-muted)' }}>Cookies</a>
-        </div>
+          {loading ? 'Creating account…' : 'Create account'}
+        </button>
+      </form>
+
+      <div className="auth-v2-footer">
+        <span>Already have an account?</span>
+        <Link to="/login">Sign in</Link>
       </div>
-    </div>
+
+      <div className="auth-v2-legal">
+        <a href={`${LEGAL_BASE}/privacy`}>Privacy</a>
+        <a href={`${LEGAL_BASE}/sellerhq-terms`}>Terms</a>
+        <a href={`${LEGAL_BASE}/cookies`}>Cookies</a>
+      </div>
+    </AuthShell>
   )
 }
 

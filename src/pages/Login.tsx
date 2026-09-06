@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
-import BrandMark from '../components/BrandMark'
+import AuthShell from '../components/AuthShell'
 import { useAuth } from '../hooks/useAuth'
 
 const LEGAL_BASE = 'https://onsoftware.uk/legal'
@@ -35,73 +35,58 @@ function Login() {
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-header">
-          <BrandMark className="auth-brand" />
-          <h1>Welcome back</h1>
-          <p>Sign in to manage your reselling business.</p>
-        </div>
+    <AuthShell
+      eyebrow="SellerHQ"
+      title="Welcome back"
+      subtitle="Sign in to continue to your business workspace."
+    >
+      <form onSubmit={handleSubmit}>
+        <label>
+          Email address
+          <input
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@example.com"
+            autoComplete="email"
+            required
+          />
+        </label>
 
-        <form onSubmit={handleSubmit}>
-          <label>
-            Email address
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-              required
-            />
-          </label>
+        <label>
+          Password
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Enter your password"
+            autoComplete="current-password"
+            required
+          />
+        </label>
 
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Enter your password"
-              autoComplete="current-password"
-              required
-            />
-          </label>
+        {error && <div className="auth-v2-error">{error}</div>}
 
-          {error && <div className="auth-error">{error}</div>}
-
-          <button
-            type="submit"
-            className="primary-button auth-submit"
-            disabled={loading}
-          >
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
-
-        <div className="auth-footer">
-          <span>Don't have a SellerHQ account?</span>
-          <Link to="/register">Create an account</Link>
-        </div>
-
-        <div
-          style={{
-            marginTop: 24,
-            paddingTop: 16,
-            borderTop: '1px solid var(--shq-border)',
-            display: 'flex',
-            justifyContent: 'center',
-            flexWrap: 'wrap',
-            gap: 16,
-            fontSize: 12.5,
-          }}
+        <button
+          type="submit"
+          className="auth-v2-submit"
+          disabled={loading}
         >
-          <a href={`${LEGAL_BASE}/privacy`} style={{ color: 'var(--shq-ink-muted)' }}>Privacy</a>
-          <a href={`${LEGAL_BASE}/sellerhq-terms`} style={{ color: 'var(--shq-ink-muted)' }}>Terms</a>
-          <a href={`${LEGAL_BASE}/cookies`} style={{ color: 'var(--shq-ink-muted)' }}>Cookies</a>
-        </div>
+          {loading ? 'Signing in…' : 'Sign in'}
+        </button>
+      </form>
+
+      <div className="auth-v2-footer">
+        <span>New to SellerHQ?</span>
+        <Link to="/register">Create an account</Link>
       </div>
-    </div>
+
+      <div className="auth-v2-legal">
+        <a href={`${LEGAL_BASE}/privacy`}>Privacy</a>
+        <a href={`${LEGAL_BASE}/sellerhq-terms`}>Terms</a>
+        <a href={`${LEGAL_BASE}/cookies`}>Cookies</a>
+      </div>
+    </AuthShell>
   )
 }
 
