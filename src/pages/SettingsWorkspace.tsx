@@ -9,10 +9,10 @@ import { useSubscription } from '../hooks/useSubscription'
 import { useToast } from '../hooks/useToast'
 import { supabase } from '../lib/supabase'
 import AuditLog from './AuditLog'
+import BillingSettingsV2 from './BillingSettingsV2'
 import BusinessCustomization from './BusinessCustomization'
 import Profile from './Profile'
 import SettingsPreferencesV2 from './SettingsPreferencesV2'
-import Subscriptions from './Subscriptions'
 import TeamHub from './TeamHub'
 
 type SettingsView = 'preferences' | 'business' | 'branding' | 'team' | 'billing' | 'account' | 'activity'
@@ -51,7 +51,7 @@ function SettingsWorkspace() {
           {view === 'preferences' && <SettingsPreferencesV2 />}
           {view === 'branding' && <BusinessCustomization />}
           {view === 'team' && <TeamHub />}
-          {view === 'billing' && <Subscriptions />}
+          {view === 'billing' && <BillingSettingsV2 />}
           {view === 'account' && <Profile />}
           {view === 'activity' && canUse('auditLog') && <AuditLog />}
         </div>
