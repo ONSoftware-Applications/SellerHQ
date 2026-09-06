@@ -28,7 +28,6 @@ function AnalyticsWorkspace() {
   const [params, setParams] = useSearchParams()
   const { products } = useProducts()
   const { expenses } = useExpenses()
-  const { money } = useCurrency()
 
   const requested = params.get('view') as AnalyticsView | null
   const view: AnalyticsView = ['performance', 'marketplaces', 'inventory', 'forecast', 'scenarios'].includes(requested ?? '')
