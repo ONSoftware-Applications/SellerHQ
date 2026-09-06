@@ -248,7 +248,7 @@ function PreferenceToggle({
         <strong>{label}</strong>
         <span>{description}</span>
       </div>
-      <Toggle checked={checked} onChange={onChange} label={label} />
+      <Toggle checked={checked} onChange={onChange} label={label} hideLabel />
     </div>
   )
 }
