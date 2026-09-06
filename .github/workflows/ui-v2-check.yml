@@ -1,3 +1,4 @@
+# Deployment retrigger after Vercel repository access was restored.
 name: UI v2 build check
 
 on:
