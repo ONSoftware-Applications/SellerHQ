@@ -33,7 +33,7 @@ import Register from './pages/Register'
 import CreateBusiness from './pages/CreateBusiness'
 import RequireBusiness from './components/RequireBusiness'
 
-const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Dashboard = lazy(() => import('./pages/DashboardV2'))
 const Inventory = lazy(() => import('./pages/Inventory'))
 const Listings = lazy(() => import('./pages/Listings'))
 const Sales = lazy(() => import('./pages/Sales'))
