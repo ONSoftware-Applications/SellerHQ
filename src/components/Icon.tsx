@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react'
+import type { ReactNode, SVGProps } from 'react'
 
 export type IconName =
   | 'dashboard'
@@ -57,7 +57,7 @@ function Icon({ name, size = 18, ...props }: IconProps) {
     ...props,
   }
 
-  const paths: Record<IconName, React.ReactNode> = {
+  const paths: Record<IconName, ReactNode> = {
     dashboard: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>,
     inventory: <><path d="M4 7.5 12 3l8 4.5-8 4.5-8-4.5Z" /><path d="M4 7.5V17l8 4 8-4V7.5" /><path d="M12 12v9" /></>,
     listings: <><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h7.2l6.8 6.8a1.5 1.5 0 0 1 0 2.1l-6.6 6.6a1.5 1.5 0 0 1-2.1 0L4 12.7V5.5Z" /><circle cx="8" cy="8" r="1.25" /></>,
