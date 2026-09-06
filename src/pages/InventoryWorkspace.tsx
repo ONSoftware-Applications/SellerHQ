@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import WorkspaceShell, { type WorkspaceTab } from '../components/WorkspaceShell'
 import { useCurrency } from '../hooks/useCurrency'
 import { useProducts } from '../hooks/useProducts'
+import { useSettings } from '../hooks/useSettings'
+import { useSubscription } from '../hooks/useSubscription'
 import type { ProductStatus } from '../types/product'
 import Inventory from './Inventory'
 import Listings from './Listings'
@@ -28,17 +30,22 @@ const statusForView: Partial<Record<InventoryView, ProductStatus>> = {
 function InventoryWorkspace() {
   const [params, setParams] = useSearchParams()
   const { products } = useProducts()
+  const { settings } = useSettings()
+  const { canUse } = useSubscription()
 
-  const requested = params.get('view') as InventoryView | null
-  const view: InventoryView = [
+  const listingsAvailable = settings.features.listingsEnabled && canUse('listings')
+  const allowedViews: InventoryView[] = [
     'all',
     'unlisted',
-    'listed',
+    ...(listingsAvailable ? ['listed' as const] : []),
     'relisting',
     'reserved',
     'archived',
     'pricing',
-  ].includes(requested ?? '')
+  ]
+
+  const requested = params.get('view') as InventoryView | null
+  const view: InventoryView = allowedViews.includes(requested as InventoryView)
     ? (requested as InventoryView)
     : 'all'
 
@@ -53,7 +60,9 @@ function InventoryWorkspace() {
   const tabs: WorkspaceTab[] = [
     { id: 'all', label: 'All stock', icon: 'inventory', badge: products.length },
     { id: 'unlisted', label: 'Unlisted', icon: 'package', badge: counts.unlisted },
-    { id: 'listed', label: 'Listed', icon: 'listings', badge: counts.listed },
+    ...(listingsAvailable
+      ? [{ id: 'listed', label: 'Listed', icon: 'listings' as const, badge: counts.listed }]
+      : []),
     { id: 'relisting', label: 'Needs relisting', icon: 'alert', badge: counts.relisting },
     { id: 'reserved', label: 'Reserved', icon: 'clock', badge: counts.reserved },
     { id: 'archived', label: 'Archived', icon: 'reports', badge: counts.archived },
@@ -71,7 +80,7 @@ function InventoryWorkspace() {
     >
       <div className="workspace-v2-embedded">
         {view === 'all' && <Inventory />}
-        {view === 'listed' && <Listings />}
+        {view === 'listed' && listingsAvailable && <Listings />}
         {view === 'pricing' && <Pricing />}
         {statusForView[view] && (
           <InventoryStatusView
