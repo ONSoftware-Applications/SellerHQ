@@ -1,0 +1,70 @@
+.sidebar-account-button {
+  width: 100%;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.compact-row-v2-button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.compact-row-v2-button:hover {
+  background: var(--shq-surface-subtle);
+}
+
+.hamburger.topbar-icon-btn {
+  display: none;
+}
+
+.business-menu-item > svg {
+  margin-left: auto;
+  color: var(--shq-success);
+  flex: 0 0 auto;
+}
+
+.business-menu-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.business-menu-join-row button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.panel-v2-header > svg {
+  color: var(--shq-accent);
+}
+
+.dashboard-v2-primary-action:hover {
+  background: var(--shq-navy-soft);
+}
+
+[data-theme='dark'] .dashboard-v2-primary-action:hover {
+  background: var(--shq-accent-hover);
+}
+
+@media (max-width: 900px) {
+  .hamburger.topbar-icon-btn {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 680px) {
+  .topbar-actions {
+    margin-left: auto;
+  }
+
+  .business-selector {
+    max-width: 190px;
+  }
+}
