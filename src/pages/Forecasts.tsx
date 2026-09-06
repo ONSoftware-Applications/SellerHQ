@@ -175,13 +175,13 @@ function Forecasts() {
             <ForecastRow label="Planning tax estimate" value={money(totals.projectedTax)} />
           </div>
           <div className="forecast-method-v2">
-            <Icon name="info" size={14} />
+            <Icon name="support" size={14} />
             <span>Projection uses the latest three months as a baseline and caps short-term trend extrapolation to avoid extreme forecasts.</span>
           </div>
         </section>
       </div>
 
-      {canUse('cashFlowForecast') && (
+      {canUse('cashFlow') && (
         <section className="panel-v2 forecast-cashflow-v2">
           <header className="panel-v2-header"><div><h2>Cash-flow outlook</h2><p>Projected monthly inflow, estimated operating expenses and net contribution.</p></div></header>
           <div className="forecast-cashflow-table-v2">
