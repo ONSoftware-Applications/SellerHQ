@@ -21,6 +21,29 @@
   padding: 14px 16px 16px;
 }
 
+/* The shared callout rule also targets every span in the row, which previously
+   overrode the icon tile's grid display. Reassert the icon tile after that rule
+   so the SVG is genuinely centred rather than sitting at the tile's top-left. */
+.finance-callout-v2 > .finance-callout-v2-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  margin: 0;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--shq-border);
+  border-radius: 10px;
+  background: var(--shq-surface-subtle);
+  color: var(--shq-ink-soft);
+  line-height: 0;
+}
+
+.finance-callout-v2 > .finance-callout-v2-icon svg {
+  display: block;
+  margin: 0;
+}
+
 /* ───────────────────────── Analytics */
 
 .analytics-chart-panel-v2 .analytics-bars-v2 {
