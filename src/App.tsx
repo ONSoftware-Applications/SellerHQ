@@ -9,6 +9,7 @@ import {
 import './App.css'
 import './styles/ui-v2.css'
 import './styles/ui-v2-extras.css'
+import './styles/workspace-v2.css'
 
 import { AuthProvider } from './context/AuthContext'
 import { BusinessProvider } from './context/BusinessContext'
@@ -35,28 +36,17 @@ import CreateBusiness from './pages/CreateBusiness'
 import RequireBusiness from './components/RequireBusiness'
 
 const Dashboard = lazy(() => import('./pages/DashboardV2'))
-const Inventory = lazy(() => import('./pages/Inventory'))
-const Listings = lazy(() => import('./pages/Listings'))
-const Sales = lazy(() => import('./pages/Sales'))
-const Expenses = lazy(() => import('./pages/Expenses'))
-const Receipts = lazy(() => import('./pages/Receipts'))
-const Forecasts = lazy(() => import('./pages/Forecasts'))
-const Tax = lazy(() => import('./pages/Tax'))
-const Settings = lazy(() => import('./pages/Settings'))
+const Inventory = lazy(() => import('./pages/InventoryWorkspace'))
+const OrdersSales = lazy(() => import('./pages/OrdersSales'))
+const Finance = lazy(() => import('./pages/FinanceWorkspace'))
+const Analytics = lazy(() => import('./pages/AnalyticsWorkspace'))
+const Settings = lazy(() => import('./pages/SettingsWorkspace'))
 const ProductDetails = lazy(() => import('./pages/ProductDetails'))
-const Pricing = lazy(() => import('./pages/Pricing'))
-const Subscriptions = lazy(() => import('./pages/Subscriptions'))
-const Reports = lazy(() => import('./pages/Reports'))
-const TeamHub = lazy(() => import('./pages/TeamHub'))
-const Profile = lazy(() => import('./pages/Profile'))
 const Install = lazy(() => import('./pages/Install'))
-const Scan = lazy(() => import('./pages/Scan'))
+const ScannerWorkspace = lazy(() => import('./pages/ScannerWorkspace'))
 const Legal = lazy(() => import('./pages/Legal'))
 const Support = lazy(() => import('./pages/Support'))
-const AuditLog = lazy(() => import('./pages/AuditLog'))
-const BusinessCustomization = lazy(() => import('./pages/BusinessCustomization'))
-const Relay = lazy(() => import('./pages/Relay'))
-const Till = lazy(() => import('./pages/Till'))
+const Till = lazy(() => import('./pages/TillV2'))
 
 const debugEnabled =
   import.meta.env.MODE === 'development' ||
@@ -106,81 +96,50 @@ function App() {
 
                                 <Route element={<Layout />}>
                                   {DebugErrors && (
-                                    <Route
-                                      path="/debug/errors"
-                                      element={<DebugErrors />}
-                                    />
+                                    <Route path="/debug/errors" element={<DebugErrors />} />
                                   )}
 
-                                  <Route
-                                    path="/"
-                                    element={<Navigate to="/dashboard" replace />}
-                                  />
+                                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
                                   <Route element={<ProtectedRoute />}>
-                                    <Route
-                                      path="/create-business"
-                                      element={<CreateBusiness />}
-                                    />
+                                    <Route path="/create-business" element={<CreateBusiness />} />
 
                                     <Route element={<RequireBusiness />}>
                                       <Route path="/dashboard" element={<Dashboard />} />
                                       <Route path="/inventory" element={<Inventory />} />
-                                      <Route
-                                        path="/products/:productId"
-                                        element={<ProductDetails />}
-                                      />
-
-                                      <Route element={<PlanGuard feature="listings" />}>
-                                        <Route path="/listings" element={<Listings />} />
-                                      </Route>
-
-                                      <Route path="/sales" element={<Sales />} />
-                                      <Route path="/expenses" element={<Expenses />} />
-                                      <Route path="/receipts" element={<Receipts />} />
-
-                                      <Route element={<PlanGuard feature="forecasts" />}>
-                                        <Route path="/forecasts" element={<Forecasts />} />
-                                      </Route>
-
-                                      <Route path="/tax" element={<Tax />} />
-                                      <Route path="/settings" element={<Settings />} />
-                                      <Route path="/pricing" element={<Pricing />} />
-                                      <Route
-                                        path="/subscriptions"
-                                        element={<Subscriptions />}
-                                      />
+                                      <Route path="/orders" element={<OrdersSales />} />
+                                      <Route path="/finance" element={<Finance />} />
 
                                       <Route element={<PlanGuard feature="reports" />}>
-                                        <Route path="/reports" element={<Reports />} />
+                                        <Route path="/analytics" element={<Analytics />} />
                                       </Route>
 
-                                      <Route path="/team" element={<TeamHub />} />
+                                      <Route path="/settings" element={<Settings />} />
+                                      <Route path="/products/:productId" element={<ProductDetails />} />
 
-                                      <Route element={<PlanGuard feature="auditLog" />}>
-                                        <Route path="/audit-log" element={<AuditLog />} />
-                                      </Route>
+                                      <Route path="/listings" element={<Navigate to="/inventory?view=listed" replace />} />
+                                      <Route path="/pricing" element={<Navigate to="/inventory?view=pricing" replace />} />
+                                      <Route path="/sales" element={<Navigate to="/orders" replace />} />
+                                      <Route path="/expenses" element={<Navigate to="/finance?view=expenses" replace />} />
+                                      <Route path="/receipts" element={<Navigate to="/finance?view=receipts" replace />} />
+                                      <Route path="/tax" element={<Navigate to="/finance?view=tax" replace />} />
+                                      <Route path="/reports" element={<Navigate to="/analytics" replace />} />
+                                      <Route path="/forecasts" element={<Navigate to="/analytics?view=forecast" replace />} />
+                                      <Route path="/subscriptions" element={<Navigate to="/settings?view=billing" replace />} />
+                                      <Route path="/team" element={<Navigate to="/settings?view=team" replace />} />
+                                      <Route path="/profile" element={<Navigate to="/settings?view=account" replace />} />
+                                      <Route path="/audit-log" element={<Navigate to="/settings?view=activity" replace />} />
+                                      <Route path="/business" element={<Navigate to="/settings?view=business" replace />} />
 
-                                      <Route path="/profile" element={<Profile />} />
                                       <Route path="/install" element={<Install />} />
 
                                       <Route element={<PlanGuard feature="qrScanner" />}>
-                                        <Route path="/scan" element={<Scan />} />
+                                        <Route path="/scan" element={<ScannerWorkspace />} />
                                       </Route>
-
-                                      <Route element={<PlanGuard feature="qrRelay" />}>
-                                        <Route path="/relay" element={<Relay />} />
-                                      </Route>
+                                      <Route path="/relay" element={<Navigate to="/scan" replace />} />
 
                                       <Route path="/support" element={<Support />} />
                                       <Route path="/legal/:page" element={<Legal />} />
-
-                                      <Route element={<PlanGuard feature="customization" />}>
-                                        <Route
-                                          path="/business"
-                                          element={<BusinessCustomization />}
-                                        />
-                                      </Route>
                                     </Route>
                                   </Route>
                                 </Route>
