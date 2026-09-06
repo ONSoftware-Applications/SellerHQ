@@ -1,0 +1,82 @@
+.settings-preferences-grid-v2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.settings-section-v2-wide {
+  grid-column: 1 / -1;
+}
+
+.settings-toggle-list-v2,
+.settings-preference-fields-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.settings-toggle-row-v2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 67px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--shq-border);
+}
+
+.settings-toggle-row-v2:last-child {
+  border-bottom: 0;
+}
+
+.settings-toggle-row-v2 > div:first-child {
+  min-width: 0;
+}
+
+.settings-toggle-row-v2 strong,
+.settings-toggle-row-v2 span {
+  display: block;
+}
+
+.settings-toggle-row-v2 strong {
+  color: var(--shq-ink);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.settings-toggle-row-v2 span {
+  max-width: 430px;
+  margin-top: 4px;
+  color: var(--shq-ink-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.settings-toggle-row-v2 > div:last-child {
+  flex: 0 0 auto;
+}
+
+.settings-preference-fields-v2 > .settings-field-v2 {
+  padding: 4px 0 14px;
+  border-bottom: 1px solid var(--shq-border);
+}
+
+.settings-preference-fields-v2 > .settings-toggle-row-v2 {
+  padding-top: 14px;
+}
+
+@media (max-width: 820px) {
+  .settings-preferences-grid-v2 {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-section-v2-wide {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .settings-toggle-row-v2 {
+    align-items: flex-start;
+  }
+}
