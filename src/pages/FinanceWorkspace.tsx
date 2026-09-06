@@ -30,9 +30,15 @@ function FinanceWorkspace() {
   const { settings } = useSettings()
   const { money } = useCurrency()
 
+  const allowedViews: FinanceView[] = [
+    'overview',
+    ...(settings.features.expensesEnabled ? ['expenses' as const] : []),
+    ...(settings.features.receiptsEnabled ? ['receipts' as const] : []),
+    'tax',
+  ]
   const requested = params.get('view') as FinanceView | null
-  const view: FinanceView = ['overview', 'expenses', 'receipts', 'tax'].includes(requested ?? '')
-    ? (requested as FinanceView)
+  const view: FinanceView = requested && allowedViews.includes(requested)
+    ? requested
     : 'overview'
 
   const sold = useMemo(() => products.filter((product) => product.status === 'Sold'), [products])
@@ -104,42 +110,46 @@ function FinanceWorkspace() {
               </div>
             </section>
 
-            <section className="panel-v2">
-              <header className="panel-v2-header">
-                <div><h2>Expense control</h2><p>Standalone costs recorded outside product fees</p></div>
-              </header>
-              <div className="finance-callout-v2">
-                <span className="finance-callout-v2-icon"><Icon name="expenses" size={18} /></span>
-                <div><strong>{expenses.length} expense{expenses.length === 1 ? '' : 's'}</strong><span>{money(exp)} recorded</span></div>
-                <button type="button" className="secondary-button" onClick={() => setParams({ view: 'expenses' })}>Open ledger</button>
-              </div>
-            </section>
+            {settings.features.expensesEnabled && (
+              <section className="panel-v2">
+                <header className="panel-v2-header">
+                  <div><h2>Expense control</h2><p>Standalone costs recorded outside product fees</p></div>
+                </header>
+                <div className="finance-callout-v2">
+                  <span className="finance-callout-v2-icon"><Icon name="expenses" size={18} /></span>
+                  <div><strong>{expenses.length} expense{expenses.length === 1 ? '' : 's'}</strong><span>{money(exp)} recorded</span></div>
+                  <button type="button" className="secondary-button" onClick={() => setParams({ view: 'expenses' })}>Open ledger</button>
+                </div>
+              </section>
+            )}
 
-            <section className="panel-v2">
-              <header className="panel-v2-header">
-                <div><h2>Receipt inbox</h2><p>Supporting documents ready to review and match</p></div>
-              </header>
-              <div className="finance-callout-v2">
-                <span className="finance-callout-v2-icon"><Icon name="receipts" size={18} /></span>
-                <div><strong>{receipts.length} file{receipts.length === 1 ? '' : 's'}</strong><span>Images and PDFs stored with this business</span></div>
-                <button type="button" className="secondary-button" onClick={() => setParams({ view: 'receipts' })}>Review receipts</button>
-              </div>
-            </section>
+            {settings.features.receiptsEnabled && (
+              <section className="panel-v2">
+                <header className="panel-v2-header">
+                  <div><h2>Receipt inbox</h2><p>Supporting documents ready to review and match</p></div>
+                </header>
+                <div className="finance-callout-v2">
+                  <span className="finance-callout-v2-icon"><Icon name="receipts" size={18} /></span>
+                  <div><strong>{receipts.length} file{receipts.length === 1 ? '' : 's'}</strong><span>Images and PDFs stored with this business</span></div>
+                  <button type="button" className="secondary-button" onClick={() => setParams({ view: 'receipts' })}>Review receipts</button>
+                </div>
+              </section>
+            )}
           </div>
 
           <div className="workspace-inline-notice-v2">
             <Icon name="sparkles" size={16} />
             <div>
               <strong>Finance now owns expenses, receipts and tax.</strong>
-              <span>Those tools remain fully available, but no longer compete as separate top-level destinations.</span>
+              <span>Enabled finance tools live here rather than competing as separate top-level destinations.</span>
             </div>
             <button type="button" className="row-action-link" onClick={() => navigate('/analytics')}>Open analytics</button>
           </div>
         </div>
       ) : (
         <div className="workspace-v2-embedded workspace-v2-embedded-finance">
-          {view === 'expenses' && <Expenses />}
-          {view === 'receipts' && <Receipts />}
+          {view === 'expenses' && settings.features.expensesEnabled && <Expenses />}
+          {view === 'receipts' && settings.features.receiptsEnabled && <Receipts />}
           {view === 'tax' && <Tax />}
         </div>
       )}
