@@ -8,6 +8,7 @@ import {
 
 import './App.css'
 import './styles/ui-v2.css'
+import './styles/ui-v2-extras.css'
 
 import { AuthProvider } from './context/AuthContext'
 import { BusinessProvider } from './context/BusinessContext'
