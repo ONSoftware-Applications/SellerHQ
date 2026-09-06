@@ -8,10 +8,6 @@ import { useSettings } from '../hooks/useSettings'
 import { useSubscription } from '../hooks/useSubscription'
 import { appDisplayName, isWhiteLabel } from '../lib/branding'
 
-function isMobileDevice() {
-  return /iphone|ipad|ipod|android/i.test(navigator.userAgent)
-}
-
 type SidebarProps = {
   mobileNavOpen?: boolean
   onCloseMobileNav?: () => void
@@ -124,139 +120,39 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
 
       <nav className="navigation" aria-label="Primary navigation">
         <div className="nav-group">
-          <SidebarLink
-            to="/dashboard"
-            label="Overview"
-            icon="dashboard"
-            onClick={handleNavClick}
-          />
+          <SidebarLink to="/dashboard" label="Overview" icon="dashboard" onClick={handleNavClick} />
         </div>
 
         <div className="nav-group">
           <span className="nav-group-label">Operations</span>
-          <SidebarLink
-            to="/inventory"
-            label="Inventory"
-            icon="inventory"
-            onClick={handleNavClick}
-          />
-
-          {settings.features.listingsEnabled && canUse('listings') && (
-            <SidebarLink
-              to="/listings"
-              label="Listings"
-              icon="listings"
-              onClick={handleNavClick}
-            />
-          )}
-
-          <SidebarLink
-            to="/sales"
-            label="Sales"
-            icon="sales"
-            onClick={handleNavClick}
-          />
-
-          {canUse('tillMode') && settings.features.tillModeEnabled && (
-            <SidebarLink
-              to="/till"
-              label="Till"
-              icon="till"
-              onClick={handleNavClick}
-            />
-          )}
+          <SidebarLink to="/inventory" label="Inventory" icon="inventory" onClick={handleNavClick} />
+          <SidebarLink to="/orders" label="Orders & sales" icon="sales" onClick={handleNavClick} />
         </div>
 
         <div className="nav-group">
           <span className="nav-group-label">Finance</span>
-
-          {settings.features.expensesEnabled && (
-            <SidebarLink
-              to="/expenses"
-              label="Expenses"
-              icon="expenses"
-              onClick={handleNavClick}
-            />
-          )}
-
-          <SidebarLink
-            to="/tax"
-            label="Tax"
-            icon="tax"
-            onClick={handleNavClick}
-          />
-
-          {canUse('reports') && (
-            <SidebarLink
-              to="/reports"
-              label="Reports"
-              icon="reports"
-              onClick={handleNavClick}
-            />
-          )}
-
-          {settings.features.forecastsEnabled && canUse('forecasts') && (
-            <SidebarLink
-              to="/forecasts"
-              label="Forecasts"
-              icon="forecast"
-              onClick={handleNavClick}
-            />
-          )}
+          <SidebarLink to="/finance" label="Finance" icon="wallet" onClick={handleNavClick} />
         </div>
 
-        <div className="nav-group">
-          <span className="nav-group-label">Workspace</span>
+        {canUse('reports') && (
+          <div className="nav-group">
+            <span className="nav-group-label">Insights</span>
+            <SidebarLink to="/analytics" label="Analytics" icon="reports" onClick={handleNavClick} />
+          </div>
+        )}
 
-          {settings.features.receiptsEnabled && (
-            <SidebarLink
-              to="/receipts"
-              label="Receipts"
-              icon="receipts"
-              onClick={handleNavClick}
-            />
-          )}
-
-          <SidebarLink
-            to="/team"
-            label="Team"
-            icon="team"
-            onClick={handleNavClick}
-          />
-
-          {!isMobileDevice() && canUse('qrRelay') && (
-            <SidebarLink
-              to="/relay"
-              label="QR relay"
-              icon="relay"
-              onClick={handleNavClick}
-            />
-          )}
-        </div>
+        {canUse('tillMode') && settings.features.tillModeEnabled && (
+          <div className="nav-group">
+            <span className="nav-group-label">Point of sale</span>
+            <SidebarLink to="/till" label="Till" icon="till" onClick={handleNavClick} />
+          </div>
+        )}
       </nav>
 
       <div className="sidebar-bottom">
         <div className="sidebar-bottom-links">
-          <SidebarLink
-            to="/settings"
-            label="Settings"
-            icon="settings"
-            onClick={handleNavClick}
-          />
-          <SidebarLink
-            to="/support"
-            label="Help & support"
-            icon="support"
-            onClick={handleNavClick}
-          />
-          {canUse('auditLog') && (
-            <SidebarLink
-              to="/audit-log"
-              label="Audit log"
-              icon="reports"
-              onClick={handleNavClick}
-            />
-          )}
+          <SidebarLink to="/settings" label="Settings" icon="settings" onClick={handleNavClick} />
+          <SidebarLink to="/support" label="Help" icon="support" onClick={handleNavClick} />
         </div>
 
         <button
@@ -264,9 +160,9 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
           className="account sidebar-account-button"
           onClick={() => {
             handleNavClick()
-            navigate('/profile')
+            navigate('/settings?view=account')
           }}
-          aria-label="Open profile"
+          aria-label="Open account settings"
         >
           <div className="avatar">{initials}</div>
           <div className="account-details">
@@ -275,11 +171,7 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
           </div>
         </button>
 
-        <button
-          type="button"
-          onClick={handleSignOut}
-          className="nav-item sidebar-signout"
-        >
+        <button type="button" onClick={handleSignOut} className="nav-item sidebar-signout">
           <Icon name="logout" />
           <span>Sign out</span>
         </button>
