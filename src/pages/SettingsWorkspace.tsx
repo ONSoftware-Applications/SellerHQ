@@ -23,7 +23,7 @@ function SettingsWorkspace() {
 
   const requested = params.get('view') as SettingsView | null
   const allowed: SettingsView[] = ['preferences', 'business', 'branding', 'team', 'billing', 'account', 'activity']
-  const view: SettingsView = allowed.includes(requested ?? '') ? (requested as SettingsView) : 'preferences'
+  const view: SettingsView = requested && allowed.includes(requested) ? requested : 'preferences'
 
   const tabs: WorkspaceTab[] = [
     { id: 'preferences', label: 'Preferences', icon: 'settings' },
