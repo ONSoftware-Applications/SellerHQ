@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import ConfirmDialog from '../components/ConfirmDialog'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import Icon from '../components/Icon'
 import { useAuth } from '../hooks/useAuth'
 import { useBusiness } from '../hooks/useBusiness'
