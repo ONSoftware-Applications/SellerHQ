@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import Icon from './Icon'
 import { useBusiness } from '../hooks/useBusiness'
+import { useProducts } from '../hooks/useProducts'
 import { useSubscription } from '../hooks/useSubscription'
 import { useToast } from '../hooks/useToast'
 import { appDisplayName } from '../lib/branding'
@@ -16,37 +17,12 @@ function isMobileDevice() {
   return /iphone|ipad|ipod|android/i.test(navigator.userAgent)
 }
 
-const pageTitles: Record<string, string> = {
-  '/dashboard': 'Overview',
-  '/inventory': 'Inventory',
-  '/listings': 'Listings',
-  '/sales': 'Sales',
-  '/expenses': 'Expenses',
-  '/receipts': 'Receipts',
-  '/forecasts': 'Forecasts',
-  '/tax': 'Tax',
-  '/settings': 'Settings',
-  '/profile': 'Profile',
-  '/install': 'Install SellerHQ',
-  '/scan': 'Scan QR',
-  '/relay': 'QR relay',
-  '/pricing': 'Pricing tool',
-  '/subscriptions': 'Subscription',
-  '/reports': 'Reports',
-  '/team': 'Team',
-  '/create-business': 'New business',
-  '/support': 'Help & support',
-  '/audit-log': 'Audit log',
-  '/business': 'Business customisation',
-}
-
 type TopbarProps = {
   onToggleMobileNav?: () => void
 }
 
 function Topbar({ onToggleMobileNav }: TopbarProps) {
   const navigate = useNavigate()
-  const location = useLocation()
   const {
     businesses,
     currentBusiness,
@@ -54,18 +30,32 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
     switchBusiness,
     joinWithCode,
   } = useBusiness()
+  const { products } = useProducts()
   const { canUse } = useSubscription()
   const { showToast } = useToast()
 
   const [open, setOpen] = useState(false)
   const [codeInput, setCodeInput] = useState('')
   const [joining, setJoining] = useState(false)
+  const [search, setSearch] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const appName = appDisplayName(currentBusiness)
-  const productMatch = location.pathname.match(/^\/products\/([^/]+)$/)
-  const title = productMatch
-    ? 'Product details'
-    : pageTitles[location.pathname] ?? appName
+
+  const searchResults = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    if (!query) return []
+    return products
+      .filter((product) => [
+        product.code,
+        product.sku,
+        product.name,
+        product.brand,
+        product.category,
+        product.barcode,
+      ].join(' ').toLowerCase().includes(query))
+      .slice(0, 7)
+  }, [products, search])
 
   async function handleJoinCode() {
     if (!codeInput.trim() || joining) return
@@ -88,9 +78,15 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
     }
   }
 
+  function openProduct(productId: string) {
+    setSearch('')
+    setSearchOpen(false)
+    navigate(`/products/${productId}`)
+  }
+
   return (
-    <header className="topbar">
-      <div className="topbar-left">
+    <header className="topbar topbar-v2-global">
+      <div className="topbar-left topbar-v2-left">
         <button
           type="button"
           className="hamburger topbar-icon-btn"
@@ -100,12 +96,65 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
           <Icon name="menu" size={19} />
         </button>
 
-        <div className="topbar-heading">
-          <h1>{title}</h1>
+        <div className={`global-search-v2 ${searchOpen ? 'mobile-open' : ''}`}>
+          <Icon name="search" size={16} />
+          <input
+            type="search"
+            placeholder="Search products, SKU, barcode…"
+            value={search}
+            onFocus={() => setSearchOpen(true)}
+            onChange={(event) => {
+              setSearch(event.target.value)
+              setSearchOpen(true)
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                setSearchOpen(false)
+                setSearch('')
+              }
+            }}
+          />
+          {search && (
+            <button type="button" className="global-search-clear-v2" onClick={() => setSearch('')} aria-label="Clear search">
+              <Icon name="close" size={13} />
+            </button>
+          )}
+          {searchOpen && search.trim() && (
+            <div className="global-search-results-v2">
+              {searchResults.length ? searchResults.map((product) => (
+                <button type="button" key={product.id} onClick={() => openProduct(product.id)}>
+                  <span><strong>{product.name}</strong><small>{product.code} · {product.brand || 'No brand'}</small></span>
+                  <span className={`status-badge status-${product.status.toLowerCase().replace(/ /g, '-')}`}>{product.status}</span>
+                </button>
+              )) : (
+                <div className="global-search-empty-v2">No matching products.</div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="topbar-actions">
+        <button
+          type="button"
+          className="topbar-icon-btn topbar-search-mobile-v2"
+          onClick={() => setSearchOpen((value) => !value)}
+          aria-label="Search products"
+          title="Search products"
+        >
+          <Icon name="search" size={17} />
+        </button>
+
+        <button
+          type="button"
+          className="topbar-icon-btn"
+          onClick={() => navigate('/support')}
+          aria-label="Help"
+          title="Help"
+        >
+          <Icon name="support" size={17} />
+        </button>
+
         {isInstallable() && (
           <button
             type="button"
@@ -134,10 +183,7 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
           {loading ? (
             <div className="business-selector business-selector-loading">
               <div className="business-icon">…</div>
-              <div>
-                <strong>Loading…</strong>
-                <span>Business</span>
-              </div>
+              <div><strong>Loading…</strong><span>Business</span></div>
             </div>
           ) : currentBusiness ? (
             <>
@@ -150,97 +196,45 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
               >
                 <div className="business-icon">
                   {currentBusiness.logo_url ? (
-                    <img
-                      src={currentBusiness.logo_url}
-                      alt=""
-                      style={{ width: 22, height: 22, objectFit: 'contain' }}
-                    />
-                  ) : (
-                    currentBusiness.name.charAt(0).toUpperCase()
-                  )}
+                    <img src={currentBusiness.logo_url} alt="" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                  ) : currentBusiness.name.charAt(0).toUpperCase()}
                 </div>
-
-                <div>
-                  <strong>{currentBusiness.name}</strong>
-                  <span>{currentBusiness.business_type}</span>
-                </div>
-
-                <span className="chevron">
-                  <Icon name="chevron-down" size={14} />
-                </span>
+                <div><strong>{currentBusiness.name}</strong><span>{currentBusiness.business_type}</span></div>
+                <span className="chevron"><Icon name="chevron-down" size={14} /></span>
               </button>
 
               {open && (
                 <div className="business-menu" role="listbox">
                   <div className="business-menu-heading">Your businesses</div>
-
                   {businesses.map((business) => (
                     <button
                       key={business.id}
                       type="button"
-                      className={`business-menu-item ${
-                        business.id === currentBusiness.id ? 'selected' : ''
-                      }`}
+                      className={`business-menu-item ${business.id === currentBusiness.id ? 'selected' : ''}`}
                       onClick={() => {
                         switchBusiness(business.id)
                         setOpen(false)
                       }}
                     >
                       <div className="business-menu-icon">
-                        {business.logo_url ? (
-                          <img
-                            src={business.logo_url}
-                            alt=""
-                            style={{ width: 20, height: 20, objectFit: 'contain' }}
-                          />
-                        ) : (
-                          business.name.charAt(0).toUpperCase()
-                        )}
+                        {business.logo_url ? <img src={business.logo_url} alt="" style={{ width: 20, height: 20, objectFit: 'contain' }} /> : business.name.charAt(0).toUpperCase()}
                       </div>
-
-                      <div>
-                        <strong>{business.name}</strong>
-                        <span>{business.business_type}</span>
-                      </div>
-
-                      {business.id === currentBusiness.id && (
-                        <Icon name="check" size={15} />
-                      )}
+                      <div><strong>{business.name}</strong><span>{business.business_type}</span></div>
+                      {business.id === currentBusiness.id && <Icon name="check" size={15} />}
                     </button>
                   ))}
 
                   <div className="business-menu-divider" />
-
-                  <button
-                    type="button"
-                    className="business-menu-add"
-                    onClick={() => {
-                      setOpen(false)
-                      navigate('/create-business')
-                    }}
-                  >
-                    <Icon name="plus" size={15} />
-                    Add another business
+                  <button type="button" className="business-menu-add" onClick={() => { setOpen(false); navigate('/create-business') }}>
+                    <Icon name="plus" size={15} /> Add another business
                   </button>
-
-                  <button
-                    type="button"
-                    className="business-menu-add"
-                    onClick={() => {
-                      setOpen(false)
-                      navigate('/business')
-                    }}
-                  >
-                    <Icon name="settings" size={15} />
-                    Business settings
+                  <button type="button" className="business-menu-add" onClick={() => { setOpen(false); navigate('/settings?view=business') }}>
+                    <Icon name="settings" size={15} /> Business settings
                   </button>
 
                   <div className="business-menu-divider" />
-
                   <div className="business-menu-join">
-                    <label className="business-menu-join-label" htmlFor="business-join-code">
-                      Join with a code
-                    </label>
+                    <label className="business-menu-join-label" htmlFor="business-join-code">Join with a code</label>
                     <div className="business-menu-join-row">
                       <input
                         id="business-join-code"
@@ -255,11 +249,7 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
                           }
                         }}
                       />
-                      <button
-                        type="button"
-                        onClick={() => void handleJoinCode()}
-                        disabled={joining || !codeInput.trim()}
-                      >
+                      <button type="button" onClick={() => void handleJoinCode()} disabled={joining || !codeInput.trim()}>
                         {joining ? 'Joining…' : 'Join'}
                       </button>
                     </div>
