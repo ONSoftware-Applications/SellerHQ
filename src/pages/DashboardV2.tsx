@@ -119,13 +119,13 @@ function DashboardV2() {
 
   const actions = useMemo(() => {
     const items: { id: string; title: string; copy: string; icon: 'truck' | 'package' | 'clock' | 'trend-down' | 'wallet'; path: string }[] = []
-    if (stats.awaiting.length) items.push({ id: 'ship', title: `${stats.awaiting.length} order${stats.awaiting.length === 1 ? '' : 's'} awaiting shipment`, copy: 'Move sold stock through dispatch so orders do not stall.', icon: 'truck', path: '/inventory' })
-    if (stats.unlisted.length) items.push({ id: 'list', title: `${stats.unlisted.length} product${stats.unlisted.length === 1 ? '' : 's'} not listed`, copy: 'These products are holding capital but are not currently available to buyers.', icon: 'package', path: '/inventory' })
-    if ((stats.aged?.count ?? 0) > 0) items.push({ id: 'age', title: `${stats.aged?.count ?? 0} product${stats.aged?.count === 1 ? '' : 's'} held for 90+ days`, copy: `${money(stats.aged?.value ?? 0)} of purchase capital is tied up in ageing stock.`, icon: 'clock', path: '/inventory' })
-    if (stats.soldCount > 3 && stats.margin < 15) items.push({ id: 'margin', title: `Margin is ${stats.margin.toFixed(1)}%`, copy: 'Pricing or sourcing costs may need attention.', icon: 'trend-down', path: '/pricing' })
-    if (stats.soldCount > 0 && stats.expense > stats.gross) items.push({ id: 'expense', title: 'Expenses exceed gross profit', copy: `${money(stats.expense)} of expenses have overtaken gross profit this period.`, icon: 'wallet', path: '/expenses' })
+    if (stats.awaiting.length) items.push({ id: 'ship', title: `${stats.awaiting.length} order${stats.awaiting.length === 1 ? '' : 's'} awaiting shipment`, copy: 'Move sold stock through dispatch so orders do not stall.', icon: 'truck', path: '/orders?view=awaiting' })
+    if (stats.unlisted.length) items.push({ id: 'list', title: `${stats.unlisted.length} product${stats.unlisted.length === 1 ? '' : 's'} not listed`, copy: 'These products are holding capital but are not currently available to buyers.', icon: 'package', path: '/inventory?view=unlisted' })
+    if ((stats.aged?.count ?? 0) > 0) items.push({ id: 'age', title: `${stats.aged?.count ?? 0} product${stats.aged?.count === 1 ? '' : 's'} held for 90+ days`, copy: `${money(stats.aged?.value ?? 0)} of purchase capital is tied up in ageing stock.`, icon: 'clock', path: canUse('reports') ? '/analytics?view=inventory' : '/inventory' })
+    if (stats.soldCount > 3 && stats.margin < 15) items.push({ id: 'margin', title: `Margin is ${stats.margin.toFixed(1)}%`, copy: 'Pricing or sourcing costs may need attention.', icon: 'trend-down', path: '/inventory?view=pricing' })
+    if (stats.soldCount > 0 && stats.expense > stats.gross) items.push({ id: 'expense', title: 'Expenses exceed gross profit', copy: `${money(stats.expense)} of expenses have overtaken gross profit this period.`, icon: 'wallet', path: '/finance?view=expenses' })
     return items.slice(0, 4)
-  }, [money, stats])
+  }, [canUse, money, stats])
 
   if (loading) return <LoadingState label="Loading business overview..." />
 
@@ -157,7 +157,7 @@ function DashboardV2() {
 
       <section className="dashboard-v2-grid">
         <article className="panel-v2">
-          <header className="panel-v2-header"><div><h2>Revenue & profit</h2><p>Performance across the last six months</p></div>{canUse('reports') && <button className="panel-v2-link" type="button" onClick={() => navigate('/reports')}>View reports <Icon name="arrow-right" size={12} /></button>}</header>
+          <header className="panel-v2-header"><div><h2>Revenue & profit</h2><p>Performance across the last six months</p></div>{canUse('reports') && <button className="panel-v2-link" type="button" onClick={() => navigate('/analytics')}>View analytics <Icon name="arrow-right" size={12} /></button>}</header>
           <div className="dashboard-trend">
             <div className="dashboard-trend-summary"><div><span>6 month revenue</span><strong>{money(sixMonthRevenue)}</strong></div><div><span>6 month gross profit</span><strong>{money(sixMonthProfit)}</strong></div></div>
             <div className="dashboard-bars">{trend.map((point) => <div className="dashboard-bar-group" key={point.key} title={`${point.label}: ${money(point.revenue)} revenue`}><span className="dashboard-bar revenue" style={{ height: `${Math.max(2, point.revenue / trendMax * 100)}%` }} /><span className="dashboard-bar profit" style={{ height: `${Math.max(2, Math.max(0, point.profit) / trendMax * 100)}%` }} /></div>)}</div>
