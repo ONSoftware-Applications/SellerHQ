@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase'
 import AuditLog from './AuditLog'
 import BusinessCustomization from './BusinessCustomization'
 import Profile from './Profile'
-import Settings from './Settings'
+import SettingsPreferencesV2 from './SettingsPreferencesV2'
 import Subscriptions from './Subscriptions'
 import TeamHub from './TeamHub'
 
@@ -48,7 +48,7 @@ function SettingsWorkspace() {
         <BusinessSettingsView onOpen={(next) => setParams({ view: next })} />
       ) : (
         <div className="workspace-v2-embedded workspace-v2-embedded-settings">
-          {view === 'preferences' && <Settings />}
+          {view === 'preferences' && <SettingsPreferencesV2 />}
           {view === 'branding' && <BusinessCustomization />}
           {view === 'team' && <TeamHub />}
           {view === 'billing' && <Subscriptions />}
