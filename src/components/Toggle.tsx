@@ -2,15 +2,19 @@ type ToggleProps = {
   checked: boolean
   onChange: (value: boolean) => void
   label: string
+  hideLabel?: boolean
 }
 
-function Toggle({ checked, onChange, label }: ToggleProps) {
+function Toggle({ checked, onChange, label, hideLabel = false }: ToggleProps) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-      <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--shq-ink)' }}>{label}</span>
+      {!hideLabel && (
+        <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--shq-ink)' }}>{label}</span>
+      )}
       <button
         type="button"
         role="switch"
+        aria-label={label}
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         style={{
