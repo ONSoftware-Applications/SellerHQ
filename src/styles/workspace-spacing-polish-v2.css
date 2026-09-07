@@ -185,6 +185,39 @@
   margin: 12px 16px 16px;
 }
 
+/* ───────────────────────── Live interaction hotfixes */
+
+/* Inventory's mature page owns the add/import actions and editor state. The
+   workspace hides its duplicate heading, but must keep those actions reachable. */
+.workspace-v2-embedded > .inventory-page > .page-heading:has(.page-heading-actions) {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0 0 16px;
+}
+
+.workspace-v2-embedded > .inventory-page > .page-heading:has(.page-heading-actions) > div:first-child {
+  display: none !important;
+}
+
+.workspace-v2-embedded > .inventory-page > .page-heading:has(.page-heading-actions) .page-heading-actions {
+  width: auto;
+  margin-left: auto;
+}
+
+/* UI v2's desktop sidebar z-index was overriding the mobile shell's z-index,
+   leaving the dimming overlay physically above the navigation on phones. */
+@media (max-width: 900px) {
+  .sidebar,
+  .sidebar.sidebar-mobile-open {
+    z-index: 1000;
+  }
+
+  .mobile-nav-overlay {
+    z-index: 999;
+  }
+}
+
 /* ───────────────────────── Narrow layouts */
 
 @media (max-width: 620px) {
@@ -290,5 +323,10 @@
   .help-context-v2 > p {
     margin-right: 13px;
     margin-left: 13px;
+  }
+
+  .workspace-v2-embedded > .inventory-page > .page-heading:has(.page-heading-actions) .page-heading-actions {
+    width: 100%;
+    margin-left: 0;
   }
 }
