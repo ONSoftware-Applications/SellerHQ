@@ -7,6 +7,7 @@ import {
 } from 'react'
 
 import { supabase } from '../lib/supabase'
+import { RECEIPTS_BUCKET } from '../lib/storage'
 import { useBusiness } from '../hooks/useBusiness'
 import { ExpenseContext } from '../hooks/useExpenses'
 import type { Expense, ExpenseDraft, ExpenseRow } from '../types/expense'
@@ -26,6 +27,57 @@ function databaseToExpense(row: ExpenseRow): Expense {
     receiptUrl: row.receipt_url ?? '',
     createdAt: row.created_at ?? '',
     updatedAt: row.updated_at ?? '',
+  }
+}
+
+function receiptExtension(mimeType: string): string {
+  if (mimeType === 'image/jpeg') return 'jpg'
+  if (mimeType === 'image/png') return 'png'
+  if (mimeType === 'image/webp') return 'webp'
+  if (mimeType === 'image/gif') return 'gif'
+  if (mimeType === 'application/pdf') return 'pdf'
+
+  const candidate = mimeType.split('/').pop()?.replace(/[^a-zA-Z0-9]+/g, '')
+  return candidate || 'bin'
+}
+
+async function persistExpenseReceipt(receiptUrl: string): Promise<string> {
+  if (!receiptUrl || !receiptUrl.startsWith('data:')) {
+    return receiptUrl
+  }
+
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return receiptUrl
+    }
+
+    const response = await fetch(receiptUrl)
+    const blob = await response.blob()
+    const extension = receiptExtension(blob.type)
+    const nonce = Math.random().toString(36).slice(2, 10)
+    const path = `${user.id}/expense-${Date.now()}-${nonce}.${extension}`
+
+    const { error } = await supabase.storage
+      .from(RECEIPTS_BUCKET)
+      .upload(path, blob, { upsert: false })
+
+    if (error) {
+      console.error('Failed to persist expense receipt:', error)
+      return receiptUrl
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(RECEIPTS_BUCKET).getPublicUrl(path)
+
+    return publicUrl
+  } catch (error) {
+    console.error('Failed to convert expense receipt to storage:', error)
+    return receiptUrl
   }
 }
 
@@ -57,7 +109,30 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    setExpenses((data ?? []).map(databaseToExpense))
+    const loadedExpenses = (data ?? []).map(databaseToExpense)
+
+    const normalisedExpenses = await Promise.all(
+      loadedExpenses.map(async (expense) => {
+        const receiptUrl = await persistExpenseReceipt(expense.receiptUrl)
+
+        if (receiptUrl === expense.receiptUrl) {
+          return expense
+        }
+
+        const { error: updateError } = await supabase
+          .from('expenses')
+          .update({ receipt_url: receiptUrl })
+          .eq('id', expense.id)
+
+        if (updateError) {
+          console.error('Failed to migrate legacy expense receipt:', updateError)
+        }
+
+        return { ...expense, receiptUrl }
+      }),
+    )
+
+    setExpenses(normalisedExpenses)
     setLoading(false)
   }, [currentBusiness])
 
@@ -65,6 +140,8 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     if (!currentBusiness) {
       throw new Error('No business is currently selected.')
     }
+
+    const receiptUrl = await persistExpenseReceipt(expense.receiptUrl)
 
     const { data, error } = await supabase
       .from('expenses')
@@ -78,7 +155,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         supplier: expense.supplier || null,
         payment_method: expense.paymentMethod || null,
         notes: expense.notes || null,
-        receipt_url: expense.receiptUrl || null,
+        receipt_url: receiptUrl || null,
       })
       .select()
       .single()
@@ -92,6 +169,8 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
   }, [currentBusiness])
 
   const updateExpense = useCallback(async (expense: Expense) => {
+    const receiptUrl = await persistExpenseReceipt(expense.receiptUrl)
+
     const { data, error } = await supabase
       .from('expenses')
       .update({
@@ -103,7 +182,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         supplier: expense.supplier || null,
         payment_method: expense.paymentMethod || null,
         notes: expense.notes || null,
-        receipt_url: expense.receiptUrl || null,
+        receipt_url: receiptUrl || null,
       })
       .eq('id', expense.id)
       .select()
@@ -153,5 +232,4 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
 
   return <ExpenseContext.Provider value={value}>{children}</ExpenseContext.Provider>
 }
-
 
