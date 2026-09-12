@@ -205,6 +205,29 @@
   margin-left: auto;
 }
 
+/* Finance embeds mature Expenses and Receipts pages. Their duplicate headings
+   stay hidden, but action controls such as Add Expense, Export CSV and Upload
+   Receipt must remain available inside the Finance workspace. */
+.workspace-v2-embedded-finance > .inventory-page > .page-heading:has(.btn) {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.workspace-v2-embedded-finance > .inventory-page > .page-heading:has(.btn) > div:first-child {
+  display: none !important;
+}
+
+.workspace-v2-embedded-finance > .inventory-page > .page-heading:has(.btn) > div:not(:first-child) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+}
+
 /* UI v2's desktop sidebar z-index was overriding the mobile shell's z-index,
    leaving the dimming overlay physically above the navigation on phones. */
 @media (max-width: 900px) {
@@ -325,8 +348,13 @@
     margin-left: 13px;
   }
 
-  .workspace-v2-embedded > .inventory-page > .page-heading:has(.page-heading-actions) .page-heading-actions {
+  .workspace-v2-embedded > .inventory-page > .page-heading:has(.page-heading-actions) .page-heading-actions,
+  .workspace-v2-embedded-finance > .inventory-page > .page-heading:has(.btn) > div:not(:first-child) {
     width: 100%;
     margin-left: 0;
+  }
+
+  .workspace-v2-embedded-finance > .inventory-page > .page-heading:has(.btn) > .btn {
+    width: 100%;
   }
 }
