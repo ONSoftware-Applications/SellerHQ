@@ -20,6 +20,10 @@ type SidebarLinkProps = {
   onClick: () => void
 }
 
+function isMobileDevice() {
+  return /iphone|ipad|ipod|android/i.test(navigator.userAgent)
+}
+
 function SidebarLink({ to, label, icon, onClick }: SidebarLinkProps) {
   return (
     <NavLink
@@ -127,6 +131,9 @@ function Sidebar({ mobileNavOpen, onCloseMobileNav }: SidebarProps) {
           <span className="nav-group-label">Operations</span>
           <SidebarLink to="/inventory" label="Inventory" icon="inventory" onClick={handleNavClick} />
           <SidebarLink to="/orders" label="Orders & sales" icon="sales" onClick={handleNavClick} />
+          {!isMobileDevice() && canUse('qrRelay') && (
+            <SidebarLink to="/scan" label="Scan Relay" icon="relay" onClick={handleNavClick} />
+          )}
         </div>
 
         <div className="nav-group">
