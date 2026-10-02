@@ -19,6 +19,7 @@ import './styles/account-v2.css'
 import './styles/polish-v2.css'
 import './styles/forecast-v2.css'
 import './styles/workspace-spacing-polish-v2.css'
+import './styles/relay-v2.css'
 
 import { AuthProvider } from './context/AuthContext'
 import { BusinessProvider } from './context/BusinessContext'
