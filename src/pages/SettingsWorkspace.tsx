@@ -13,6 +13,7 @@ import AuditLog from './AuditLog'
 import BillingSettingsV2 from './BillingSettingsV2'
 import BusinessCustomization from './BusinessCustomization'
 import SettingsPreferencesV2 from './SettingsPreferencesV2'
+import CustomStatusSettings from './CustomStatusSettings'
 import TeamHub from './TeamHub'
 
 type SettingsView = 'preferences' | 'business' | 'branding' | 'team' | 'billing' | 'account' | 'activity'
@@ -155,6 +156,7 @@ function BusinessSettingsView({ onOpen }: { onOpen: (view: SettingsView) => void
           <button type="button" className="secondary-button" onClick={() => onOpen('team')}>Manage team</button>
         </section>
       </div>
+      <CustomStatusSettings />
     </div>
   )
 }
