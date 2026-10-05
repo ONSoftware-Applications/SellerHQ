@@ -6,6 +6,7 @@ import { useBusiness } from '../hooks/useBusiness'
 import { useCurrency } from '../hooks/useCurrency'
 import { useToast } from '../hooks/useToast'
 import { useSettings } from '../hooks/useSettings'
+import { useCustomStatuses } from '../hooks/useCustomStatuses'
 import { escapeHtml } from '../lib/sanitize'
 import { printBrandingMarkup, PRINT_BRAND_CSS, qrLogoUrl } from '../lib/branding'
 import type {
@@ -17,6 +18,7 @@ import type {
 } from '../types/product'
 import { ProductEditorModal } from '../components/ProductEditorModal'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import ProductStatusBadge from '../components/ProductStatusBadge'
 import {
   createDuplicateProductDraft,
   productToDraft,
@@ -53,6 +55,7 @@ const {
   const { money } = useCurrency()
   const { showToast } = useToast()
   const { settings } = useSettings()
+  const { statuses: customStatuses } = useCustomStatuses()
 
   const shippingFlowEnabled = settings.features.shippingFlowEnabled
 
@@ -144,10 +147,18 @@ const product = productId
     }
   }
 
-  async function handleQuickStatusChange(
-    nextStatus: ProductStatus,
-  ) {
-    if (nextStatus === currentProduct.status) {
+  async function handleQuickStatusChange(value: string) {
+    const customStatusId = value.startsWith('custom:')
+      ? value.slice('custom:'.length)
+      : null
+    const nextStatus: ProductStatus = customStatusId
+      ? 'Custom'
+      : value as ProductStatus
+
+    if (
+      nextStatus === currentProduct.status
+      && customStatusId === currentProduct.customStatusId
+    ) {
       return
     }
 
@@ -172,6 +183,7 @@ const product = productId
       await updateProduct({
         ...currentProduct,
         status: nextStatus,
+        customStatusId,
         listingDate:
           nextStatus === 'Listed'
             ? todayValue()
@@ -663,42 +675,56 @@ if (!popup) {
               <span>Quick status</span>
 
               <select
-                value={currentProduct.status}
+                value={
+                  currentProduct.status === 'Custom'
+                    && currentProduct.customStatusId
+                    ? `custom:${currentProduct.customStatusId}`
+                    : currentProduct.status
+                }
                 onChange={(event) =>
-                  handleQuickStatusChange(
-                    event.target.value as ProductStatus,
-                  )
+                  void handleQuickStatusChange(event.target.value)
                 }
                 disabled={statusSaving}
               >
-{[
-                  'Unlisted',
-                  'Draft',
-                  'Listed',
-                  'Awaiting Shipping',
-                  'In Shipping',
-                  'Sold',
-                  'Reserved',
-                  'Issue',
-                  'Relisting Required',
-                  'Removed',
-                  'Returned',
-                  'Archived',
-                ].map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
+                <optgroup label="SellerHQ statuses">
+                  {[
+                    'Unlisted',
+                    'Draft',
+                    'Listed',
+                    'Awaiting Shipping',
+                    'In Shipping',
+                    'Sold',
+                    'Reserved',
+                    'Issue',
+                    'Relisting Required',
+                    'Removed',
+                    'Returned',
+                    'Archived',
+                  ].map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </optgroup>
+                {customStatuses.length > 0 && (
+                  <optgroup label="Custom statuses">
+                    {customStatuses.map((customStatus) => (
+                      <option
+                        key={customStatus.id}
+                        value={`custom:${customStatus.id}`}
+                      >
+                        {customStatus.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </label>
 
-            <span
-              className={`status-badge status-${currentProduct.status
-                .toLowerCase()
-                .replace(/ /g, '-')}`}
-            >
-              {statusSaving ? 'Saving...' : currentProduct.status}
-            </span>
+            <ProductStatusBadge
+              product={currentProduct}
+              labelOverride={statusSaving ? 'Saving...' : undefined}
+            />
           </div>
 
           <div className="product-details-actions">
