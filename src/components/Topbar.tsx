@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import Icon from './Icon'
+import ProductStatusBadge from './ProductStatusBadge'
 import { useBusiness } from '../hooks/useBusiness'
 import { useProducts } from '../hooks/useProducts'
 import { useSubscription } from '../hooks/useSubscription'
@@ -124,7 +125,7 @@ function Topbar({ onToggleMobileNav }: TopbarProps) {
               {searchResults.length ? searchResults.map((product) => (
                 <button type="button" key={product.id} onClick={() => openProduct(product.id)}>
                   <span><strong>{product.name}</strong><small>{product.code} · {product.brand || 'No brand'}</small></span>
-                  <span className={`status-badge status-${product.status.toLowerCase().replace(/ /g, '-')}`}>{product.status}</span>
+                  <ProductStatusBadge product={product} />
                 </button>
               )) : (
                 <div className="global-search-empty-v2">No matching products.</div>
