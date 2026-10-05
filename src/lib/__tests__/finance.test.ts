@@ -59,6 +59,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     labels: [],
     customFields: {},
     status: 'Unlisted',
+    customStatusId: null,
     marketplaces: [],
     listingPrice: 0,
     listingDate: null,
