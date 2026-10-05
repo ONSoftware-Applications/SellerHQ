@@ -166,6 +166,7 @@ function App() {
                 </ProductProvider>
               </TeamProvider>
             </SubscriptionProvider>
+            </CustomStatusProvider>
           </BusinessProvider>
         </SettingsProvider>
       </AuthProvider>
