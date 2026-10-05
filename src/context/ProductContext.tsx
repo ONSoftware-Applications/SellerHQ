@@ -12,6 +12,10 @@ import { useSubscription } from '../hooks/useSubscription'
 import { getPlan } from '../lib/plans'
 import { logAudit } from '../lib/audit'
 import { ProductContext } from '../hooks/useProducts'
+import {
+  customStatusDatabaseValue,
+  customStatusIdFromDatabaseValue,
+} from '../lib/productStatus'
 
 import type {
   Marketplace,
@@ -90,6 +94,7 @@ function databaseToProduct(row: ProductRow): Product {
     customFields: (row.custom_fields as Record<string, string> | null) ?? {},
 
     status: databaseStatusToProductStatus(row.status ?? ''),
+    customStatusId: customStatusIdFromDatabaseValue(row.status ?? ''),
 
     marketplaces: (row.marketplaces ?? []) as Marketplace[],
     listingPrice: Number(row.listing_price ?? 0),
@@ -130,6 +135,10 @@ function databaseToProduct(row: ProductRow): Product {
 function databaseStatusToProductStatus(
   status: string,
 ): ProductStatus {
+  if (customStatusIdFromDatabaseValue(status)) {
+    return 'Custom'
+  }
+
   switch (status) {
     case 'listed':
       return 'Listed'
@@ -173,7 +182,12 @@ function databaseStatusToProductStatus(
 
 function productStatusToDatabaseStatus(
   status: ProductStatus,
+  customStatusId: string | null,
 ): string {
+  if (status === 'Custom' && customStatusId) {
+    return customStatusDatabaseValue(customStatusId)
+  }
+
   switch (status) {
     case 'Listed':
       return 'listed'
@@ -208,6 +222,7 @@ function productStatusToDatabaseStatus(
     case 'Draft':
       return 'draft'
 
+    case 'Custom':
     case 'Unlisted':
     default:
       return 'unlisted'
@@ -248,7 +263,10 @@ function productToDatabase(product: Product) {
     labels: product.labels || [],
     custom_fields: product.customFields,
 
-    status: productStatusToDatabaseStatus(product.status),
+    status: productStatusToDatabaseStatus(
+      product.status,
+      product.customStatusId,
+    ),
 
     marketplaces: product.marketplaces,
     listing_price: product.listingPrice,
