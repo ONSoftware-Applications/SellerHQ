@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import WorkspaceShell, { type WorkspaceTab } from '../components/WorkspaceShell'
+import ProductStatusBadge from '../components/ProductStatusBadge'
 import { useCurrency } from '../hooks/useCurrency'
 import { useProducts } from '../hooks/useProducts'
 import { useSettings } from '../hooks/useSettings'
@@ -161,9 +162,7 @@ function InventoryStatusView({
                   <td data-label="Cost">{money(product.purchasePrice + product.additionalCosts)}</td>
                   <td data-label="Price">{money(product.listingPrice || 0)}</td>
                   <td data-label="Status">
-                    <span className={`status-badge status-${product.status.toLowerCase().replace(/ /g, '-')}`}>
-                      {product.status}
-                    </span>
+                    <ProductStatusBadge product={product} />
                   </td>
                   <td>
                     <button type="button" className="row-action-link" onClick={() => navigate(`/products/${product.id}`)}>
