@@ -1,0 +1,176 @@
+.custom-status-settings-v2 {
+  margin-top: 16px;
+}
+
+.custom-status-settings-body-v2 {
+  padding: 16px;
+}
+
+.custom-status-create-v2 {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(140px, 190px) auto;
+  gap: 10px;
+  align-items: end;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--shq-border);
+}
+
+.custom-status-create-v2 label,
+.custom-status-edit-fields-v2 {
+  min-width: 0;
+}
+
+.custom-status-create-v2 label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.custom-status-create-v2 label > span {
+  color: var(--shq-ink-muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.custom-status-create-v2 input,
+.custom-status-create-v2 select,
+.custom-status-edit-fields-v2 input,
+.custom-status-edit-fields-v2 select {
+  width: 100%;
+  min-height: 39px;
+  padding: 9px 10px;
+  border: 1px solid var(--shq-border);
+  border-radius: 8px;
+  outline: 0;
+  background: var(--shq-surface);
+  color: var(--shq-ink);
+  font: inherit;
+  font-size: 12px;
+}
+
+.custom-status-create-v2 input:focus,
+.custom-status-create-v2 select:focus,
+.custom-status-edit-fields-v2 input:focus,
+.custom-status-edit-fields-v2 select:focus {
+  border-color: var(--shq-border-strong);
+  box-shadow: 0 0 0 3px rgb(245 158 11 / 7%);
+}
+
+.custom-status-list-v2 {
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+}
+
+.custom-status-row-v2 {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--shq-border);
+}
+
+.custom-status-row-v2:last-child {
+  border-bottom: 0;
+}
+
+.custom-status-row-main-v2 {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.custom-status-usage-v2 {
+  color: var(--shq-ink-muted);
+  font-size: 10px;
+}
+
+.custom-status-actions-v2 {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+}
+
+.custom-status-actions-v2 .primary-button,
+.custom-status-actions-v2 .secondary-button {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 10px;
+}
+
+.custom-status-delete-v2 {
+  color: var(--shq-danger) !important;
+}
+
+.custom-status-edit-fields-v2 {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(180px, 1fr) minmax(120px, 180px);
+  gap: 8px;
+}
+
+.custom-status-badge {
+  border-style: solid;
+  border-width: 1px;
+}
+
+.custom-status-inline-create-v2 {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(120px, 160px) auto;
+  gap: 8px;
+  align-items: end;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--shq-border);
+  border-radius: 9px;
+  background: var(--shq-surface-subtle);
+}
+
+.custom-status-inline-create-v2 label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.custom-status-inline-create-v2 label > span {
+  color: var(--shq-ink-muted);
+  font-size: 9px;
+}
+
+.custom-status-inline-create-v2 input,
+.custom-status-inline-create-v2 select {
+  width: 100%;
+  min-height: 37px;
+  padding: 8px 9px;
+  border: 1px solid var(--shq-border);
+  border-radius: 8px;
+  background: var(--shq-surface);
+  color: var(--shq-ink);
+  font: inherit;
+  font-size: 11px;
+}
+
+@media (max-width: 760px) {
+  .custom-status-create-v2,
+  .custom-status-inline-create-v2 {
+    grid-template-columns: 1fr;
+  }
+
+  .custom-status-row-v2 {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .custom-status-actions-v2 {
+    width: 100%;
+  }
+
+  .custom-status-edit-fields-v2 {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+}
