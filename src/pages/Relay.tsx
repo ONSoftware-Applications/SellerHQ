@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase'
 import { useBusiness } from '../hooks/useBusiness'
 import { useProducts } from '../hooks/useProducts'
 import { useQrRelay } from '../hooks/useQrRelay'
+import { useCustomStatuses } from '../hooks/useCustomStatuses'
+import { getProductStatusLabel } from '../lib/productStatus'
 
 type ScanEntry = {
   id: string
@@ -37,6 +39,7 @@ function Relay() {
   const { currentBusiness } = useBusiness()
   const { getProduct } = useProducts()
   const { listening, error: relayError, listen, stop } = useQrRelay()
+  const { statuses: customStatuses } = useCustomStatuses()
 
   const [scans, setScans] = useState<ScanEntry[]>([])
   const [clearing, setClearing] = useState(false)
@@ -235,7 +238,7 @@ function Relay() {
                           ? [
                               product.code,
                               product.sku,
-                              product.status,
+                              getProductStatusLabel(product, customStatuses),
                               product.storageLocation,
                             ].filter(Boolean).join(' · ')
                           : 'External or unrecognised QR code'}
