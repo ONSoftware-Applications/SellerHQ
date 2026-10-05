@@ -7,8 +7,10 @@ import { useCurrency } from '../hooks/useCurrency'
 import { useToast } from '../hooks/useToast'
 import { useSettings } from '../hooks/useSettings'
 import { useSubscription } from '../hooks/useSubscription'
+import { useCustomStatuses } from '../hooks/useCustomStatuses'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FilterBar } from '../components/FilterBar'
+import ProductStatusBadge from '../components/ProductStatusBadge'
 import type {
   Product,
   ProductCondition,
@@ -27,6 +29,7 @@ import {
 import { generateQrDataUrl, getProductQrValue } from '../lib/qr'
 import { escapeHtml } from '../lib/sanitize'
 import { printBrandingMarkup, PRINT_BRAND_CSS, qrLogoUrl } from '../lib/branding'
+import { getProductStatusLabel } from '../lib/productStatus'
 import {
   parseInventoryImportCsv,
   todayIsoDate,
@@ -47,6 +50,7 @@ type SortKey =
   | 'profit'
 
 type MarketplaceFilter = Marketplace | 'All'
+type StatusFilter = ProductStatus | `custom:${string}` | 'All'
 
 type DraftEditorState = {
   title: string
@@ -68,6 +72,7 @@ const statusOrder: ProductStatus[] = [
   'Removed',
   'Returned',
   'Archived',
+  'Custom',
 ]
 
 const sortLabels: Record<SortKey, string> = {
@@ -107,6 +112,7 @@ function Inventory() {
   const { showToast } = useToast()
   const { settings } = useSettings()
   const { plan, productLimit } = useSubscription()
+  const { statuses: customStatuses } = useCustomStatuses()
 
   const shippingFlowEnabled = settings.features.shippingFlowEnabled
 
@@ -122,7 +128,7 @@ function Inventory() {
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] =
-    useState<ProductStatus | 'All'>('All')
+    useState<StatusFilter>('All')
   const [marketplaceFilter, setMarketplaceFilter] =
     useState<MarketplaceFilter>('All')
   const [conditionFilter, setConditionFilter] =
@@ -184,7 +190,7 @@ function Inventory() {
       if (saved) {
         const parsed = JSON.parse(saved) as Partial<{
           search: string
-          statusFilter: ProductStatus | 'All'
+          statusFilter: StatusFilter
           marketplaceFilter: MarketplaceFilter
           conditionFilter: ProductCondition | 'All'
           sortKey: SortKey
@@ -195,12 +201,15 @@ function Inventory() {
           setSearch(parsed.search)
         }
 
-if (
-          parsed.statusFilter === 'All' ||
-          (typeof parsed.statusFilter === 'string' &&
-            statusOrder.includes(parsed.statusFilter as ProductStatus))
-        ) {
-          setStatusFilter(parsed.statusFilter as ProductStatus | 'All')
+        if (typeof parsed.statusFilter === 'string') {
+          const savedStatus = parsed.statusFilter as StatusFilter
+          if (
+            savedStatus === 'All'
+            || statusOrder.includes(savedStatus as ProductStatus)
+            || savedStatus.startsWith('custom:')
+          ) {
+            setStatusFilter(savedStatus)
+          }
         }
 
         if (
@@ -309,8 +318,13 @@ if (
           .includes(query)
 
       const statusMatch =
-        statusFilter === 'All' ||
-        product.status === statusFilter
+        statusFilter === 'All'
+        || (
+          statusFilter.startsWith('custom:')
+            ? product.status === 'Custom'
+              && product.customStatusId === statusFilter.slice('custom:'.length)
+            : product.status === statusFilter
+        )
 
       const marketplaceMatch =
         marketplaceFilter === 'All' ||
@@ -341,9 +355,14 @@ if (
           comparison = left.name.localeCompare(right.name)
           break
         case 'status':
-          comparison =
-            statusOrder.indexOf(left.status) -
-            statusOrder.indexOf(right.status)
+          if (left.status === 'Custom' || right.status === 'Custom') {
+            comparison = getProductStatusLabel(left, customStatuses)
+              .localeCompare(getProductStatusLabel(right, customStatuses))
+          } else {
+            comparison =
+              statusOrder.indexOf(left.status) -
+              statusOrder.indexOf(right.status)
+          }
           break
         case 'purchaseDate':
           comparison = dateValue(left.purchaseDate) - dateValue(right.purchaseDate)
@@ -380,7 +399,7 @@ if (
     })
 
     return sorted
-  }, [filteredProducts, sortDirection, sortKey])
+  }, [filteredProducts, sortDirection, sortKey, customStatuses])
 
   const totalPages = Math.max(1, Math.ceil(sortedProducts.length / pageSize))
 
@@ -683,7 +702,7 @@ if (
         product.storageLocation,
         product.barcode ?? '',
         (product.labels || []).join('; '),
-        product.status,
+        getProductStatusLabel(product, customStatuses),
         marketplacesText,
         product.listingPrice.toFixed(2),
         product.listingDate ?? '',
@@ -1232,9 +1251,7 @@ const sheetsMarkup = sheets.join('')
         <select
           value={statusFilter}
           onChange={(event) =>
-            setStatusFilter(
-              event.target.value as ProductStatus | 'All',
-            )
+            setStatusFilter(event.target.value as StatusFilter)
           }
         >
           <option value="All">All statuses</option>
@@ -1254,6 +1271,18 @@ const sheetsMarkup = sheets.join('')
           <option value="Removed">Removed</option>
           <option value="Returned">Returned</option>
           <option value="Archived">Archived</option>
+          {customStatuses.length > 0 && (
+            <optgroup label="Custom statuses">
+              {customStatuses.map((customStatus) => (
+                <option
+                  key={customStatus.id}
+                  value={`custom:${customStatus.id}`}
+                >
+                  {customStatus.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
 
         <select
@@ -1458,13 +1487,7 @@ const sheetsMarkup = sheets.join('')
                    <td data-label="Storage">{product.storageLocation || '-'}</td>
 
                    <td data-label="Status">
-                    <span
-                      className={`status-badge status-${product.status
-                        .toLowerCase()
-                        .replace(/ /g, '-')}`}
-                    >
-                      {product.status}
-                    </span>
+                    <ProductStatusBadge product={product} />
                   </td>
 
                   <td data-label="Marketplaces">
