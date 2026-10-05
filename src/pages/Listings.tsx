@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useProducts } from '../hooks/useProducts'
 import { useCurrency } from '../hooks/useCurrency'
 import { FilterBar } from '../components/FilterBar'
+import ProductStatusBadge from '../components/ProductStatusBadge'
 import { usePagination, PaginationControls } from '../components/Pagination'
 
 const statusOrder: string[] = [
@@ -227,9 +228,7 @@ function Listings() {
                   <td data-label="Brand">{product.brand || '-'}</td>
 
                   <td data-label="Status">
-                    <span className={`status-badge status-${product.status.toLowerCase().replace(/ /g, '-')}`}>
-                      {product.status}
-                    </span>
+                    <ProductStatusBadge product={product} />
                   </td>
 
                   <td data-label="Marketplaces">
