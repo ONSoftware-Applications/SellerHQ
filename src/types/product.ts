@@ -11,6 +11,7 @@ export type ProductStatus =
   | 'Returned'
   | 'Archived'
   | 'Draft'
+  | 'Custom'
 
 export type Marketplace =
   | 'Website'
@@ -57,6 +58,7 @@ export type Product = {
   customFields: Record<string, string>
 
   status: ProductStatus
+  customStatusId: string | null
 
   marketplaces: Marketplace[]
   listingPrice: number
