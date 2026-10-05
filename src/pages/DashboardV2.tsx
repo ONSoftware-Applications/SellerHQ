@@ -5,8 +5,10 @@ import Icon from '../components/Icon'
 import LoadingState from '../components/LoadingState'
 import { useBusiness } from '../hooks/useBusiness'
 import { useCurrency } from '../hooks/useCurrency'
+import { getProductStatusLabel } from '../lib/productStatus'
 import { useExpenses } from '../hooks/useExpenses'
 import { useProducts } from '../hooks/useProducts'
+import { useCustomStatuses } from '../hooks/useCustomStatuses'
 import { useSubscription } from '../hooks/useSubscription'
 import {
   type Period,
@@ -41,6 +43,7 @@ function DashboardV2() {
   const { expenses } = useExpenses()
   const { canUse } = useSubscription()
   const { money } = useCurrency()
+  const { statuses: customStatuses } = useCustomStatuses()
   const [period, setPeriod] = useState<Period>('month')
 
   const stats = useMemo(() => {
@@ -176,7 +179,7 @@ function DashboardV2() {
 
         <article className="panel-v2"><header className="panel-v2-header"><div><h3>Marketplace performance</h3><p>Revenue by sales channel</p></div></header>{marketplaces.length ? <div className="compact-list-v2">{marketplaces.map((item) => <div className="compact-row-v2" key={item.marketplace}><div className="compact-row-v2-main"><span className="compact-row-v2-title">{item.marketplace}</span><span className="compact-row-v2-subtitle">{item.count} sale{item.count === 1 ? '' : 's'} · {money(item.profit)} profit</span></div><div><span className="compact-row-v2-value">{money(item.revenue)}</span><div className="marketplace-bar-v2"><span style={{ width: `${item.revenue / marketplaceMax * 100}%` }} /></div></div></div>)}</div> : <div className="action-empty-v2"><strong>No marketplace sales yet</strong><span>Channel performance will appear here as sales are recorded.</span></div>}</article>
 
-        <article className="panel-v2"><header className="panel-v2-header"><div><h3>Recent activity</h3><p>Latest product movement</p></div></header>{recent.length ? <div className="compact-list-v2">{recent.map((product) => <button type="button" className="compact-row-v2 compact-row-v2-button" key={product.id} onClick={() => navigate(`/products/${product.id}`)}><div className="compact-row-v2-main"><span className="compact-row-v2-title">{product.name}</span><span className="compact-row-v2-subtitle">{product.status}</span></div><span className="compact-row-v2-value">{product.salePrice !== null ? money(product.salePrice) : product.listingPrice !== null ? money(product.listingPrice) : '—'}</span></button>)}</div> : <div className="action-empty-v2"><strong>No activity yet</strong><span>Add your first product to start building your business timeline.</span></div>}</article>
+        <article className="panel-v2"><header className="panel-v2-header"><div><h3>Recent activity</h3><p>Latest product movement</p></div></header>{recent.length ? <div className="compact-list-v2">{recent.map((product) => <button type="button" className="compact-row-v2 compact-row-v2-button" key={product.id} onClick={() => navigate(`/products/${product.id}`)}><div className="compact-row-v2-main"><span className="compact-row-v2-title">{product.name}</span><span className="compact-row-v2-subtitle">{getProductStatusLabel(product, customStatuses)}</span></div><span className="compact-row-v2-value">{product.salePrice !== null ? money(product.salePrice) : product.listingPrice !== null ? money(product.listingPrice) : '—'}</span></button>)}</div> : <div className="action-empty-v2"><strong>No activity yet</strong><span>Add your first product to start building your business timeline.</span></div>}</article>
       </section>
     </div>
   )
