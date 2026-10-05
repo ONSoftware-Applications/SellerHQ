@@ -10,6 +10,10 @@ import { uploadProductPhoto } from '../lib/storage'
 import { generateProductCode } from '../lib/productDraft'
 import { uuid } from '../utils/uuid'
 import { useSubscription } from '../hooks/useSubscription'
+import { useBusiness } from '../hooks/useBusiness'
+import { useCustomStatuses } from '../hooks/useCustomStatuses'
+import { CUSTOM_STATUS_COLOURS } from '../lib/productStatus'
+import type { CustomStatusColour } from '../types/customStatus'
 
 const marketplaceOptions: Marketplace[] = [
   'eBay',
@@ -60,6 +64,11 @@ export function ProductEditorModal({
   onSubmit,
 }: ProductEditorModalProps) {
   const { canUse } = useSubscription()
+  const { currentBusiness } = useBusiness()
+  const { statuses: customStatuses, createStatus } = useCustomStatuses()
+  const canManageCustomStatuses =
+    currentBusiness?.memberRole === 'owner'
+    || currentBusiness?.memberRole === 'admin'
 
   const [code, setCode] = useState(initialProduct.code)
   const [sku, setSku] = useState(initialProduct.sku)
@@ -139,6 +148,14 @@ export function ProductEditorModal({
   }, [cameraStream])
 
   const [status, setStatus] = useState(initialProduct.status)
+  const [customStatusId, setCustomStatusId] = useState(
+    initialProduct.customStatusId,
+  )
+  const [showCustomStatusCreator, setShowCustomStatusCreator] = useState(false)
+  const [newCustomStatusName, setNewCustomStatusName] = useState('')
+  const [newCustomStatusColour, setNewCustomStatusColour] =
+    useState<CustomStatusColour>('amber')
+  const [creatingCustomStatus, setCreatingCustomStatus] = useState(false)
   const [selectedMarketplaces, setSelectedMarketplaces] =
     useState<Marketplace[]>(initialProduct.marketplaces)
   const [listingPrice, setListingPrice] = useState(
@@ -174,11 +191,52 @@ export function ProductEditorModal({
     )
   }
 
-  function handleStatusChange(nextStatus: ProductStatus) {
+  function handleStatusSelection(value: string) {
+    if (value === '__create_custom__') {
+      setShowCustomStatusCreator(true)
+      return
+    }
+
+    if (value.startsWith('custom:')) {
+      setStatus('Custom')
+      setCustomStatusId(value.slice('custom:'.length))
+      return
+    }
+
+    const nextStatus = value as ProductStatus
     setStatus(nextStatus)
+    setCustomStatusId(null)
 
     if (nextStatus === 'Listed' && !listingDate) {
       setListingDate(new Date().toISOString().split('T')[0])
+    }
+  }
+
+  async function handleCreateCustomStatus() {
+    if (!newCustomStatusName.trim() || creatingCustomStatus) return
+
+    setCreatingCustomStatus(true)
+    setError('')
+
+    try {
+      const created = await createStatus(
+        newCustomStatusName,
+        newCustomStatusColour,
+      )
+      setStatus('Custom')
+      setCustomStatusId(created.id)
+      setNewCustomStatusName('')
+      setNewCustomStatusColour('amber')
+      setShowCustomStatusCreator(false)
+    } catch (err) {
+      console.error(err)
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'The custom status could not be created.',
+      )
+    } finally {
+      setCreatingCustomStatus(false)
     }
   }
 
@@ -256,6 +314,7 @@ export function ProductEditorModal({
             .map((field) => [field.key.trim(), field.value]),
         ),
         status,
+        customStatusId: status === 'Custom' ? customStatusId : null,
         marketplaces: selectedMarketplaces,
         listingPrice: resolvedListingPrice,
         listingDate: listingDate || null,
@@ -862,21 +921,84 @@ export function ProductEditorModal({
                 Product status
 
                 <select
-                  value={status}
+                  value={
+                    status === 'Custom' && customStatusId
+                      ? `custom:${customStatusId}`
+                      : status
+                  }
                   onChange={(event) =>
-                    handleStatusChange(
-                      event.target.value as ProductStatus,
-                    )
+                    handleStatusSelection(event.target.value)
                   }
                   disabled={submitting}
                 >
-                  {statusOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
+                  <optgroup label="SellerHQ statuses">
+                    {statusOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {customStatuses.length > 0 && (
+                    <optgroup label="Custom statuses">
+                      {customStatuses.map((customStatus) => (
+                        <option
+                          key={customStatus.id}
+                          value={`custom:${customStatus.id}`}
+                        >
+                          {customStatus.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {canManageCustomStatuses && (
+                    <option value="__create_custom__">
+                      + Create new custom status
                     </option>
-                  ))}
+                  )}
                 </select>
               </label>
+
+              {showCustomStatusCreator && canManageCustomStatuses && (
+                <div className="custom-status-inline-create-v2">
+                  <label>
+                    <span>Status name</span>
+                    <input
+                      type="text"
+                      maxLength={40}
+                      value={newCustomStatusName}
+                      placeholder="e.g. Mystery Bag"
+                      onChange={(event) =>
+                        setNewCustomStatusName(event.target.value)
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>Colour</span>
+                    <select
+                      value={newCustomStatusColour}
+                      onChange={(event) =>
+                        setNewCustomStatusColour(
+                          event.target.value as CustomStatusColour,
+                        )
+                      }
+                    >
+                      {CUSTOM_STATUS_COLOURS.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={() => void handleCreateCustomStatus()}
+                    disabled={creatingCustomStatus || !newCustomStatusName.trim()}
+                  >
+                    {creatingCustomStatus ? 'Creating…' : 'Create'}
+                  </button>
+                </div>
+              )}
             </section>
 
               <section className="inventory-modal-section inventory-modal-full">
