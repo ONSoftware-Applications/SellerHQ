@@ -20,9 +20,11 @@ import './styles/polish-v2.css'
 import './styles/forecast-v2.css'
 import './styles/workspace-spacing-polish-v2.css'
 import './styles/relay-v2.css'
+import './styles/custom-statuses.css'
 
 import { AuthProvider } from './context/AuthContext'
 import { BusinessProvider } from './context/BusinessContext'
+import { CustomStatusProvider } from './context/CustomStatusContext'
 import { ProductProvider } from './context/ProductContext'
 import { SettingsProvider } from './context/SettingsContext'
 import { SubscriptionProvider } from './context/SubscriptionContext'
@@ -81,7 +83,8 @@ function App() {
       <AuthProvider>
         <SettingsProvider>
           <BusinessProvider>
-            <SubscriptionProvider>
+            <CustomStatusProvider>
+              <SubscriptionProvider>
               <TeamProvider>
                 <ProductProvider>
                   <ExpenseProvider>
