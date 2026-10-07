@@ -17,6 +17,7 @@ export type PlanFeature =
   | 'lowStock'
   | 'backupExport'
   | 'customProductFields'
+  | 'customStatuses'
   | 'accountingExport'
   | 'auditLog'
   | 'customization'
@@ -48,6 +49,7 @@ const PRO_FEATURES: PlanFeature[] = [
   'lowStock',
   'backupExport',
   'customProductFields',
+  'customStatuses',
 ]
 
 const BUSINESS_FEATURES: PlanFeature[] = [
@@ -161,6 +163,7 @@ export const PLANS: Plan[] = [
     available: [
       'Everything in Growing',
       'Up to 5,000 products & 5 businesses',
+      'Custom inventory statuses',
       'Advanced forecasts & scenario planning',
       'Full UK tax (quarterly deadlines, filing)',
       'Advanced reports & stock ageing',
@@ -184,6 +187,7 @@ export const PLANS: Plan[] = [
       'Everything in Pro',
       'Unlimited products & businesses',
       '5 team seats',
+      'Custom inventory statuses',
       'Business customization (logo & branding)',
       'Full audit log',
       'Accounting export',
