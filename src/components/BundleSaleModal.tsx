@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 
 import { useProducts } from '../hooks/useProducts'
+import { useSales } from '../hooks/useSales'
 import { useCurrency } from '../hooks/useCurrency'
 import { useSettings } from '../hooks/useSettings'
 import { useSubscription } from '../hooks/useSubscription'
@@ -36,7 +37,8 @@ function todayValue() {
 }
 
 export function BundleSaleModal({ onClose, onSaved }: Props) {
-  const { products, updateProduct } = useProducts()
+  const { products } = useProducts()
+  const { recordSale } = useSales()
   const { money } = useCurrency()
   const { settings } = useSettings()
   const { canUse } = useSubscription()
@@ -68,8 +70,9 @@ export function BundleSaleModal({ onClose, onSaved }: Props) {
     const addedIds = new Set(items.map((item) => item.product.id))
     return products.filter(
       (p) =>
-        !['Sold', 'In Shipping', 'Returned', 'Archived'].includes(p.status) &&
-        !addedIds.has(p.id),
+        p.quantity > 0
+        && !['Sold', 'In Shipping', 'Returned', 'Archived'].includes(p.status)
+        && !addedIds.has(p.id),
     )
   }, [products, items])
 
@@ -160,9 +163,11 @@ export function BundleSaleModal({ onClose, onSaved }: Props) {
       .map((entry) => {
         const product = productMap.get(entry.productId)
         if (!product) return null
-        const unavailable = ['Sold', 'In Shipping', 'Returned', 'Archived'].includes(
-          product.status,
-        )
+        const unavailable =
+          product.quantity <= 0
+          || ['Sold', 'In Shipping', 'Returned', 'Archived'].includes(
+            product.status,
+          )
         return unavailable
           ? null
           : { product, salePrice: entry.salePrice }
@@ -212,27 +217,19 @@ export function BundleSaleModal({ onClose, onSaved }: Props) {
     try {
       for (const item of items) {
         const price = Number(item.salePrice)
-        const itemProfit = price - item.product.purchasePrice - item.product.additionalCosts - feesPerItem
-        const remainingQuantity = Math.max(
-          0,
-          (item.product.quantity || 1) - 1,
-        )
 
-        await updateProduct({
-          ...item.product,
-          quantity: remainingQuantity,
-          status:
-            remainingQuantity > 0 ? item.product.status : saleStatus,
+        await recordSale({
+          product: item.product,
+          quantity: 1,
           salePrice: price,
           saleDate: draft.saleDate || todayValue(),
           shippingDate: draft.shippingDate || null,
           saleMarketplace: draft.saleMarketplace || null,
-          shippingCost,
-          platformFees,
-          otherFees,
-          fees: feesPerItem,
-          profit: itemProfit,
-          updatedAt: new Date().toISOString(),
+          shippingCost: feesPerItem > 0 ? shippingCost / itemCount : 0,
+          platformFees: feesPerItem > 0 ? platformFees / itemCount : 0,
+          otherFees: feesPerItem > 0 ? otherFees / itemCount : 0,
+          status: saleStatus,
+          source: 'bundle',
         })
       }
       onSaved()
