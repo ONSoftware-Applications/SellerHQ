@@ -83,9 +83,9 @@ function App() {
       <AuthProvider>
         <SettingsProvider>
           <BusinessProvider>
-            <CustomStatusProvider>
-              <SubscriptionProvider>
-              <TeamProvider>
+            <SubscriptionProvider>
+              <CustomStatusProvider>
+                <TeamProvider>
                 <ProductProvider>
                   <ExpenseProvider>
                     <ReceiptProvider>
@@ -164,9 +164,9 @@ function App() {
                     </ReceiptProvider>
                   </ExpenseProvider>
                 </ProductProvider>
-              </TeamProvider>
+                </TeamProvider>
+              </CustomStatusProvider>
             </SubscriptionProvider>
-            </CustomStatusProvider>
           </BusinessProvider>
         </SettingsProvider>
       </AuthProvider>
