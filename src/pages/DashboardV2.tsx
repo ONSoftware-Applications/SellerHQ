@@ -11,6 +11,7 @@ import { useProducts } from '../hooks/useProducts'
 import { useSales } from '../hooks/useSales'
 import { useCustomStatuses } from '../hooks/useCustomStatuses'
 import { useSubscription } from '../hooks/useSubscription'
+import { useSettings } from '../hooks/useSettings'
 import {
   type Period,
   expenseTotal,
@@ -43,6 +44,7 @@ function DashboardV2() {
   const { currentBusiness } = useBusiness()
   const { expenses } = useExpenses()
   const { canUse } = useSubscription()
+  const { settings } = useSettings()
   const { money } = useCurrency()
   const { statuses: customStatuses } = useCustomStatuses()
   const [period, setPeriod] = useState<Period>('month')
@@ -67,6 +69,11 @@ function DashboardV2() {
     )
     const ageing = stockAgeingBuckets(products)
     const aged = ageing.find((bucket) => bucket.bucket === '90+ days')
+    const lowStock = active.filter(
+      (product) =>
+        product.reorderLevel > 0
+        && product.quantity <= product.reorderLevel,
+    )
 
     return {
       range,
@@ -78,13 +85,16 @@ function DashboardV2() {
         (sum, sale) => sum + sale.quantity,
         0,
       ),
-      averageSale: sold.length ? rev / sold.length : 0,
+      averageSale: sold.reduce((sum, sale) => sum + sale.quantity, 0)
+        ? rev / sold.reduce((sum, sale) => sum + sale.quantity, 0)
+        : 0,
       margin: profitMargin(rev, gross),
       active,
       listed,
       unlisted,
       awaiting,
       aged,
+      lowStock,
       capital: inventoryCapitalTiedUp(products),
       listingRate: active.length ? (listed.length / active.length) * 100 : 0,
       sellThrough: sellThroughRate(products, sales),
@@ -138,12 +148,25 @@ function DashboardV2() {
   const actions = useMemo(() => {
     const items: { id: string; title: string; copy: string; icon: 'truck' | 'package' | 'clock' | 'trend-down' | 'wallet'; path: string }[] = []
     if (stats.awaiting.length) items.push({ id: 'ship', title: `${stats.awaiting.length} order${stats.awaiting.length === 1 ? '' : 's'} awaiting shipment`, copy: 'Move sold stock through dispatch so orders do not stall.', icon: 'truck', path: '/orders?view=awaiting' })
+    if (
+      canUse('lowStock')
+      && settings.notifications.lowStockAlerts
+      && stats.lowStock.length
+    ) {
+      items.push({
+        id: 'low-stock',
+        title: `${stats.lowStock.length} product${stats.lowStock.length === 1 ? '' : 's'} at or below reorder level`,
+        copy: 'Stock has reached the reorder threshold you set.',
+        icon: 'package',
+        path: '/inventory',
+      })
+    }
     if (stats.unlisted.length) items.push({ id: 'list', title: `${stats.unlisted.length} product${stats.unlisted.length === 1 ? '' : 's'} not listed`, copy: 'These products are holding capital but are not currently available to buyers.', icon: 'package', path: '/inventory?view=unlisted' })
     if ((stats.aged?.count ?? 0) > 0) items.push({ id: 'age', title: `${stats.aged?.count ?? 0} product${stats.aged?.count === 1 ? '' : 's'} held for 90+ days`, copy: `${money(stats.aged?.value ?? 0)} of purchase capital is tied up in ageing stock.`, icon: 'clock', path: canUse('reports') ? '/analytics?view=inventory' : '/inventory' })
     if (stats.soldCount > 3 && stats.margin < 15) items.push({ id: 'margin', title: `Margin is ${stats.margin.toFixed(1)}%`, copy: 'Pricing or sourcing costs may need attention.', icon: 'trend-down', path: '/inventory?view=pricing' })
     if (stats.soldCount > 0 && stats.expense > stats.gross) items.push({ id: 'expense', title: 'Expenses exceed gross profit', copy: `${money(stats.expense)} of expenses have overtaken gross profit this period.`, icon: 'wallet', path: '/finance?view=expenses' })
     return items.slice(0, 4)
-  }, [canUse, money, stats])
+  }, [canUse, money, settings.notifications.lowStockAlerts, stats])
 
   if (productsLoading || salesLoading) return <LoadingState label="Loading business overview..." />
 
