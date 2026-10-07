@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 
 import { useProducts } from '../hooks/useProducts'
+import { useSales } from '../hooks/useSales'
 import { useCurrency } from '../hooks/useCurrency'
 import { useSettings } from '../hooks/useSettings'
 import type { Marketplace, Product } from '../types/product'
@@ -25,7 +26,8 @@ function todayValue() {
 }
 
 export function RecordSaleModal({ onClose, onSaved }: Props) {
-  const { products, updateProduct } = useProducts()
+  const { products } = useProducts()
+  const { recordSale } = useSales()
   const { money } = useCurrency()
   const { settings } = useSettings()
 
@@ -51,7 +53,9 @@ export function RecordSaleModal({ onClose, onSaved }: Props) {
 
   const availableProducts = useMemo(() => {
     return products.filter(
-      (p) => !['Sold', 'In Shipping', 'Returned', 'Archived'].includes(p.status),
+      (p) =>
+        p.quantity > 0
+        && !['Sold', 'In Shipping', 'Returned', 'Archived'].includes(p.status),
     )
   }, [products])
 
@@ -113,16 +117,9 @@ export function RecordSaleModal({ onClose, onSaved }: Props) {
     setError('')
 
     try {
-      const remainingQuantity = Math.max(
-        0,
-        (selectedProduct.quantity || 1) - 1,
-      )
-
-      await updateProduct({
-        ...selectedProduct,
-        quantity: remainingQuantity,
-        status:
-          remainingQuantity > 0 ? selectedProduct.status : saleStatus,
+      await recordSale({
+        product: selectedProduct,
+        quantity: 1,
         salePrice,
         saleDate: draft.saleDate || todayValue(),
         shippingDate: draft.shippingDate || null,
@@ -130,9 +127,8 @@ export function RecordSaleModal({ onClose, onSaved }: Props) {
         shippingCost,
         platformFees,
         otherFees,
-        fees: totalFees,
-        profit,
-        updatedAt: new Date().toISOString(),
+        status: saleStatus,
+        source: 'manual',
       })
       onSaved()
     } catch (err) {
