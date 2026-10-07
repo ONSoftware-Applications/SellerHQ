@@ -5,7 +5,7 @@ import Icon from '../components/Icon'
 import WorkspaceShell, { type WorkspaceTab } from '../components/WorkspaceShell'
 import { useCurrency } from '../hooks/useCurrency'
 import { useExpenses } from '../hooks/useExpenses'
-import { useProducts } from '../hooks/useProducts'
+import { useSales } from '../hooks/useSales'
 import { useReceipts } from '../hooks/useReceipts'
 import { useSettings } from '../hooks/useSettings'
 import {
@@ -24,7 +24,7 @@ type FinanceView = 'overview' | 'expenses' | 'receipts' | 'tax'
 function FinanceWorkspace() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const { products } = useProducts()
+  const { sales } = useSales()
   const { expenses } = useExpenses()
   const { receipts } = useReceipts()
   const { settings } = useSettings()
@@ -41,7 +41,10 @@ function FinanceWorkspace() {
     ? requested
     : 'overview'
 
-  const sold = useMemo(() => products.filter((product) => product.status === 'Sold'), [products])
+  const sold = useMemo(
+    () => sales.filter((sale) => !sale.refunded && sale.status !== 'Refunded' && sale.status !== 'Voided'),
+    [sales],
+  )
   const rev = revenue(sold)
   const gross = grossProfit(sold)
   const exp = expenseTotal(expenses)
