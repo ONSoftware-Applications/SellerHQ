@@ -226,7 +226,7 @@ export function CustomStatusProvider({ children }: { children: ReactNode }) {
 
     setStatuses((current) => current.filter((status) => status.id !== id))
     return affected
-  }, [currentBusiness])
+  }, [canUse, currentBusiness])
 
   useEffect(() => {
     void refreshStatuses()
