@@ -69,6 +69,7 @@ export function createDuplicateProductDraft(
     sku: code,
     name: draft.name ? `${draft.name} copy` : 'Copy of product',
     barcode: '',
+    quantity: 1,
     status: 'Unlisted',
     customStatusId: null,
     listingPrice: 0,

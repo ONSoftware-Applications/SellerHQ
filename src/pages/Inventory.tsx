@@ -8,6 +8,7 @@ import { useToast } from '../hooks/useToast'
 import { useSettings } from '../hooks/useSettings'
 import { useSubscription } from '../hooks/useSubscription'
 import { useCustomStatuses } from '../hooks/useCustomStatuses'
+import { useSales } from '../hooks/useSales'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FilterBar } from '../components/FilterBar'
 import ProductStatusBadge from '../components/ProductStatusBadge'
@@ -113,6 +114,7 @@ function Inventory() {
   const { settings } = useSettings()
   const { plan, productLimit, canUse } = useSubscription()
   const { statuses: customStatuses } = useCustomStatuses()
+  const { sales } = useSales()
   const customStatusesEnabled = canUse('customStatuses')
 
   const shippingFlowEnabled = settings.features.shippingFlowEnabled
@@ -466,27 +468,34 @@ function Inventory() {
 
   const awaitingShippingCount = useMemo(
     () =>
-      products.filter(
-        (product) =>
-          product.status === 'Awaiting Shipping',
+      sales.filter(
+        (sale) =>
+          sale.status === 'Awaiting Shipping'
+          && !sale.refunded,
       ).length,
-    [products],
+    [sales],
   )
 
   const inShippingCount = useMemo(
     () =>
-      products.filter(
-        (product) => product.status === 'In Shipping',
+      sales.filter(
+        (sale) =>
+          sale.status === 'In Shipping'
+          && !sale.refunded,
       ).length,
-    [products],
+    [sales],
   )
 
   const soldCount = useMemo(
     () =>
-      products.filter(
-        (product) => product.status === 'Sold',
-      ).length,
-    [products],
+      sales
+        .filter(
+          (sale) =>
+            sale.status === 'Sold'
+            && !sale.refunded,
+        )
+        .reduce((sum, sale) => sum + sale.quantity, 0),
+    [sales],
   )
 
   const filtersActive =

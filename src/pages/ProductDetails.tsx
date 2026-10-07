@@ -209,6 +209,16 @@ const product = productId
       return
     }
 
+    if (
+      nextStatus === 'Awaiting Shipping'
+      || nextStatus === 'In Shipping'
+    ) {
+      setError(
+        'Shipping statuses are managed from Orders & Sales after a sale is recorded.',
+      )
+      return
+    }
+
     setStatusSaving(true)
     setError('')
 
