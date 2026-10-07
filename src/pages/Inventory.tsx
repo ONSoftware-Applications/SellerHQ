@@ -448,9 +448,9 @@ function Inventory() {
     () =>
       products.reduce(
         (total, product) =>
-          total +
-          product.purchasePrice +
-          product.additionalCosts,
+          total
+          + (product.purchasePrice + product.additionalCosts)
+            * Math.max(0, product.quantity),
         0,
       ),
     [products],
@@ -666,6 +666,8 @@ function Inventory() {
       'Purchase Price',
       'Purchase Date',
       'Purchase Source',
+      'Quantity',
+      'Reorder Level',
       'Storage Location',
       'Barcode',
       'Labels',
@@ -700,6 +702,8 @@ function Inventory() {
         product.purchasePrice.toFixed(2),
         product.purchaseDate ?? '',
         product.purchaseSource,
+        product.quantity,
+        product.reorderLevel,
         product.storageLocation,
         product.barcode ?? '',
         (product.labels || []).join('; '),
@@ -912,6 +916,17 @@ const sheetsMarkup = sheets.join('')
   async function applyBulkStatus(
     status: ProductStatus,
   ) {
+    if (
+      status === 'Awaiting Shipping'
+      || status === 'In Shipping'
+      || status === 'Sold'
+    ) {
+      setActionError(
+        'Sale and shipping statuses are created from Orders & Sales so stock quantity and finance stay accurate.',
+      )
+      return
+    }
+
     const today = todayIsoDate()
 
     await updateSelectedProducts(
@@ -922,10 +937,6 @@ const sheetsMarkup = sheets.join('')
           status === 'Listed'
             ? today
             : product.listingDate,
-        saleDate:
-          status === 'Sold' && !product.saleDate
-            ? today
-            : product.saleDate,
         updatedAt: new Date().toISOString(),
       }),
       'The selected products could not be updated. Please try again.',
@@ -1126,29 +1137,6 @@ const sheetsMarkup = sheets.join('')
               onClick={() => applyBulkStatus('Listed')}
             >
               Listed
-            </button>
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() =>
-                applyBulkStatus('Awaiting Shipping')
-              }
-            >
-              Awaiting shipping
-            </button>
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => applyBulkStatus('In Shipping')}
-            >
-              In shipping
-            </button>
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => applyBulkStatus('Sold')}
-            >
-              Sold
             </button>
             <button
               type="button"
@@ -1482,7 +1470,7 @@ const sheetsMarkup = sheets.join('')
                   </td>
 
                    <td data-label="Qty">
-                     {(product.quantity ?? 1) > 1 ? product.quantity : '-'}
+                     {product.quantity === 1 ? '-' : product.quantity}
                    </td>
 
                    <td data-label="Storage">{product.storageLocation || '-'}</td>

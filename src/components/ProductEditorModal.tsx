@@ -210,6 +210,18 @@ export function ProductEditorModal({
     }
 
     const nextStatus = value as ProductStatus
+
+    if (
+      nextStatus === 'Awaiting Shipping'
+      || nextStatus === 'In Shipping'
+      || nextStatus === 'Sold'
+    ) {
+      setError(
+        'Record sales from Orders & Sales so quantity, fulfilment and finance stay in sync.',
+      )
+      return
+    }
+
     setStatus(nextStatus)
     setCustomStatusId(null)
 

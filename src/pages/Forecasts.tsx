@@ -3,9 +3,9 @@ import { useMemo, useState } from 'react'
 import Icon from '../components/Icon'
 import { useCurrency } from '../hooks/useCurrency'
 import { useExpenses } from '../hooks/useExpenses'
-import { useProducts } from '../hooks/useProducts'
+import { useSales } from '../hooks/useSales'
 import { useSubscription } from '../hooks/useSubscription'
-import { productSaleDate, taxEstimate } from '../lib/finance'
+import { taxEstimate } from '../lib/finance'
 
 type ForecastPoint = {
   key: string
@@ -17,7 +17,7 @@ type ForecastPoint = {
 }
 
 function Forecasts() {
-  const { products } = useProducts()
+  const { sales } = useSales()
   const { expenses } = useExpenses()
   const { money } = useCurrency()
   const { canUse } = useSubscription()
@@ -28,24 +28,25 @@ function Forecasts() {
     const now = new Date()
     return Array.from({ length: historyMonths }, (_, index) => {
       const point = new Date(now.getFullYear(), now.getMonth() - historyMonths + 1 + index, 1)
-      const sold = products.filter((product) => {
-        if (product.status !== 'Sold' || product.salePrice === null) return false
-        const raw = productSaleDate(product)
-        if (!raw) return false
-        const date = new Date(raw)
-        return date.getFullYear() === point.getFullYear() && date.getMonth() === point.getMonth()
+      const sold = sales.filter((sale) => {
+        if (sale.refunded || sale.status === 'Refunded' || sale.status === 'Voided') {
+          return false
+        }
+        const date = new Date(sale.saleDate)
+        return date.getFullYear() === point.getFullYear()
+          && date.getMonth() === point.getMonth()
       })
 
       return {
         key: `${point.getFullYear()}-${point.getMonth()}`,
         label: point.toLocaleString('en-GB', { month: 'short' }),
-        revenue: sold.reduce((sum, product) => sum + (product.salePrice || 0), 0),
-        grossProfit: sold.reduce((sum, product) => sum + (product.profit || 0), 0),
-        units: sold.length,
+        revenue: sold.reduce((sum, sale) => sum + sale.salePrice, 0),
+        grossProfit: sold.reduce((sum, sale) => sum + sale.profit, 0),
+        units: sold.reduce((sum, sale) => sum + sale.quantity, 0),
         forecast: false,
       } satisfies ForecastPoint
     })
-  }, [historyMonths, products])
+  }, [historyMonths, sales])
 
   const projection = useMemo(() => {
     const recent = history.slice(-3)
