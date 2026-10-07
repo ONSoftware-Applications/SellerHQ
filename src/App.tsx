@@ -26,6 +26,7 @@ import { AuthProvider } from './context/AuthContext'
 import { BusinessProvider } from './context/BusinessContext'
 import { CustomStatusProvider } from './context/CustomStatusContext'
 import { ProductProvider } from './context/ProductContext'
+import { SaleProvider } from './context/SaleContext'
 import { SettingsProvider } from './context/SettingsContext'
 import { SubscriptionProvider } from './context/SubscriptionContext'
 import { TeamProvider } from './context/TeamContext'
@@ -87,7 +88,8 @@ function App() {
               <CustomStatusProvider>
                 <TeamProvider>
                 <ProductProvider>
-                  <ExpenseProvider>
+                  <SaleProvider>
+                    <ExpenseProvider>
                     <ReceiptProvider>
                       <TillProvider>
                         <ThemeController />
@@ -162,7 +164,8 @@ function App() {
                         </BrowserRouter>
                       </TillProvider>
                     </ReceiptProvider>
-                  </ExpenseProvider>
+                    </ExpenseProvider>
+                  </SaleProvider>
                 </ProductProvider>
                 </TeamProvider>
               </CustomStatusProvider>
