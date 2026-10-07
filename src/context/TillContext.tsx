@@ -11,6 +11,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useBusiness } from '../hooks/useBusiness'
 import { useProducts } from '../hooks/useProducts'
 import { useSettings } from '../hooks/useSettings'
+import { useSales } from '../hooks/useSales'
 import { logAudit } from '../lib/audit'
 import { createBlankProductDraft } from '../lib/productDraft'
 import { TillContext } from '../hooks/useTill'
@@ -126,6 +127,7 @@ export function TillProvider({ children }: { children: ReactNode }) {
   const { products, updateProduct, addProduct, deleteProduct, logEvent } =
     useProducts()
   const { settings } = useSettings()
+  const { sales, ledgerAvailable, recordSale, voidSale } = useSales()
 
   const [session, setSession] = useState<TillSession | null>(null)
   const [transactions, setTransactions] = useState<TillTransaction[]>([])
@@ -370,41 +372,62 @@ export function TillProvider({ children }: { children: ReactNode }) {
         ? 'Awaiting Shipping'
         : 'Sold'
 
-      for (const item of checkout.items) {
-        if (!item.productId) continue
-        const product = products.find((p) => p.id === item.productId)
-        if (!product) continue
+      const recordedSaleIds: string[] = []
 
-        const remainingQuantity = Math.max(0, product.quantity - item.quantity)
-        const profit =
-          (item.unitPrice - product.purchasePrice) * item.quantity -
-          product.additionalCosts
+      try {
+        for (const item of checkout.items) {
+          if (!item.productId) continue
+          const product = products.find((p) => p.id === item.productId)
+          if (!product) continue
 
-        await updateProduct({
-          ...product,
-          quantity: remainingQuantity,
-          status: remainingQuantity > 0 ? product.status : saleStatus,
-          salePrice: item.unitPrice * item.quantity,
-          saleDate: new Date().toISOString().split('T')[0],
-          saleMarketplace: 'In Store',
-          shippingCost: 0,
-          platformFees: 0,
-          otherFees: 0,
-          fees: 0,
-          profit,
-          updatedAt: new Date().toISOString(),
-        })
-
-        void logEvent(
-          product.id,
-          'till_sale',
-          `Sold ${item.quantity} in till`,
-          {
-            unitPrice: item.unitPrice,
+          const saleId = await recordSale({
+            product,
             quantity: item.quantity,
-            transactionId,
-          },
-        )
+            salePrice: item.unitPrice * item.quantity,
+            saleDate: new Date().toISOString().split('T')[0],
+            saleMarketplace: 'In Store',
+            shippingCost: 0,
+            platformFees: 0,
+            otherFees: 0,
+            status: saleStatus,
+            source: 'till',
+            externalReference: `${transactionId}:${product.id}`,
+            tillTransactionId: transactionId,
+          })
+
+          if (saleId) {
+            recordedSaleIds.push(saleId)
+          }
+
+          void logEvent(
+            product.id,
+            'till_sale',
+            `Sold ${item.quantity} in till`,
+            {
+              unitPrice: item.unitPrice,
+              quantity: item.quantity,
+              transactionId,
+            },
+          )
+        }
+      } catch (saleError) {
+        for (const saleId of recordedSaleIds) {
+          try {
+            await voidSale(saleId)
+          } catch {
+            // Best-effort rollback; the transaction is also marked voided below.
+          }
+        }
+
+        await supabase
+          .from('till_transactions')
+          .update({
+            status: 'voided',
+            void_reason: 'Stock update failed',
+          })
+          .eq('id', transactionId)
+
+        throw saleError
       }
 
       void logAudit(
@@ -436,7 +459,16 @@ export function TillProvider({ children }: { children: ReactNode }) {
       setTransactions((prev) => [transaction, ...prev])
       return transaction
     },
-    [businessId, user, session, products, updateProduct, logEvent, settings],
+    [
+      businessId,
+      user,
+      session,
+      products,
+      recordSale,
+      voidSale,
+      logEvent,
+      settings,
+    ],
   )
 
   const completePurchase = useCallback(
@@ -591,34 +623,46 @@ export function TillProvider({ children }: { children: ReactNode }) {
           await deleteProduct(item.productId)
         }
       } else {
-        for (const item of transaction.items) {
-          if (!item.productId) continue
-          const product = products.find((p) => p.id === item.productId)
-          if (!product) continue
+        const ledgerSales = sales.filter(
+          (sale) =>
+            sale.tillTransactionId === id
+            && sale.status !== 'Voided',
+        )
 
-          const newQuantity = product.quantity + item.quantity
-          const wasSold = ['Sold', 'Awaiting Shipping', 'In Shipping'].includes(
-            product.status,
-          ) && product.quantity === 0
+        if (ledgerAvailable === true && ledgerSales.length > 0) {
+          for (const sale of ledgerSales) {
+            await voidSale(sale.id)
+          }
+        } else {
+          for (const item of transaction.items) {
+            if (!item.productId) continue
+            const product = products.find((p) => p.id === item.productId)
+            if (!product) continue
 
-          await updateProduct({
-            ...product,
-            quantity: newQuantity,
-            ...(wasSold
-              ? {
-                  status: 'Unlisted' as Product['status'],
-                  salePrice: null,
-                  saleDate: null,
-                  saleMarketplace: null,
-                  profit: 0,
-                  fees: 0,
-                  shippingCost: 0,
-                  platformFees: 0,
-                  otherFees: 0,
-                }
-              : {}),
-            updatedAt: new Date().toISOString(),
-          })
+            const newQuantity = product.quantity + item.quantity
+            const wasSold = ['Sold', 'Awaiting Shipping', 'In Shipping'].includes(
+              product.status,
+            ) && product.quantity === 0
+
+            await updateProduct({
+              ...product,
+              quantity: newQuantity,
+              ...(wasSold
+                ? {
+                    status: 'Unlisted' as Product['status'],
+                    salePrice: null,
+                    saleDate: null,
+                    saleMarketplace: null,
+                    profit: 0,
+                    fees: 0,
+                    shippingCost: 0,
+                    platformFees: 0,
+                    otherFees: 0,
+                  }
+                : {}),
+              updatedAt: new Date().toISOString(),
+            })
+          }
         }
       }
 
@@ -638,7 +682,16 @@ export function TillProvider({ children }: { children: ReactNode }) {
         ),
       )
     },
-    [businessId, transactions, products, updateProduct, deleteProduct],
+    [
+      businessId,
+      transactions,
+      products,
+      updateProduct,
+      deleteProduct,
+      sales,
+      ledgerAvailable,
+      voidSale,
+    ],
   )
 
   const holdOrder = useCallback(
