@@ -215,7 +215,9 @@ function BillingSettingsV2() {
       )}
 
       <div className="billing-footnote-v2">
-        Payments and subscription management are handled by Stripe. Upgrades apply to the selected SellerHQ business subscription.
+        <strong>Prices shown exclude VAT and other applicable taxes.</strong>{' '}
+        Tax is calculated at checkout from your billing region using the current applicable rates, which update automatically as rates change.
+        {' '}Payments and subscription management are handled by Stripe. Upgrades apply to the selected SellerHQ business subscription.
       </div>
     </div>
   )
