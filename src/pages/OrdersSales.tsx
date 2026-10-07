@@ -6,17 +6,21 @@ import Icon from '../components/Icon'
 import { RecordSaleModal } from '../components/RecordSaleModal'
 import WorkspaceShell, { type WorkspaceTab } from '../components/WorkspaceShell'
 import { useCurrency } from '../hooks/useCurrency'
-import { useProducts } from '../hooks/useProducts'
+import { useSales } from '../hooks/useSales'
 import { useSubscription } from '../hooks/useSubscription'
 import { useToast } from '../hooks/useToast'
-import type { Product } from '../types/product'
+import type { Sale } from '../types/sale'
 
 type OrdersView = 'action' | 'awaiting' | 'shipping' | 'completed' | 'refunded'
 
 function OrdersSales() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const { products, loading, updateProduct } = useProducts()
+  const {
+    sales,
+    loading,
+    updateSaleStatus,
+  } = useSales()
   const { money } = useCurrency()
   const { canUse } = useSubscription()
   const { showToast } = useToast()
@@ -26,25 +30,65 @@ function OrdersSales() {
   const [savingId, setSavingId] = useState<string | null>(null)
 
   const requested = params.get('view') as OrdersView | null
-  const view: OrdersView = ['action', 'awaiting', 'shipping', 'completed', 'refunded'].includes(requested ?? '')
+  const view: OrdersView = [
+    'action',
+    'awaiting',
+    'shipping',
+    'completed',
+    'refunded',
+  ].includes(requested ?? '')
     ? (requested as OrdersView)
     : 'action'
 
-  const awaiting = products.filter((p) => p.status === 'Awaiting Shipping')
-  const shipping = products.filter((p) => p.status === 'In Shipping')
-  const completed = products.filter((p) => p.status === 'Sold' && !p.refunded)
-  const refunded = products.filter((p) => Boolean(p.refunded))
+  const activeSales = sales.filter((sale) => sale.status !== 'Voided')
+  const awaiting = activeSales.filter(
+    (sale) => sale.status === 'Awaiting Shipping' && !sale.refunded,
+  )
+  const shipping = activeSales.filter(
+    (sale) => sale.status === 'In Shipping' && !sale.refunded,
+  )
+  const completed = activeSales.filter(
+    (sale) => sale.status === 'Sold' && !sale.refunded,
+  )
+  const refunded = activeSales.filter(
+    (sale) => sale.refunded || sale.status === 'Refunded',
+  )
 
   const tabs: WorkspaceTab[] = [
-    { id: 'action', label: 'Needs action', icon: 'alert', badge: awaiting.length + shipping.length },
-    { id: 'awaiting', label: 'Awaiting dispatch', icon: 'package', badge: awaiting.length },
-    { id: 'shipping', label: 'Shipped', icon: 'truck', badge: shipping.length },
-    { id: 'completed', label: 'Completed', icon: 'check', badge: completed.length },
-    { id: 'refunded', label: 'Refunded', icon: 'trend-down', badge: refunded.length },
+    {
+      id: 'action',
+      label: 'Needs action',
+      icon: 'alert',
+      badge: awaiting.length + shipping.length,
+    },
+    {
+      id: 'awaiting',
+      label: 'Awaiting dispatch',
+      icon: 'package',
+      badge: awaiting.length,
+    },
+    {
+      id: 'shipping',
+      label: 'Shipped',
+      icon: 'truck',
+      badge: shipping.length,
+    },
+    {
+      id: 'completed',
+      label: 'Completed',
+      icon: 'check',
+      badge: completed.length,
+    },
+    {
+      id: 'refunded',
+      label: 'Refunded',
+      icon: 'trend-down',
+      badge: refunded.length,
+    },
   ]
 
   const rows = useMemo(() => {
-    let source: Product[]
+    let source: Sale[]
     if (view === 'awaiting') source = awaiting
     else if (view === 'shipping') source = shipping
     else if (view === 'completed') source = completed
@@ -52,45 +96,65 @@ function OrdersSales() {
     else source = [...awaiting, ...shipping]
 
     const query = search.trim().toLowerCase()
+
     return [...source]
-      .filter((product) => !query || [
-        product.code,
-        product.name,
-        product.brand,
-        product.saleMarketplace,
-        product.sku,
-      ].join(' ').toLowerCase().includes(query))
-      .sort((a, b) => new Date(b.saleDate || b.updatedAt).getTime() - new Date(a.saleDate || a.updatedAt).getTime())
+      .filter((sale) =>
+        !query
+        || [
+          sale.productCode,
+          sale.productName,
+          sale.brand,
+          sale.saleMarketplace,
+          sale.sku,
+        ].join(' ').toLowerCase().includes(query),
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.saleDate || b.updatedAt).getTime()
+          - new Date(a.saleDate || a.updatedAt).getTime(),
+      )
   }, [awaiting, completed, refunded, search, shipping, view])
 
-  const completedRevenue = completed.reduce((sum, p) => sum + (p.salePrice || 0), 0)
-  const completedProfit = completed.reduce((sum, p) => sum + p.profit, 0)
-  const pipelineValue = [...awaiting, ...shipping].reduce((sum, p) => sum + (p.salePrice || 0), 0)
+  const completedRevenue = completed.reduce(
+    (sum, sale) => sum + sale.salePrice,
+    0,
+  )
+  const completedProfit = completed.reduce(
+    (sum, sale) => sum + sale.profit,
+    0,
+  )
+  const pipelineValue = [...awaiting, ...shipping].reduce(
+    (sum, sale) => sum + sale.salePrice,
+    0,
+  )
 
-  async function progressOrder(product: Product) {
-    setSavingId(product.id)
+  async function progressOrder(sale: Sale) {
+    setSavingId(sale.id)
+
     try {
-      if (product.status === 'Awaiting Shipping') {
-        await updateProduct({
-          ...product,
-          status: 'In Shipping',
-          shippingDate: product.shippingDate || new Date().toISOString().split('T')[0],
-          updatedAt: new Date().toISOString(),
-        })
-        showToast(`${product.code} marked as shipped`, 'success')
-      } else if (product.status === 'In Shipping') {
-        await updateProduct({
-          ...product,
-          status: 'Sold',
-          updatedAt: new Date().toISOString(),
-        })
-        showToast(`${product.code} completed`, 'success')
+      if (sale.status === 'Awaiting Shipping') {
+        await updateSaleStatus(
+          sale.id,
+          'In Shipping',
+          sale.shippingDate
+            || new Date().toISOString().split('T')[0],
+        )
+        showToast(`${sale.productCode} marked as shipped`, 'success')
+      } else if (sale.status === 'In Shipping') {
+        await updateSaleStatus(sale.id, 'Sold')
+        showToast(`${sale.productCode} completed`, 'success')
       }
     } catch (error) {
       console.error(error)
       showToast('The order could not be updated.', 'error')
     } finally {
       setSavingId(null)
+    }
+  }
+
+  function openProduct(sale: Sale) {
+    if (sale.productId) {
+      navigate(`/products/${sale.productId}`)
     }
   }
 
@@ -101,25 +165,47 @@ function OrdersSales() {
       eyebrow="Operations"
       tabs={tabs}
       activeTab={view}
-      onTabChange={(next) => setParams(next === 'action' ? {} : { view: next })}
+      onTabChange={(next) =>
+        setParams(next === 'action' ? {} : { view: next })
+      }
       actions={
         <>
           {canUse('bundleSales') && (
-            <button type="button" className="secondary-button" onClick={() => setShowBundleSale(true)}>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => setShowBundleSale(true)}
+            >
               Bundle sale
             </button>
           )}
-          <button type="button" className="primary-button" onClick={() => setShowRecordSale(true)}>
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => setShowRecordSale(true)}
+          >
             <Icon name="plus" size={15} /> Record sale
           </button>
         </>
       }
     >
       <div className="workspace-metric-strip workspace-metric-strip-4">
-        <div><span>Needs action</span><strong>{awaiting.length + shipping.length}</strong></div>
-        <div><span>Pipeline value</span><strong>{money(pipelineValue)}</strong></div>
-        <div><span>Completed revenue</span><strong>{money(completedRevenue)}</strong></div>
-        <div><span>Completed profit</span><strong>{money(completedProfit)}</strong></div>
+        <div>
+          <span>Needs action</span>
+          <strong>{awaiting.length + shipping.length}</strong>
+        </div>
+        <div>
+          <span>Pipeline value</span>
+          <strong>{money(pipelineValue)}</strong>
+        </div>
+        <div>
+          <span>Completed revenue</span>
+          <strong>{money(completedRevenue)}</strong>
+        </div>
+        <div>
+          <span>Completed profit</span>
+          <strong>{money(completedProfit)}</strong>
+        </div>
       </div>
 
       <div className="workspace-toolbar-v2">
@@ -149,54 +235,87 @@ function OrdersSales() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7}><div className="table-empty"><strong>Loading orders…</strong></div></td></tr>
+              <tr>
+                <td colSpan={7}>
+                  <div className="table-empty">
+                    <strong>Loading orders…</strong>
+                  </div>
+                </td>
+              </tr>
             ) : rows.length ? (
-              rows.map((product) => (
-                <tr key={product.id}>
+              rows.map((sale) => (
+                <tr key={sale.id}>
                   <td data-label="Order / product">
                     <button
                       type="button"
                       className="product-link product-name-link"
-                      onClick={() => navigate(`/products/${product.id}`)}
+                      onClick={() => openProduct(sale)}
+                      disabled={!sale.productId}
                     >
-                      {product.name}
+                      {sale.productName}
                     </button>
-                    <span className="workspace-table-subline">{product.code} · {product.brand || 'No brand'}</span>
-                  </td>
-                  <td data-label="Marketplace">{product.saleMarketplace || 'Direct / not set'}</td>
-                  <td data-label="Sale">{product.salePrice === null ? '—' : money(product.salePrice)}</td>
-                  <td data-label="Profit">
-                    <span className={product.profit >= 0 ? 'inventory-profit-positive' : 'inventory-profit-negative'}>
-                      {money(product.profit)}
+                    <span className="workspace-table-subline">
+                      {sale.productCode} · {sale.brand || 'No brand'}
+                      {sale.quantity > 1 ? ` · ${sale.quantity} units` : ''}
                     </span>
                   </td>
-                  <td data-label="Sale date">{product.saleDate ? new Date(product.saleDate).toLocaleDateString('en-GB') : '—'}</td>
+                  <td data-label="Marketplace">
+                    {sale.saleMarketplace || 'Direct / not set'}
+                  </td>
+                  <td data-label="Sale">{money(sale.salePrice)}</td>
+                  <td data-label="Profit">
+                    <span
+                      className={
+                        sale.profit >= 0
+                          ? 'inventory-profit-positive'
+                          : 'inventory-profit-negative'
+                      }
+                    >
+                      {money(sale.profit)}
+                    </span>
+                  </td>
+                  <td data-label="Sale date">
+                    {sale.saleDate
+                      ? new Date(sale.saleDate).toLocaleDateString('en-GB')
+                      : '—'}
+                  </td>
                   <td data-label="Status">
-                    <span className={`status-badge status-${product.refunded ? 'issue' : product.status.toLowerCase().replace(/ /g, '-')}`}>
-                      {product.refunded ? 'Refunded' : product.status}
+                    <span
+                      className={`status-badge status-${
+                        sale.refunded
+                          ? 'issue'
+                          : sale.status.toLowerCase().replace(/ /g, '-')
+                      }`}
+                    >
+                      {sale.refunded ? 'Refunded' : sale.status}
                     </span>
                   </td>
                   <td data-label="Next action">
-                    {product.status === 'Awaiting Shipping' && !product.refunded ? (
+                    {sale.status === 'Awaiting Shipping' && !sale.refunded ? (
                       <button
                         type="button"
                         className="primary-button workspace-table-action"
-                        onClick={() => void progressOrder(product)}
-                        disabled={savingId === product.id}
+                        onClick={() => void progressOrder(sale)}
+                        disabled={savingId === sale.id}
                       >
-                        {savingId === product.id ? 'Saving…' : 'Mark shipped'}
+                        {savingId === sale.id ? 'Saving…' : 'Mark shipped'}
                       </button>
-                    ) : product.status === 'In Shipping' && !product.refunded ? (
+                    ) : sale.status === 'In Shipping' && !sale.refunded ? (
                       <button
                         type="button"
                         className="primary-button workspace-table-action"
-                        onClick={() => void progressOrder(product)}
-                        disabled={savingId === product.id}
+                        onClick={() => void progressOrder(sale)}
+                        disabled={savingId === sale.id}
                       >
-                        {savingId === product.id ? 'Saving…' : 'Complete'}
+                        {savingId === sale.id ? 'Saving…' : 'Complete'}
                       </button>
                     ) : (
-                      <button type="button" className="row-action-link" onClick={() => navigate(`/products/${product.id}`)}>
+                      <button
+                        type="button"
+                        className="row-action-link"
+                        onClick={() => openProduct(sale)}
+                        disabled={!sale.productId}
+                      >
                         View sale
                       </button>
                     )}
@@ -208,7 +327,9 @@ function OrdersSales() {
                 <td colSpan={7}>
                   <div className="inventory-empty-state">
                     <strong>No orders in this view</strong>
-                    <span>Sales will move through these stages as you record and fulfil them.</span>
+                    <span>
+                      Sales will move through these stages as you record and fulfil them.
+                    </span>
                   </div>
                 </td>
               </tr>
@@ -226,6 +347,7 @@ function OrdersSales() {
           }}
         />
       )}
+
       {showBundleSale && (
         <BundleSaleModal
           onClose={() => setShowBundleSale(false)}
