@@ -156,7 +156,28 @@ function BusinessSettingsView({ onOpen }: { onOpen: (view: SettingsView) => void
           <button type="button" className="secondary-button" onClick={() => onOpen('team')}>Manage team</button>
         </section>
       </div>
-      <CustomStatusSettings />
+      {canUse('customStatuses') ? (
+        <CustomStatusSettings />
+      ) : (
+        <section className="panel-v2 settings-section-v2 custom-status-settings-v2">
+          <header className="panel-v2-header">
+            <div>
+              <h2>Custom inventory statuses</h2>
+              <p>Create neutral workflow labels such as Mystery Bag, Needs Cleaning or Photography.</p>
+            </div>
+            <span className="status-badge status-listed">Pro</span>
+          </header>
+          <div className="custom-status-settings-body-v2">
+            <div className="settings-locked-v2">
+              <strong>Available on Pro and Business</strong>
+              <span>Upgrade to create, assign and filter by your own inventory statuses.</span>
+            </div>
+            <button type="button" className="secondary-button" onClick={() => onOpen('billing')}>
+              View Pro plans
+            </button>
+          </div>
+        </section>
+      )}
     </div>
   )
 }
