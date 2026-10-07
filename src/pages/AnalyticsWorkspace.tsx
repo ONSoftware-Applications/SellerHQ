@@ -28,7 +28,6 @@ type AnalyticsView = 'performance' | 'marketplaces' | 'inventory' | 'forecast' |
 
 function AnalyticsWorkspace() {
   const [params, setParams] = useSearchParams()
-  const { products } = useProducts()
   const { sales } = useSales()
   const { expenses } = useExpenses()
 

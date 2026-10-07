@@ -31,7 +31,7 @@ export function RecordSaleModal({ onClose, onSaved }: Props) {
   const { money } = useCurrency()
   const { settings } = useSettings()
 
-  const saleStatus: Product['status'] = settings.features.shippingFlowEnabled
+  const saleStatus: 'Awaiting Shipping' | 'Sold' = settings.features.shippingFlowEnabled
     ? 'Awaiting Shipping'
     : 'Sold'
 
