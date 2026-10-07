@@ -111,8 +111,9 @@ function Inventory() {
   const { money } = useCurrency()
   const { showToast } = useToast()
   const { settings } = useSettings()
-  const { plan, productLimit } = useSubscription()
+  const { plan, productLimit, canUse } = useSubscription()
   const { statuses: customStatuses } = useCustomStatuses()
+  const customStatusesEnabled = canUse('customStatuses')
 
   const shippingFlowEnabled = settings.features.shippingFlowEnabled
 
@@ -206,7 +207,7 @@ function Inventory() {
           if (
             savedStatus === 'All'
             || statusOrder.includes(savedStatus as ProductStatus)
-            || savedStatus.startsWith('custom:')
+            || (customStatusesEnabled && savedStatus.startsWith('custom:'))
           ) {
             setStatusFilter(savedStatus)
           }
@@ -253,7 +254,7 @@ function Inventory() {
     } finally {
       setPreferencesLoaded(true)
     }
-  }, [currentBusiness, inventoryPreferencesKey])
+  }, [currentBusiness, customStatusesEnabled, inventoryPreferencesKey])
 
   useEffect(() => {
     if (!currentBusiness || !preferencesLoaded) {
@@ -1271,7 +1272,7 @@ const sheetsMarkup = sheets.join('')
           <option value="Removed">Removed</option>
           <option value="Returned">Returned</option>
           <option value="Archived">Archived</option>
-          {customStatuses.length > 0 && (
+          {customStatusesEnabled && customStatuses.length > 0 && (
             <optgroup label="Custom statuses">
               {customStatuses.map((customStatus) => (
                 <option
