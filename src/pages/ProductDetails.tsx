@@ -56,6 +56,8 @@ const {
   const { showToast } = useToast()
   const { settings } = useSettings()
   const { statuses: customStatuses } = useCustomStatuses()
+  const { canUse } = useSubscription()
+  const customStatusesEnabled = canUse('customStatuses')
 
   const shippingFlowEnabled = settings.features.shippingFlowEnabled
 
@@ -151,6 +153,11 @@ const product = productId
     const customStatusId = value.startsWith('custom:')
       ? value.slice('custom:'.length)
       : null
+
+    if (customStatusId && !customStatusesEnabled) {
+      setError('Custom inventory statuses require SellerHQ Pro or Business.')
+      return
+    }
     const nextStatus: ProductStatus = customStatusId
       ? 'Custom'
       : value as ProductStatus
@@ -706,7 +713,7 @@ if (!popup) {
                     </option>
                   ))}
                 </optgroup>
-                {customStatuses.length > 0 && (
+                {customStatusesEnabled && customStatuses.length > 0 && (
                   <optgroup label="Custom statuses">
                     {customStatuses.map((customStatus) => (
                       <option
