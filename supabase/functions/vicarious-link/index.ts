@@ -492,17 +492,20 @@ async function handleRecordSale(body: Record<string, unknown>, admin: ReturnType
   const sellerHqStatus = sellerHqStatusFromVicariousOrder(order.status)
   const updated: Array<Record<string, unknown>> = []
 
-  for (const item of items) {
-    const sku = clean((item as Record<string, unknown>).sku)
+  for (const rawItem of items) {
+    const item = rawItem as Record<string, unknown>
+    const sku = clean(item.sku)
     if (!sku) continue
 
     let product: Record<string, unknown> | null = null
-    const businessId = targetBusinessId()
+    const configuredBusinessId = targetBusinessId()
     let byVicariousSku = admin
       .from('products')
       .select('*')
       .eq('custom_fields->>vicariousSku', sku)
-    if (businessId) byVicariousSku = byVicariousSku.eq('business_id', businessId)
+    if (configuredBusinessId) {
+      byVicariousSku = byVicariousSku.eq('business_id', configuredBusinessId)
+    }
 
     const firstLookup = await byVicariousSku.maybeSingle()
     if (firstLookup.error) throw firstLookup.error
@@ -510,7 +513,9 @@ async function handleRecordSale(body: Record<string, unknown>, admin: ReturnType
 
     if (!product) {
       let bySku = admin.from('products').select('*').eq('sku', sku)
-      if (businessId) bySku = bySku.eq('business_id', businessId)
+      if (configuredBusinessId) {
+        bySku = bySku.eq('business_id', configuredBusinessId)
+      }
       const secondLookup = await bySku.maybeSingle()
       if (secondLookup.error) throw secondLookup.error
       product = secondLookup.data as Record<string, unknown> | null
@@ -518,29 +523,130 @@ async function handleRecordSale(body: Record<string, unknown>, admin: ReturnType
 
     if (!product) continue
 
-    const price = toNumber((item as Record<string, unknown>).price) ?? toNumber(order.total) ?? 0
-    const shippingCost = 0
-    const platformFees = 0
-    const otherFees = 0
-    const fees = shippingCost + platformFees + otherFees
-    const purchasePrice = Number(product.purchase_price ?? 0)
-    const additionalCosts = Number(product.additional_costs ?? 0)
-    const profit = Math.round((price - purchasePrice - additionalCosts - fees) * 100) / 100
-    const existingCustomFields = (product.custom_fields as Record<string, unknown> | null) ?? {}
+    const businessId = clean(product.business_id)
+    const quantity = Math.max(1, Math.floor(toNumber(item.quantity) ?? 1))
+    const explicitLineTotal =
+      toNumber(item.lineTotal)
+      ?? toNumber(item.line_total)
+      ?? toNumber(item.total)
+    const price =
+      explicitLineTotal
+      ?? toNumber(item.price)
+      ?? toNumber(order.total)
+      ?? 0
+    const orderId = clean(order.id)
+    const externalReference = `${orderId || 'order'}:${sku}`
 
-    const updates: Record<string, unknown> = {
-      status: sellerHqStatus,
-      sale_price: price,
-      sale_date: dateOnly(order.createdAt),
-      sale_marketplace: 'Website',
-      shipping_cost: shippingCost,
-      platform_fees: platformFees,
-      other_fees: otherFees,
-      fees,
-      profit,
+    const existingSaleResult = await admin
+      .from('product_sales')
+      .select('*')
+      .eq('business_id', businessId)
+      .eq('source', 'vicarious')
+      .eq('external_reference', externalReference)
+      .maybeSingle()
+
+    if (
+      existingSaleResult.error
+      && existingSaleResult.error.code !== '42P01'
+      && existingSaleResult.error.code !== 'PGRST205'
+    ) {
+      throw existingSaleResult.error
+    }
+
+    const existingSale =
+      existingSaleResult.data as Record<string, unknown> | null
+
+    if (existingSale) {
+      const salePatch: Record<string, unknown> = {
+        status: sellerHqStatus,
+        updated_at: new Date().toISOString(),
+      }
+      if (sellerHqStatus === 'in_shipping' || sellerHqStatus === 'sold') {
+        salePatch.shipping_date =
+          clean(existingSale.shipping_date)
+          || dateOnly(order.updatedAt)
+          || dateOnly(order.createdAt)
+      }
+
+      const { error: saleUpdateError } = await admin
+        .from('product_sales')
+        .update(salePatch)
+        .eq('id', existingSale.id)
+
+      if (saleUpdateError) throw saleUpdateError
+    } else {
+      const { error: saleError } = await admin.rpc(
+        'record_product_sale',
+        {
+          p_product_id: product.id,
+          p_quantity: quantity,
+          p_sale_price: price,
+          p_sale_date: dateOnly(order.createdAt),
+          p_sale_marketplace: 'Website',
+          p_shipping_cost: 0,
+          p_platform_fees: 0,
+          p_other_fees: 0,
+          p_sale_status: sellerHqStatus,
+          p_source: 'vicarious',
+          p_external_reference: externalReference,
+          p_till_transaction_id: null,
+        },
+      )
+
+      if (saleError) {
+        const ledgerUnavailable =
+          saleError.code === '42883'
+          || saleError.code === 'PGRST202'
+          || saleError.code === '42P01'
+
+        if (!ledgerUnavailable) throw saleError
+
+        // Backward-compatible fallback until the ledger migration is applied.
+        const remainingQuantity = Math.max(
+          0,
+          Number(product.quantity ?? 1) - quantity,
+        )
+        const purchasePrice = Number(product.purchase_price ?? 0)
+        const additionalCosts = Number(product.additional_costs ?? 0)
+        const profit =
+          price - ((purchasePrice + additionalCosts) * quantity)
+
+        const { error: fallbackError } = await admin
+          .from('products')
+          .update({
+            quantity: remainingQuantity,
+            status:
+              remainingQuantity > 0
+                ? product.status
+                : sellerHqStatus,
+            sale_price: price,
+            sale_date: dateOnly(order.createdAt),
+            sale_marketplace: 'Website',
+            fees: 0,
+            profit,
+          })
+          .eq('id', product.id)
+
+        if (fallbackError) throw fallbackError
+      }
+    }
+
+    const latestProductResult = await admin
+      .from('products')
+      .select('*')
+      .eq('id', product.id)
+      .single()
+
+    if (latestProductResult.error) throw latestProductResult.error
+    const latestProduct =
+      latestProductResult.data as Record<string, unknown>
+    const existingCustomFields =
+      (latestProduct.custom_fields as Record<string, unknown> | null) ?? {}
+
+    const productPatch: Record<string, unknown> = {
       custom_fields: {
         ...existingCustomFields,
-        vicariousOrderId: clean(order.id),
+        vicariousOrderId: orderId,
         vicariousOrderStatus: clean(order.status),
         vicariousPaymentProvider: clean(order.paymentProvider),
         vicariousPaymentIntentId: clean(order.paymentIntentId),
@@ -550,13 +656,18 @@ async function handleRecordSale(body: Record<string, unknown>, admin: ReturnType
       },
     }
 
-    if (sellerHqStatus === 'in_shipping' || sellerHqStatus === 'sold') {
-      updates.shipping_date = clean(product.shipping_date) || dateOnly(order.updatedAt)
+    if (Number(latestProduct.quantity ?? 0) === 0) {
+      productPatch.status = sellerHqStatus
+      if (sellerHqStatus === 'in_shipping' || sellerHqStatus === 'sold') {
+        productPatch.shipping_date =
+          clean(latestProduct.shipping_date)
+          || dateOnly(order.updatedAt)
+      }
     }
 
     const { data, error } = await admin
       .from('products')
-      .update(updates)
+      .update(productPatch)
       .eq('id', product.id)
       .select('*')
       .single()
@@ -570,14 +681,21 @@ async function handleRecordSale(body: Record<string, unknown>, admin: ReturnType
         ? 'vicarious_sale_recorded'
         : 'vicarious_fulfilment_updated',
       sellerHqStatus === 'awaiting_shipping'
-        ? `Website sale recorded from Vicarious order ${clean(order.id)}`
-        : `Vicarious order ${clean(order.id)} updated stock flow to ${databaseStatusToProductStatus(sellerHqStatus)}`,
-      { order, item },
+        ? `Website sale recorded from Vicarious order ${orderId}`
+        : `Vicarious order ${orderId} updated fulfilment to ${databaseStatusToProductStatus(sellerHqStatus)}`,
+      { order, item, quantity },
     )
-    updated.push(databaseToSellerHqProduct(data as Record<string, unknown>))
+
+    updated.push(
+      databaseToSellerHqProduct(data as Record<string, unknown>),
+    )
   }
 
-  return jsonResponse({ ok: true, updatedCount: updated.length, products: updated })
+  return jsonResponse({
+    ok: true,
+    updatedCount: updated.length,
+    products: updated,
+  })
 }
 
 Deno.serve(async (request: Request) => {

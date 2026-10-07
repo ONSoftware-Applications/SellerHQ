@@ -43,7 +43,7 @@ export function BundleSaleModal({ onClose, onSaved }: Props) {
   const { settings } = useSettings()
   const { canUse } = useSubscription()
 
-  const saleStatus: Product['status'] = settings.features.shippingFlowEnabled
+  const saleStatus: 'Awaiting Shipping' | 'Sold' = settings.features.shippingFlowEnabled
     ? 'Awaiting Shipping'
     : 'Sold'
 

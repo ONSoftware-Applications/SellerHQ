@@ -111,10 +111,17 @@ function InventoryStatusView({
   )
 
   const capital = rows.reduce(
-    (sum, product) => sum + product.purchasePrice + product.additionalCosts,
+    (sum, product) =>
+      sum
+      + (product.purchasePrice + product.additionalCosts)
+        * Math.max(0, product.quantity),
     0,
   )
-  const listingValue = rows.reduce((sum, product) => sum + (product.listingPrice || 0), 0)
+  const listingValue = rows.reduce(
+    (sum, product) =>
+      sum + (product.listingPrice || 0) * Math.max(0, product.quantity),
+    0,
+  )
 
   return (
     <div className="inventory-view-v2">

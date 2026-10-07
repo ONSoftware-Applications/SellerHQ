@@ -388,3 +388,34 @@ begin
   where id = p_sale_id;
 end;
 $$;
+
+
+-- Prevent direct status edits from bypassing the quantity-aware sale ledger.
+-- Sale workflow states may only sit on a product when all stock has been
+-- consumed; partial fulfilment lives on product_sales instead.
+create or replace function public.enforce_product_sale_status_consistency()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if new.status in ('awaiting_shipping', 'in_shipping', 'sold')
+    and coalesce(new.quantity, 0) > 0
+  then
+    raise exception 'Record the sale through Orders & Sales before using a sale or shipping status.';
+  end if;
+
+  if coalesce(new.quantity, 0) < 0 then
+    raise exception 'Product quantity cannot be negative.';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists enforce_product_sale_status_consistency_on_products
+  on public.products;
+
+create trigger enforce_product_sale_status_consistency_on_products
+  before insert or update of status, quantity on public.products
+  for each row execute function public.enforce_product_sale_status_consistency();

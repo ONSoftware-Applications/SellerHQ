@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Icon from '../components/Icon'
 import { useCurrency } from '../hooks/useCurrency'
 import { useExpenses } from '../hooks/useExpenses'
-import { useProducts } from '../hooks/useProducts'
+import { useSales } from '../hooks/useSales'
 import { useSettings } from '../hooks/useSettings'
 import { useSubscription } from '../hooks/useSubscription'
 import { useToast } from '../hooks/useToast'
@@ -16,10 +16,9 @@ import {
   ukTaxYearLabel,
   ukTaxYearStartForDate,
 } from '../config/tax'
-import { productSaleDate } from '../lib/finance'
 
 function TaxPlannerV2() {
-  const { products } = useProducts()
+  const { sales } = useSales()
   const { expenses } = useExpenses()
   const { settings, updateSettings } = useSettings()
   const { canUse } = useSubscription()
@@ -40,10 +39,14 @@ function TaxPlannerV2() {
 
   const data = useMemo(() => {
     const config = getTaxConfig(selectedTaxYear)
-    const sold = products.filter((product) => {
-      if (product.status !== 'Sold' || product.salePrice === null) return false
-      const date = productSaleDate(product)
-      return Boolean(date && inUkTaxYear(new Date(date), selectedTaxYear))
+    const sold = sales.filter((sale) => {
+      if (sale.refunded || sale.status === 'Refunded' || sale.status === 'Voided') {
+        return false
+      }
+      return Boolean(
+        sale.saleDate
+        && inUkTaxYear(new Date(sale.saleDate), selectedTaxYear),
+      )
     })
     const periodExpenses = expenses.filter((expense) =>
       Boolean(expense.expenseDate && inUkTaxYear(new Date(expense.expenseDate), selectedTaxYear)),
@@ -68,7 +71,7 @@ function TaxPlannerV2() {
       class4Ni,
       totalEstimate,
     }
-  }, [expenses, products, selectedTaxYear])
+  }, [expenses, sales, selectedTaxYear])
 
   const reserved = settings.tax?.reservedAmount ?? 0
   const remaining = Math.max(0, data.totalEstimate - reserved)

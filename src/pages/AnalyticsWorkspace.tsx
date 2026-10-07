@@ -6,6 +6,8 @@ import WorkspaceShell, { type WorkspaceTab } from '../components/WorkspaceShell'
 import { useCurrency } from '../hooks/useCurrency'
 import { useExpenses } from '../hooks/useExpenses'
 import { useProducts } from '../hooks/useProducts'
+import { useSales } from '../hooks/useSales'
+import type { Sale } from '../types/sale'
 import {
   bestPerforming,
   expenseTotal,
@@ -26,7 +28,7 @@ type AnalyticsView = 'performance' | 'marketplaces' | 'inventory' | 'forecast' |
 
 function AnalyticsWorkspace() {
   const [params, setParams] = useSearchParams()
-  const { products } = useProducts()
+  const { sales } = useSales()
   const { expenses } = useExpenses()
 
   const requested = params.get('view') as AnalyticsView | null
@@ -34,7 +36,10 @@ function AnalyticsWorkspace() {
     ? (requested as AnalyticsView)
     : 'performance'
 
-  const sold = useMemo(() => products.filter((product) => product.status === 'Sold'), [products])
+  const sold = useMemo(
+    () => sales.filter((sale) => !sale.refunded && sale.status !== 'Refunded' && sale.status !== 'Voided'),
+    [sales],
+  )
   const rev = revenue(sold)
   const gross = grossProfit(sold)
   const exp = expenseTotal(expenses)
@@ -88,7 +93,7 @@ function PerformanceView({
   net,
   margin,
 }: {
-  sold: ReturnType<typeof useProducts>['products']
+  sold: Sale[]
   rev: number
   gross: number
   exp: number
@@ -100,7 +105,8 @@ function PerformanceView({
   const bestBrands = useMemo(() => bestPerforming(sold, 'brand').slice(0, 5), [sold])
   const bestCategories = useMemo(() => bestPerforming(sold, 'category').slice(0, 5), [sold])
   const maxRevenue = Math.max(1, ...monthly.map((item) => item.revenue))
-  const averageSale = sold.length ? rev / sold.length : 0
+  const unitsSold = sold.reduce((sum, sale) => sum + sale.quantity, 0)
+  const averageSale = unitsSold ? rev / unitsSold : 0
 
   return (
     <div className="analytics-view-v2">
@@ -142,7 +148,7 @@ function PerformanceView({
             <FinanceLine label="Net profit" value={money(net)} strong accent />
           </div>
           <div className="analytics-mini-stats-v2">
-            <div><span>Sales</span><strong>{sold.length}</strong></div>
+            <div><span>Sales</span><strong>{unitsSold}</strong></div>
             <div><span>Average sale</span><strong>{money(averageSale)}</strong></div>
           </div>
         </section>
@@ -156,7 +162,7 @@ function PerformanceView({
   )
 }
 
-function MarketplaceView({ sold }: { sold: ReturnType<typeof useProducts>['products'] }) {
+function MarketplaceView({ sold }: { sold: Sale[] }) {
   const { money } = useCurrency()
   const data = useMemo(() => groupByMarketplace(sold).sort((a, b) => b.revenue - a.revenue), [sold])
   const total = data.reduce((sum, row) => sum + row.revenue, 0)
@@ -189,11 +195,14 @@ function MarketplaceView({ sold }: { sold: ReturnType<typeof useProducts>['produ
 
 function InventoryAnalyticsView() {
   const { products } = useProducts()
+  const { sales } = useSales()
   const { money } = useCurrency()
   const ageing = useMemo(() => stockAgeingBuckets(products), [products])
-  const sellThrough = sellThroughRate(products)
+  const sellThrough = sellThroughRate(products, sales)
   const capital = inventoryCapitalTiedUp(products)
-  const active = products.filter((product) => product.status !== 'Sold')
+  const active = products.filter(
+    (product) => product.quantity > 0 && product.status !== 'Archived',
+  )
   const listed = active.filter((product) => product.status === 'Listed').length
   const unlisted = active.filter((product) => product.status === 'Unlisted').length
   const maxCount = Math.max(1, ...ageing.map((bucket) => bucket.count))
@@ -238,7 +247,7 @@ function ScenarioView({
   sold,
   expensesTotal,
 }: {
-  sold: ReturnType<typeof useProducts>['products']
+  sold: Sale[]
   expensesTotal: number
 }) {
   const { money } = useCurrency()
@@ -248,7 +257,7 @@ function ScenarioView({
 
   const baseRevenue = revenue(sold)
   const baseGross = grossProfit(sold)
-  const units = sold.length
+  const units = sold.reduce((sum, sale) => sum + sale.quantity, 0)
   const averagePrice = units ? baseRevenue / units : 0
   const grossMargin = baseRevenue > 0 ? baseGross / baseRevenue : 0
   const projectedUnits = Math.max(0, Math.round(units * (1 + volumeChange / 100)))

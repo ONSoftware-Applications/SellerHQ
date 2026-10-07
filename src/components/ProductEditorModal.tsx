@@ -210,6 +210,18 @@ export function ProductEditorModal({
     }
 
     const nextStatus = value as ProductStatus
+
+    if (
+      nextStatus === 'Awaiting Shipping'
+      || nextStatus === 'In Shipping'
+      || nextStatus === 'Sold'
+    ) {
+      setError(
+        'Record sales from Orders & Sales so quantity, fulfilment and finance stay in sync.',
+      )
+      return
+    }
+
     setStatus(nextStatus)
     setCustomStatusId(null)
 
@@ -308,7 +320,7 @@ export function ProductEditorModal({
         purchasePrice: resolvedPurchasePrice,
         purchaseDate: purchaseDate || null,
         purchaseSource: purchaseSource.trim(),
-        quantity: Math.max(1, Number(quantity) || 1),
+        quantity: Math.max(0, Number(quantity) || 0),
         reorderLevel: Math.max(0, Number(reorderLevel) || 0),
         storageLocation: storageLocation.trim(),
         barcode: barcode.trim(),
@@ -630,7 +642,7 @@ export function ProductEditorModal({
 
                   <input
                     type="number"
-                    min="1"
+                    min="0"
                     step="1"
                     value={quantity}
                     onChange={(event) =>
