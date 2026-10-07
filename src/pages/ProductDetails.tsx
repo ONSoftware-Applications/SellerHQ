@@ -8,6 +8,7 @@ import { useToast } from '../hooks/useToast'
 import { useSettings } from '../hooks/useSettings'
 import { useSubscription } from '../hooks/useSubscription'
 import { useCustomStatuses } from '../hooks/useCustomStatuses'
+import { useSales } from '../hooks/useSales'
 import { escapeHtml } from '../lib/sanitize'
 import { printBrandingMarkup, PRINT_BRAND_CSS, qrLogoUrl } from '../lib/branding'
 import type {
@@ -59,6 +60,13 @@ const {
   const { statuses: customStatuses } = useCustomStatuses()
   const { canUse } = useSubscription()
   const customStatusesEnabled = canUse('customStatuses')
+  const {
+    sales,
+    recordSale,
+    updateSaleDetails,
+    updateSaleStatus,
+    refundSale,
+  } = useSales()
 
   const shippingFlowEnabled = settings.features.shippingFlowEnabled
 
@@ -113,6 +121,23 @@ const product = productId
   }
 
   const currentProduct = product
+  const productSales = sales
+    .filter(
+      (sale) =>
+        sale.productId === currentProduct.id
+        && sale.status !== 'Voided',
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.saleDate || b.createdAt).getTime()
+        - new Date(a.saleDate || a.createdAt).getTime(),
+    )
+  const latestSale = productSales[0]
+  const latestOpenSale = productSales.find(
+    (sale) =>
+      sale.status === 'Awaiting Shipping'
+      || sale.status === 'In Shipping',
+  )
 
   async function handleUpdate(updatedProduct: Product) {
     setSaving(true)
@@ -232,14 +257,31 @@ const product = productId
 
   function openSoldFlow() {
     setError('')
+    const editingExistingSale =
+      currentProduct.quantity <= 0 ? latestSale : undefined
+
     setSellingProduct({
-      salePrice: currentProduct.salePrice?.toString() ?? '',
-      saleDate: currentProduct.saleDate ?? todayValue(),
-      shippingDate: currentProduct.shippingDate ?? '',
-      saleMarketplace: currentProduct.saleMarketplace ?? '',
-      shippingCost: currentProduct.shippingCost.toString(),
-      platformFees: currentProduct.platformFees.toString(),
-      otherFees: currentProduct.otherFees.toString(),
+      salePrice:
+        editingExistingSale?.salePrice.toString()
+        ?? (currentProduct.listingPrice || currentProduct.salePrice || '').toString(),
+      saleDate:
+        editingExistingSale?.saleDate
+        ?? currentProduct.saleDate
+        ?? todayValue(),
+      shippingDate:
+        editingExistingSale?.shippingDate
+        ?? currentProduct.shippingDate
+        ?? '',
+      saleMarketplace:
+        editingExistingSale?.saleMarketplace
+        ?? currentProduct.saleMarketplace
+        ?? '',
+      shippingCost:
+        (editingExistingSale?.shippingCost ?? currentProduct.shippingCost).toString(),
+      platformFees:
+        (editingExistingSale?.platformFees ?? currentProduct.platformFees).toString(),
+      otherFees:
+        (editingExistingSale?.otherFees ?? currentProduct.otherFees).toString(),
     })
   }
 
@@ -261,12 +303,42 @@ const product = productId
       throw new Error('Fees must be valid numbers.')
     }
 
+    if (currentProduct.quantity > 0) {
+      await recordSale({
+        product: currentProduct,
+        quantity: 1,
+        salePrice,
+        saleDate: draft.saleDate || todayValue(),
+        shippingDate: draft.shippingDate || null,
+        saleMarketplace: draft.saleMarketplace || null,
+        shippingCost,
+        platformFees,
+        otherFees,
+        status: shippingFlowEnabled ? 'Awaiting Shipping' : 'Sold',
+        source: 'manual',
+      })
+      return
+    }
+
+    if (latestSale) {
+      await updateSaleDetails(latestSale.id, {
+        salePrice,
+        saleDate: draft.saleDate || todayValue(),
+        shippingDate: draft.shippingDate || null,
+        saleMarketplace: draft.saleMarketplace || null,
+        shippingCost,
+        platformFees,
+        otherFees,
+      })
+      return
+    }
+
     const fees = shippingCost + platformFees + otherFees
     const profit =
-      salePrice -
-      currentProduct.purchasePrice -
-      currentProduct.additionalCosts -
-      fees
+      salePrice
+      - currentProduct.purchasePrice
+      - currentProduct.additionalCosts
+      - fees
 
     await updateProduct({
       ...currentProduct,
@@ -292,13 +364,20 @@ const product = productId
     setConfirmRefund(false)
 
     try {
-      await updateProduct({
-        ...currentProduct,
-        refunded: true,
-        refundAmount: currentProduct.salePrice ?? 0,
-        refundDate: todayValue(),
-        updatedAt: new Date().toISOString(),
-      })
+      if (latestSale) {
+        await refundSale(
+          latestSale.id,
+          latestSale.salePrice,
+        )
+      } else {
+        await updateProduct({
+          ...currentProduct,
+          refunded: true,
+          refundAmount: currentProduct.salePrice ?? 0,
+          refundDate: todayValue(),
+          updatedAt: new Date().toISOString(),
+        })
+      }
       showToast('Sale marked as refunded', 'info')
     } catch (err) {
       console.error(err)
@@ -310,11 +389,15 @@ const product = productId
     setConfirmShippingOpen(false)
 
     try {
-      await updateProduct({
-        ...currentProduct,
-        status: 'Sold',
-        updatedAt: new Date().toISOString(),
-      })
+      if (latestOpenSale) {
+        await updateSaleStatus(latestOpenSale.id, 'Sold')
+      } else {
+        await updateProduct({
+          ...currentProduct,
+          status: 'Sold',
+          updatedAt: new Date().toISOString(),
+        })
+      }
       showToast('Shipping confirmed - product marked as sold', 'success')
     } catch (err) {
       console.error(err)
@@ -748,12 +831,15 @@ if (!popup) {
               className="secondary-button"
               onClick={openSoldFlow}
             >
-              {currentProduct.status === 'Sold'
+              {currentProduct.quantity <= 0 && latestSale
                 ? 'Update sold details'
                 : 'Mark as sold'}
             </button>
 
-            {shippingFlowEnabled && currentProduct.status === 'In Shipping' && (
+            {shippingFlowEnabled
+              && (latestOpenSale?.status === 'In Shipping'
+                || currentProduct.status === 'In Shipping')
+              && (
               <button
                 type="button"
                 className="primary-button"
@@ -763,7 +849,9 @@ if (!popup) {
               </button>
             )}
 
-            {currentProduct.status === 'Sold' && !currentProduct.refunded && (
+            {((latestSale?.status === 'Sold' && !latestSale.refunded)
+              || (currentProduct.status === 'Sold' && !currentProduct.refunded))
+              && (
               <button
                 type="button"
                 className="secondary-button"
@@ -774,9 +862,13 @@ if (!popup) {
               </button>
             )}
 
-            {currentProduct.refunded && (
-              <span className={`status-badge status-${currentProduct.refunded ? 'sold' : 'listed'}`}>
-                Refunded {currentProduct.refundAmount ? money(currentProduct.refundAmount) : ''}
+            {(latestSale?.refunded || currentProduct.refunded) && (
+              <span className="status-badge status-issue">
+                Refunded {latestSale?.refundAmount
+                  ? money(latestSale.refundAmount)
+                  : currentProduct.refundAmount
+                    ? money(currentProduct.refundAmount)
+                    : ''}
               </span>
             )}
 
