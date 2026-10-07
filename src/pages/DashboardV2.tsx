@@ -8,6 +8,7 @@ import { useCurrency } from '../hooks/useCurrency'
 import { getProductStatusLabel } from '../lib/productStatus'
 import { useExpenses } from '../hooks/useExpenses'
 import { useProducts } from '../hooks/useProducts'
+import { useSales } from '../hooks/useSales'
 import { useCustomStatuses } from '../hooks/useCustomStatuses'
 import { useSubscription } from '../hooks/useSubscription'
 import {
@@ -19,11 +20,10 @@ import {
   inventoryCapitalTiedUp,
   netProfit,
   periodRange,
-  productSaleDate,
   profitMargin,
   revenue,
   sellThroughRate,
-  soldInPeriod,
+  salesInPeriod,
   stockAgeingBuckets,
 } from '../lib/finance'
 
@@ -38,7 +38,8 @@ function greeting() {
 
 function DashboardV2() {
   const navigate = useNavigate()
-  const { products, loading } = useProducts()
+  const { products, loading: productsLoading } = useProducts()
+  const { sales, loading: salesLoading } = useSales()
   const { currentBusiness } = useBusiness()
   const { expenses } = useExpenses()
   const { canUse } = useSubscription()
@@ -48,16 +49,22 @@ function DashboardV2() {
 
   const stats = useMemo(() => {
     const range = periodRange(period)
-    const sold = soldInPeriod(products, range)
+    const sold = salesInPeriod(sales, range)
     const periodExpenses = expensesInPeriod(expenses, range)
     const rev = revenue(sold)
     const gross = grossProfit(sold)
     const expense = expenseTotal(periodExpenses)
     const net = netProfit(sold, periodExpenses)
-    const active = products.filter((product) => product.status !== 'Sold')
+    const active = products.filter(
+      (product) => product.quantity > 0 && product.status !== 'Archived',
+    )
     const listed = active.filter((product) => product.status === 'Listed')
     const unlisted = active.filter((product) => product.status === 'Unlisted')
-    const awaiting = active.filter((product) => product.status === 'Awaiting Shipping')
+    const awaiting = sales.filter(
+      (sale) =>
+        sale.status === 'Awaiting Shipping'
+        && !sale.refunded,
+    )
     const ageing = stockAgeingBuckets(products)
     const aged = ageing.find((bucket) => bucket.bucket === '90+ days')
 
@@ -67,7 +74,10 @@ function DashboardV2() {
       gross,
       expense,
       net,
-      soldCount: sold.length,
+      soldCount: sold.reduce(
+        (sum, sale) => sum + sale.quantity,
+        0,
+      ),
       averageSale: sold.length ? rev / sold.length : 0,
       margin: profitMargin(rev, gross),
       active,
@@ -77,20 +87,21 @@ function DashboardV2() {
       aged,
       capital: inventoryCapitalTiedUp(products),
       listingRate: active.length ? (listed.length / active.length) * 100 : 0,
-      sellThrough: sellThroughRate(products),
+      sellThrough: sellThroughRate(products, sales),
     }
-  }, [expenses, period, products])
+  }, [expenses, period, products, sales])
 
   const trend = useMemo(() => {
     const now = new Date()
     return Array.from({ length: 6 }, (_, index) => {
       const point = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1)
-      const sold = products.filter((product) => {
-        if (product.status !== 'Sold' || product.salePrice === null) return false
-        const raw = productSaleDate(product)
-        if (!raw) return false
-        const date = new Date(raw)
-        return date.getFullYear() === point.getFullYear() && date.getMonth() === point.getMonth()
+      const sold = sales.filter((sale) => {
+        if (sale.refunded || sale.status === 'Refunded' || sale.status === 'Voided') {
+          return false
+        }
+        const date = new Date(sale.saleDate)
+        return date.getFullYear() === point.getFullYear()
+          && date.getMonth() === point.getMonth()
       })
       return {
         key: point.toISOString(),
@@ -99,17 +110,21 @@ function DashboardV2() {
         profit: grossProfit(sold),
       }
     })
-  }, [products])
+  }, [sales])
 
   const trendMax = Math.max(1, ...trend.map((point) => point.revenue))
   const sixMonthRevenue = trend.reduce((sum, point) => sum + point.revenue, 0)
   const sixMonthProfit = trend.reduce((sum, point) => sum + point.profit, 0)
 
   const marketplaces = useMemo(
-    () => groupByMarketplace(products.filter((product) => product.status === 'Sold'))
+    () => groupByMarketplace(
+      sales.filter(
+        (sale) => !sale.refunded && sale.status !== 'Refunded' && sale.status !== 'Voided',
+      ),
+    )
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 4),
-    [products],
+    [sales],
   )
   const marketplaceMax = Math.max(1, ...marketplaces.map((item) => item.revenue))
 
@@ -130,7 +145,7 @@ function DashboardV2() {
     return items.slice(0, 4)
   }, [canUse, money, stats])
 
-  if (loading) return <LoadingState label="Loading business overview..." />
+  if (productsLoading || salesLoading) return <LoadingState label="Loading business overview..." />
 
   if (!currentBusiness) {
     return <div className="panel-v2 action-empty-v2"><strong>No business selected</strong><span>Create or select a business to view your SellerHQ overview.</span></div>
