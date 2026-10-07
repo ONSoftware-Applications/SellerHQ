@@ -8,6 +8,7 @@ import {
 
 import { supabase } from '../lib/supabase'
 import { useBusiness } from '../hooks/useBusiness'
+import { useSubscription } from '../hooks/useSubscription'
 import {
   CustomStatusContext,
 } from '../hooks/useCustomStatuses'
@@ -67,6 +68,7 @@ function validateName(name: string, statuses: CustomProductStatus[], ignoreId?: 
 
 export function CustomStatusProvider({ children }: { children: ReactNode }) {
   const { currentBusiness } = useBusiness()
+  const { canUse } = useSubscription()
   const [statuses, setStatuses] = useState<CustomProductStatus[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -96,7 +98,7 @@ export function CustomStatusProvider({ children }: { children: ReactNode }) {
     }
 
     setLoading(false)
-  }, [currentBusiness])
+  }, [canUse, currentBusiness])
 
   const createStatus = useCallback(async (
     name: string,
@@ -104,6 +106,10 @@ export function CustomStatusProvider({ children }: { children: ReactNode }) {
   ) => {
     if (!currentBusiness) {
       throw new Error('No business is currently selected.')
+    }
+
+    if (!canUse('customStatuses')) {
+      throw new Error('Custom inventory statuses require SellerHQ Pro or Business.')
     }
 
     const trimmed = validateName(name, statuses)
@@ -129,7 +135,7 @@ export function CustomStatusProvider({ children }: { children: ReactNode }) {
     const created = rowToStatus(data as CustomProductStatusRow)
     setStatuses((current) => [...current, created])
     return created
-  }, [currentBusiness, statuses])
+  }, [canUse, currentBusiness, statuses])
 
   const updateStatus = useCallback(async (
     id: string,
@@ -137,6 +143,10 @@ export function CustomStatusProvider({ children }: { children: ReactNode }) {
   ) => {
     if (!currentBusiness) {
       throw new Error('No business is currently selected.')
+    }
+
+    if (!canUse('customStatuses')) {
+      throw new Error('Custom inventory statuses require SellerHQ Pro or Business.')
     }
 
     const trimmed = validateName(changes.name, statuses, id)
@@ -164,11 +174,15 @@ export function CustomStatusProvider({ children }: { children: ReactNode }) {
           : status,
       ),
     )
-  }, [currentBusiness, statuses])
+  }, [canUse, currentBusiness, statuses])
 
   const deleteStatus = useCallback(async (id: string) => {
     if (!currentBusiness) {
       throw new Error('No business is currently selected.')
+    }
+
+    if (!canUse('customStatuses')) {
+      throw new Error('Custom inventory statuses require SellerHQ Pro or Business.')
     }
 
     const databaseValue = customStatusDatabaseValue(id)
