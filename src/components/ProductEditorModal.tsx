@@ -64,6 +64,7 @@ export function ProductEditorModal({
   onSubmit,
 }: ProductEditorModalProps) {
   const { canUse } = useSubscription()
+  const customStatusesEnabled = canUse('customStatuses')
   const { currentBusiness } = useBusiness()
   const { statuses: customStatuses, createStatus } = useCustomStatuses()
   const canManageCustomStatuses =
@@ -198,6 +199,11 @@ export function ProductEditorModal({
     }
 
     if (value.startsWith('custom:')) {
+      if (!customStatusesEnabled) {
+        setError('Custom inventory statuses require SellerHQ Pro or Business.')
+        return
+      }
+
       setStatus('Custom')
       setCustomStatusId(value.slice('custom:'.length))
       return
@@ -213,7 +219,7 @@ export function ProductEditorModal({
   }
 
   async function handleCreateCustomStatus() {
-    if (!newCustomStatusName.trim() || creatingCustomStatus) return
+    if (!customStatusesEnabled || !newCustomStatusName.trim() || creatingCustomStatus) return
 
     setCreatingCustomStatus(true)
     setError('')
@@ -931,6 +937,14 @@ export function ProductEditorModal({
                   }
                   disabled={submitting}
                 >
+                  {!customStatusesEnabled
+                    && status === 'Custom'
+                    && customStatusId
+                    && (
+                      <option value={`custom:${customStatusId}`} disabled>
+                        {customStatuses.find((item) => item.id === customStatusId)?.name ?? 'Custom status'} · Pro
+                      </option>
+                    )}
                   <optgroup label="SellerHQ statuses">
                     {statusOptions.map((option) => (
                       <option key={option} value={option}>
@@ -938,7 +952,7 @@ export function ProductEditorModal({
                       </option>
                     ))}
                   </optgroup>
-                  {customStatuses.length > 0 && (
+                  {customStatusesEnabled && customStatuses.length > 0 && (
                     <optgroup label="Custom statuses">
                       {customStatuses.map((customStatus) => (
                         <option
@@ -950,7 +964,7 @@ export function ProductEditorModal({
                       ))}
                     </optgroup>
                   )}
-                  {canManageCustomStatuses && (
+                  {customStatusesEnabled && canManageCustomStatuses && (
                     <option value="__create_custom__">
                       + Create new custom status
                     </option>
@@ -958,7 +972,7 @@ export function ProductEditorModal({
                 </select>
               </label>
 
-              {showCustomStatusCreator && canManageCustomStatuses && (
+              {showCustomStatusCreator && customStatusesEnabled && canManageCustomStatuses && (
                 <div className="custom-status-inline-create-v2">
                   <label>
                     <span>Status name</span>
